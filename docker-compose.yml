@@ -149,8 +149,6 @@ services:
       context: ./GatewayService
       dockerfile: Dockerfile
     container_name: gatewayservice
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
     ports:
       - "8090:8080"
     networks:
