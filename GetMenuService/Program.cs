@@ -3,6 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using GetMenuService.Settings;
 using Microsoft.Extensions.Configuration;
 using GetMenuService.Services;
+using PointofSaleModels.DatabaseModels;
+using Microsoft.EntityFrameworkCore;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((context, config) =>
@@ -11,10 +13,14 @@ var host = Host.CreateDefaultBuilder(args)
     })
     .ConfigureServices((context, services) =>
     {
-        services.Configure<RabbitMqSettings>(context.Configuration.GetSection("RabbitMQ"));
-
-        services.AddSingleton<RabbitMqConnection>();
-        services.AddHostedService<ConsumerService>();
+        services
+        .AddDbContext<RestaurantErpWebContext>(
+            options => options.UseNpgsql(
+                context.Configuration.GetConnectionString("Default"))
+        )
+        .Configure<RabbitMqSettings>(context.Configuration.GetSection("RabbitMQ"))
+        .AddSingleton<RabbitMqConnection>()
+        .AddHostedService<ConsumerService>();
     })
     .Build();
 

@@ -4,25 +4,19 @@ using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client.Events;
 using Microsoft.Extensions.Options;
 using GetMenuService.Settings;
+using PointofSaleModels.DatabaseModels;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GetMenuService.Services
 {
-    public class ConsumerService : BackgroundService
+    public class ConsumerService(RabbitMqConnection rabbitConnection, IOptions<RabbitMqSettings> options, RestaurantErpWebContext db) : BackgroundService
     {
-        private readonly RabbitMqConnection _rabbitConnection;
-        private readonly RabbitMqSettings _settings;
-
-        public ConsumerService(RabbitMqConnection rabbitConnection, IOptions<RabbitMqSettings> options)
-        {
-            _rabbitConnection = rabbitConnection;
-            _settings = options.Value;
-        }
-
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            await _rabbitConnection.InitializeAsync();
+            await rabbitConnection.InitializeAsync();
 
-            var channel = _rabbitConnection.Channel;
+            var channel = rabbitConnection.Channel;
 
             var consumer = new AsyncEventingBasicConsumer(channel);
 
@@ -34,7 +28,6 @@ namespace GetMenuService.Services
                string? connectionId = null;
                string route = "unknown";
                JsonElement payload = default;
-               bool hasPayload = false;
 
                try
                {
@@ -52,7 +45,6 @@ namespace GetMenuService.Services
                    {
                        // Clone the element so it no longer depends on the lifetime of 'doc'
                        payload = pl.Clone();
-                       hasPayload = true;
                    }
                }
                catch (JsonException)
@@ -62,27 +54,38 @@ namespace GetMenuService.Services
 
                // Build a trivial response. For a real implementation, fetch the menu here.
                // Ensure the payload is independent of any disposed JsonDocument.
-               JsonElement responsePayload = hasPayload
-                   ? payload
-                   : JsonDocument.Parse("{\"status\":\"ok\"}").RootElement.Clone();
+
+               List<object> responsePayload = [];
+
+               try
+               {
+                   foreach (var item in GetMenuItems())
+                   {
+                       responsePayload.Add(item);
+                   }
+               }
+               catch (Exception ex)
+               {
+                   Console.WriteLine($"Error fetching menu items: {ex.Message}");
+               }
                var responseEnvelope = new
                {
-                   connectionId = connectionId,
-                   route = route,
+                   connectionId,
+                   route,
                    payload = responsePayload,
                    processedAt = DateTimeOffset.UtcNow
                };
                var json = JsonSerializer.Serialize(responseEnvelope);
                var body = Encoding.UTF8.GetBytes(json);
 
-               await _rabbitConnection.PublishResponseAsync(body);
+               await rabbitConnection.PublishResponseAsync(body);
 
                await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
            };
-
             // ✅ Use new API signature with all arguments
-            var requestQueue = !string.IsNullOrWhiteSpace(_settings.RequestQueueName)
-                ? _settings.RequestQueueName!
+            var settings = options.Value;
+            var requestQueue = !string.IsNullOrWhiteSpace(settings.RequestQueueName)
+                ? settings.RequestQueueName!
                 : "gateway-requests-queue";
             await channel.BasicConsumeAsync(
                 queue: requestQueue,
@@ -96,6 +99,31 @@ namespace GetMenuService.Services
             );
 
             Console.WriteLine($"✅ GetMenuService consumer started. Listening on '{requestQueue}' and replying to 'gateway-responses-queue'.");
+        }
+
+        private IEnumerable<object> GetMenuItems()
+        {
+            Console.WriteLine("📂 Fetching menu items from database...");
+            var connection = db.Database.GetDbConnection();
+            var command = connection.CreateCommand();
+
+            command.CommandText = @"SELECT ""Id"", ""Name"", ""Price"" FROM ""Products""";
+            if (connection.State == System.Data.ConnectionState.Open)
+            {
+                connection.Close();
+            }
+            connection.Open();
+            var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                yield return new
+                {
+                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                    Name = reader.GetString(reader.GetOrdinal("Name")),
+                    Price = reader.GetDecimal(reader.GetOrdinal("Price"))
+                };
+            }
+            Console.WriteLine("✅ Menu items fetched successfully.");
         }
     }
 }

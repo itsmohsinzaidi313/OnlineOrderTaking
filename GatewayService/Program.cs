@@ -1,10 +1,7 @@
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.StackExchangeRedis;
-using StackExchange.Redis;
-using RabbitMQ.Client;
 using GatewayService.Services;
 using GatewayService.Settings;
 using GatewayService.Hubs;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 

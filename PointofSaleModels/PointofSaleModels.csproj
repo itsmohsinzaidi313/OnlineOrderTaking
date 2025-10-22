@@ -10,10 +10,4 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.20" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="RabbitMQ.Client">
-      <HintPath>..\..\..\..\..\NuGet\.nuget\rabbitmq.client\7.1.2\lib\net8.0\RabbitMQ.Client.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
 </Project>
