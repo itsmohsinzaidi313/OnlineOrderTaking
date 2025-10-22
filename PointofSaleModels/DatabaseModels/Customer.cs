@@ -1,0 +1,61 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace PointofSaleModels.DatabaseModels;
+
+public partial class Customer
+{
+    public int CustomerId { get; set; }
+
+    public string? Title { get; set; }
+
+    public string? CustomerName { get; set; }
+
+    public bool IsActive { get; set; }
+
+    public int? CreatedBy { get; set; }
+
+    public DateTime? CreatedDate { get; set; }
+
+    public int? ModifiedBy { get; set; }
+
+    public DateTime? ModifiedDate { get; set; }
+
+    public string? UserIp { get; set; }
+
+    public int? PhoneId { get; set; }
+
+    public bool IsPrimary { get; set; }
+
+    public int? CompanyId { get; set; }
+
+    public bool? IsTaxPayer { get; set; }
+
+    public bool? IsApprovedVendor { get; set; }
+
+    public string? Ntn { get; set; }
+
+    public string? Gst { get; set; }
+
+    public string? Sst { get; set; }
+
+    public string? Cnic { get; set; }
+
+    public string? Email { get; set; }
+
+    public string? Password { get; set; }
+
+    public virtual SetupCompany? Company { get; set; }
+
+    public virtual ICollection<LoyaltyCard> LoyaltyCards { get; set; } = new List<LoyaltyCard>();
+
+    public virtual ICollection<OrderMaster> OrderMasters { get; set; } = new List<OrderMaster>();
+
+    public virtual ICollection<PayableReceivableVoucherMaster> PayableReceivableVoucherMasters { get; set; } = new List<PayableReceivableVoucherMaster>();
+
+    public virtual ICollection<PaymentVoucherMaster> PaymentVoucherMasters { get; set; } = new List<PaymentVoucherMaster>();
+
+    public virtual CustomerPhone? Phone { get; set; }
+
+    public virtual ICollection<ReservationMaster> ReservationMasters { get; set; } = new List<ReservationMaster>();
+}

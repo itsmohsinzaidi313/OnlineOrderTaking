@@ -1,0 +1,27 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace PointofSaleModels.DatabaseModels;
+
+public partial class SetupBankDetail
+{
+    public int BankDetailId { get; set; }
+
+    public int BankId { get; set; }
+
+    public string AccountNo { get; set; } = null!;
+
+    public DateTime CreatedDate { get; set; }
+
+    public int CreatedBy { get; set; }
+
+    public bool IsActive { get; set; }
+
+    public DateTime? ModifiedDate { get; set; }
+
+    public int? ModifiedBy { get; set; }
+
+    public string UserIp { get; set; } = null!;
+
+    public int? BranchId { get; set; }
+}
