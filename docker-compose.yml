@@ -194,6 +194,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=haproxy;Port=5432;Database=ProductsDb;Username=postgres;Password=postgrespass
+    ports:
+      - "8091:8080"
     networks:
       - patroni-net
     depends_on:
