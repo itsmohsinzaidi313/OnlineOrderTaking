@@ -1,10 +1,23 @@
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /app
 
-# Copy everything and restore
-COPY . .
-RUN dotnet publish GetMenuService.csproj -c Release -o out
+# Use a root-level workdir for multi-project build
+WORKDIR /src
+
+# Copy only csproj files first to leverage Docker layer caching
+# IMPORTANT: This assumes the build context is the repo root
+COPY GetMenuService/GetMenuService.csproj GetMenuService/
+COPY PointofSaleModels/PointofSaleModels.csproj PointofSaleModels/
+
+# Restore dependencies
+RUN dotnet restore GetMenuService/GetMenuService.csproj
+
+# Copy the remaining source
+COPY GetMenuService/ GetMenuService/
+COPY PointofSaleModels/ PointofSaleModels/
+
+# Publish the service
+RUN dotnet publish GetMenuService/GetMenuService.csproj -c Release -o /app/out
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
