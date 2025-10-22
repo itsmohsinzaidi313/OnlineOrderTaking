@@ -2,6 +2,7 @@ using GatewayService.Services;
 using GatewayService.Settings;
 using GatewayService.Hubs;
 using StackExchange.Redis;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,7 +31,18 @@ builder.Services.AddCors(options =>
 builder.Services.AddSingleton<RabbitMqConnection>();
 builder.Services.AddHostedService<ConsumerService>();
 
+// Add Swagger services
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
+
+// Enable Swagger middleware
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseRouting();
 app.UseCors();

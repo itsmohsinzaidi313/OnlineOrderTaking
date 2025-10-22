@@ -7,7 +7,7 @@
     <script>
       const log = (m) => document.getElementById('log').textContent += m + "\n";
       const connection = new signalR.HubConnectionBuilder()
-        .withUrl("http://85.190.242.39:8080/gatewayHub")
+        .withUrl("http://85.190.242.39:8090/gatewayHub")
         .withAutomaticReconnect()
         .build();
 
