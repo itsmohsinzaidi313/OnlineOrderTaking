@@ -135,8 +135,8 @@ services:
 
   getmenuservice:
     build:
-      context: ./GetMenuService
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./GetMenuService/Dockerfile
     container_name: getmenuservice
     ports:
       - "5003:8080"

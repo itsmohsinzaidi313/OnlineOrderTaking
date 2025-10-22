@@ -6,7 +6,7 @@ WORKDIR /src
 
 # Copy only csproj files first to leverage Docker layer caching
 # IMPORTANT: This assumes the build context is the repo root
-COPY . GetMenuService/
+COPY GetMenuService/GetMenuService.csproj GetMenuService/
 COPY PointofSaleModels/PointofSaleModels.csproj PointofSaleModels/
 
 # Restore dependencies
@@ -14,10 +14,9 @@ RUN dotnet restore GetMenuService/GetMenuService.csproj
 
 # Copy the remaining source
 COPY GetMenuService/ GetMenuService/
-COPY PointofSaleModels/. PointofSaleModels/
+COPY PointofSaleModels/ PointofSaleModels/
 
 # Publish the service
-WORKDIR /src/GetMenuService
 RUN dotnet publish GetMenuService/GetMenuService.csproj -c Release -o /app/out
 
 # Runtime stage
