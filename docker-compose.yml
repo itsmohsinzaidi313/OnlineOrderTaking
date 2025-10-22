@@ -1,0 +1,169 @@
+services:
+  # etcd for Patroni configuration management
+  etcd:
+    build:
+      context: ./etcd
+      dockerfile: Dockerfile
+    container_name: etcd
+    environment:
+      - ETCD_NAME=patroni-etcd
+      - ETCD_DATA_DIR=/etcd-data
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
+    volumes:
+      - etcd_data:/etcd-data
+    networks:
+      - patroni-net
+
+  # Patroni Node 1
+  patroni1:
+    build:
+      context: ./patroni-docker
+      dockerfile: Dockerfile
+    container_name: patroni1
+    hostname: patroni1
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgrespass
+      - POSTGRES_DB=mydb
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - PATRONI_SCOPE=postgres-cluster
+      - PATRONI_NAME=patroni1
+      - PATRONI_NAMESPACE=/service/
+      - PATRONI_ETCD3_HOSTS=etcd:2379
+      - PATRONI_RESTAPI_LISTEN=0.0.0.0:8008
+      - PATRONI_RESTAPI_CONNECT_ADDRESS=patroni1:8008
+      - PATRONI_POSTGRESQL_LISTEN=0.0.0.0:5432
+      - PATRONI_POSTGRESQL_CONNECT_ADDRESS=patroni1:5432
+      - PATRONI_POSTGRESQL_DATA_DIR=/var/lib/postgresql/data/pgdata
+      - PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_USERNAME=replicator
+      - PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_PASSWORD=replicatorpass
+      - PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME=postgres
+      - PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD=postgrespass
+    volumes:
+      - patroni1_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - patroni-net
+    depends_on:
+      - etcd
+
+  # Patroni Node 2  
+  patroni2:
+    build:
+      context: ./patroni-docker
+      dockerfile: Dockerfile
+    container_name: patroni2
+    hostname: patroni2
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgrespass
+      - POSTGRES_DB=mydb
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - PATRONI_SCOPE=postgres-cluster
+      - PATRONI_NAME=patroni2
+      - PATRONI_NAMESPACE=/service/
+      - PATRONI_ETCD3_HOSTS=etcd:2379
+      - PATRONI_RESTAPI_LISTEN=0.0.0.0:8008
+      - PATRONI_RESTAPI_CONNECT_ADDRESS=patroni2:8008
+      - PATRONI_POSTGRESQL_LISTEN=0.0.0.0:5432
+      - PATRONI_POSTGRESQL_CONNECT_ADDRESS=patroni2:5432
+      - PATRONI_POSTGRESQL_DATA_DIR=/var/lib/postgresql/data/pgdata
+      - PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_USERNAME=replicator
+      - PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_PASSWORD=replicatorpass
+      - PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME=postgres
+      - PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD=postgrespass
+    volumes:
+      - patroni2_data:/var/lib/postgresql/data
+    networks:
+      - patroni-net
+    depends_on:
+      - etcd
+      - patroni1
+
+  # Patroni Node 3
+  patroni3:
+    build:
+      context: ./patroni-docker
+      dockerfile: Dockerfile
+    container_name: patroni3
+    hostname: patroni3
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgrespass
+      - POSTGRES_DB=mydb
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - PATRONI_SCOPE=postgres-cluster
+      - PATRONI_NAME=patroni3
+      - PATRONI_NAMESPACE=/service/
+      - PATRONI_ETCD3_HOSTS=etcd:2379
+      - PATRONI_RESTAPI_LISTEN=0.0.0.0:8008
+      - PATRONI_RESTAPI_CONNECT_ADDRESS=patroni3:8008
+      - PATRONI_POSTGRESQL_LISTEN=0.0.0.0:5432
+      - PATRONI_POSTGRESQL_CONNECT_ADDRESS=patroni3:5432
+      - PATRONI_POSTGRESQL_DATA_DIR=/var/lib/postgresql/data/pgdata
+      - PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_USERNAME=replicator
+      - PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_PASSWORD=replicatorpass
+      - PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME=postgres
+      - PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD=postgrespass
+    volumes:
+      - patroni3_data:/var/lib/postgresql/data
+    networks:
+      - patroni-net
+    depends_on:
+      - etcd
+      - patroni1
+
+  # HAProxy for load balancing
+  haproxy:
+    build:
+      context: ./haproxy
+      dockerfile: Dockerfile
+    container_name: haproxy
+    ports:
+      - "5432:5432"   # PostgreSQL
+      - "8404:8404"   # HAProxy stats
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - patroni-net
+    depends_on:
+      - patroni1
+      - patroni2
+      - patroni3
+
+  getmenuserice:
+    build:
+      context: ./GetMenuService
+      dockerfile: Dockerfile
+    container_name: getmenuservice
+    ports:
+      - "5003:8080"
+    networks:
+      - patroni-net
+    depends_on:
+      - haproxy
+
+  gatewayservice:
+    build:
+      context: ./GatewayService
+      dockerfile: Dockerfile
+    container_name: gatewayservice
+    ports:
+      - "8080:8080"
+    networks:
+      - patroni-net
+    depends_on:
+      - getmenuservice
+  
+
+volumes:
+  etcd_data:
+  patroni1_data:
+  patroni2_data:
+  patroni3_data:
+
+networks:
+  patroni-net:
+    driver: bridge
