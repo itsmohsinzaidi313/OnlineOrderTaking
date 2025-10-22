@@ -133,7 +133,7 @@ services:
       - patroni2
       - patroni3
 
-  getmenuserice:
+  getmenuservice:
     build:
       context: ./GetMenuService
       dockerfile: Dockerfile
@@ -144,6 +144,7 @@ services:
       - patroni-net
     depends_on:
       - haproxy
+      - rabbitmq
 
   gatewayservice:
     build:
@@ -156,6 +157,38 @@ services:
       - patroni-net
     depends_on:
       - getmenuservice
+      - redis
+      - rabbitmq
+
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "StrongRedisPass!123"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - patroni-net
+
+  # RabbitMQ broker with management UI
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=appuser
+      - RABBITMQ_DEFAULT_PASS=StrongRabbitPass!123
+      - RABBITMQ_DEFAULT_VHOST=/
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - patroni-net
+
+    
   
 
 volumes:
@@ -163,6 +196,8 @@ volumes:
   patroni1_data:
   patroni2_data:
   patroni3_data:
+  redis_data:
+  rabbitmq_data:
 
 networks:
   patroni-net:
