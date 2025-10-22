@@ -14,7 +14,7 @@ RUN dotnet restore GetMenuService/GetMenuService.csproj
 
 # Copy the remaining source
 COPY GetMenuService/ GetMenuService/
-COPY PointofSaleModels/ PointofSaleModels/
+COPY PointofSaleModels/. PointofSaleModels/
 
 # Publish the service
 WORKDIR /src/GetMenuService
