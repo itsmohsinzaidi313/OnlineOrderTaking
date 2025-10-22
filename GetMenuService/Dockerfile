@@ -17,6 +17,7 @@ COPY GetMenuService/ GetMenuService/
 COPY ../PointofSaleModels/ PointofSaleModels/
 
 # Publish the service
+WORKDIR /src/GetMenuService
 RUN dotnet publish GetMenuService/GetMenuService.csproj -c Release -o /app/out
 
 # Runtime stage
