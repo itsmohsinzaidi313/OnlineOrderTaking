@@ -186,7 +186,18 @@ services:
     networks:
       - patroni-net
 
-    
+  seedingservice:
+    build:
+      context: ./Microservice
+      dockerfile: Dockerfile
+    container_name: seedingservice
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=haproxy;Port=5432;Database=ProductsDb;Username=postgres;Password=postgrespass
+    networks:
+      - patroni-net
+    depends_on:
+      - haproxy
   
 
 volumes:
