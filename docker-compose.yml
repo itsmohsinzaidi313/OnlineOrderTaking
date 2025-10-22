@@ -138,8 +138,6 @@ services:
       context: .
       dockerfile: ./GetMenuService/Dockerfile
     container_name: getmenuservice
-    ports:
-      - "5003:8080"
     networks:
       - patroni-net
     depends_on:
