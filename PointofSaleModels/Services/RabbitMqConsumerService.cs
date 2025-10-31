@@ -2,13 +2,11 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client.Events;
-using Microsoft.Extensions.Options;
-using PointofSaleModels.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace PointofSaleModels.Services
 {
-    public class RabbitMqConsumerService(ILogger<RabbitMqConsumerService> logger, RabbitMqConnection rabbitConnection, IOptions<RabbitMqSettings> options, IQueueExecution exec) : BackgroundService
+    public class RabbitMqConsumerService(ILogger<RabbitMqConsumerService> logger, RabbitMqConnection rabbitConnection, IQueueExecution exec) : BackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
