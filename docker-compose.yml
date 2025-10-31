@@ -146,8 +146,8 @@ services:
 
   gatewayservice:
     build:
-      context: ./GatewayService
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./GatewayService/Dockerfile
     container_name: gatewayservice
     ports:
       - "8090:8080"
