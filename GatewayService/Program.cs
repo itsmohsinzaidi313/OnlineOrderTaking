@@ -1,6 +1,6 @@
-using GatewayService.Services;
-using GatewayService.Settings;
 using GatewayService.Hubs;
+using PointofSaleModels.Services;
+using PointofSaleModels.Settings;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,7 +28,7 @@ builder.Services.AddCors(options =>
     });
 });
 builder.Services.AddSingleton<RabbitMqConnection>();
-builder.Services.AddHostedService<ConsumerService>();
+builder.Services.AddHostedService<RabbitMqConsumerService>();
 
 // Add Swagger services
 builder.Services.AddEndpointsApiExplorer();

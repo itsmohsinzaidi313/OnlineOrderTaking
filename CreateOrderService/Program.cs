@@ -1,13 +1,31 @@
-﻿using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
+﻿using CreateOrderService;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using PointofSaleModels.Application;
+using PointofSaleModels.DatabaseModels;
+using PointofSaleModels.Services;
+using PointofSaleModels.Settings;
 
-namespace CreateOrderService
+var builder = Host.CreateDefaultBuilder(args);
+builder.ConfigureAppConfiguration((hostingContext, config) =>
 {
-    class Program
+    config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+})
+.ConfigureServices((hostingContext, services) =>
+{
+    services.AddDbContext<RestaurantErpWebContext>(options =>
     {
-        static void Main(string[] args)
-        {
-
-        }
-    }
-}
+        services
+        .AddDbContext<RestaurantErpWebContext>(
+            options => options.UseNpgsql(
+                hostingContext.Configuration.GetConnectionString("Default"))
+        )
+        .Configure<RabbitMqSettings>(hostingContext.Configuration.GetSection("RabbitMQ"))
+        .AddSingleton<RabbitMqConnection>()
+        .AddScoped<IQueueExecution, QueueListener>()
+        .AddHostedService<RabbitMqConsumerService>();
+    });
+});
+builder.Build();

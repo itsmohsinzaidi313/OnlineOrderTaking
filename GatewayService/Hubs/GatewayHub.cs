@@ -1,13 +1,11 @@
 using System.Text;
 using System.Text.Json;
-using GatewayService.Services;
-using GatewayService.Settings;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Options;
+using PointofSaleModels.Services;
 
 namespace GatewayService.Hubs
 {
-    public class GatewayHub(RabbitMqConnection rabbit, ILogger<GatewayHub> logger) : Hub
+    public class GatewayHub(RabbitMqConnection rabbit, ILogger<GatewayHub> logger, IQueueExecution exec) : Hub
     {
         public override async Task OnConnectedAsync()
         {
@@ -22,25 +20,21 @@ namespace GatewayService.Hubs
             await base.OnConnectedAsync();
         }
 
-        // Client sends a request to be forwarded to RabbitMQ
         public async Task SendRequest(string route, string payload)
         {
             await rabbit.InitializeAsync();
-
-            var envelope = new
+            var obj = new RabbitMqTransport
             {
-                route,
-                payload,
-                connectionId = Context.ConnectionId,
-                sentAt = DateTimeOffset.UtcNow
+                Route = route,
+                Payload = payload,
+                ConnectionId = Context.ConnectionId,
+                BranchId = 0,
+                CompanyId = 0
             };
-
-            var json = JsonSerializer.Serialize(envelope);
-            var body = Encoding.UTF8.GetBytes(json);
 
             try
             {
-                await rabbit.PublishAsync(body);
+                await rabbit.PublishResponseAsync(obj);
                 logger.LogInformation("Queued message for route {Route} from {ConnId}", route, Context.ConnectionId);
                 await Clients.Caller.SendAsync("Ack", new { status = "queued", route, id = Context.ConnectionId });
             }

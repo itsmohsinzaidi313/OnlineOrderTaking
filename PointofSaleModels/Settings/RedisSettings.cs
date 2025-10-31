@@ -1,4 +1,4 @@
-namespace GatewayService.Settings
+namespace PointofSaleModels.Settings
 {
     public class RedisSettings
     {

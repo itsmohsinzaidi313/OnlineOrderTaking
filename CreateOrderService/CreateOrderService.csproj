@@ -8,6 +8,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.5.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.10" />
     <PackageReference Include="RabbitMQ.Client" Version="7.1.2" />
   </ItemGroup>
 

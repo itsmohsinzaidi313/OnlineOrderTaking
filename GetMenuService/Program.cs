@@ -1,10 +1,11 @@
-﻿using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using GetMenuService.Settings;
-using Microsoft.Extensions.Configuration;
-using GetMenuService.Services;
-using PointofSaleModels.DatabaseModels;
+﻿using GetMenuService;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using PointofSaleModels.DatabaseModels;
+using PointofSaleModels.Services;
+using PointofSaleModels.Settings;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((context, config) =>
@@ -20,7 +21,8 @@ var host = Host.CreateDefaultBuilder(args)
         )
         .Configure<RabbitMqSettings>(context.Configuration.GetSection("RabbitMQ"))
         .AddSingleton<RabbitMqConnection>()
-        .AddHostedService<ConsumerService>();
+        .AddScoped<IQueueExecution, QueueListener>()
+        .AddScoped<RabbitMqConsumerService>();
     })
     .Build();
 

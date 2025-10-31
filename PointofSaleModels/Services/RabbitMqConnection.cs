@@ -1,29 +1,28 @@
-using RabbitMQ.Client;
-using GatewayService.Settings;
+using PointofSaleModels.Settings;
 using Microsoft.Extensions.Options;
+using RabbitMQ.Client;
+using System;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 
-namespace GatewayService.Services
+namespace PointofSaleModels.Services
 {
-    public class RabbitMqConnection : IAsyncDisposable
+    public class RabbitMqConnection(IOptions<RabbitMqSettings> options) : IAsyncDisposable
     {
-        private readonly RabbitMqSettings _settings;
+        private readonly RabbitMqSettings _settings = options.Value;
         private IConnection? _connection;
         private IChannel? _channel;
 
         public IChannel Channel => _channel ?? throw new InvalidOperationException("RabbitMQ channel not initialized");
 
-        public RabbitMqConnection(IOptions<RabbitMqSettings> options)
-        {
-            _settings = options.Value;
-        }
-
         public async Task InitializeAsync()
         {
             if (_channel != null && _connection != null)
             {
-                // Already initialized
                 return;
             }
+
             var factory = new ConnectionFactory()
             {
                 HostName = _settings.HostName,
@@ -35,7 +34,6 @@ namespace GatewayService.Services
             _connection = await factory.CreateConnectionAsync();
             _channel = await _connection.CreateChannelAsync();
 
-            // Declare queues (separate request/response queues to avoid loopback)
             var requestQueue = !string.IsNullOrWhiteSpace(_settings.RequestQueueName)
                 ? _settings.RequestQueueName!
                 : "gateway-requests-queue";
@@ -44,6 +42,7 @@ namespace GatewayService.Services
                 ? _settings.ResponseQueueName!
                 : "gateway-responses-queue";
 
+            // Declare both queues to ensure existence
             await _channel.QueueDeclareAsync(
                 queue: requestQueue,
                 durable: true,
@@ -52,7 +51,6 @@ namespace GatewayService.Services
                 arguments: null
             );
 
-            // Also ensure response queue exists for the consumer service
             await _channel.QueueDeclareAsync(
                 queue: responseQueue,
                 durable: true,
@@ -62,17 +60,16 @@ namespace GatewayService.Services
             );
         }
 
-        public async Task PublishAsync(ReadOnlyMemory<byte> body)
+        public async Task PublishResponseAsync<T>(T response)
         {
             await InitializeAsync();
 
-            // Using BasicProperties from RabbitMQ.Client 7.x API
             var props = new BasicProperties();
 
-            var routingKey = !string.IsNullOrWhiteSpace(_settings.RequestQueueName)
-                ? _settings.RequestQueueName!
-                : "gateway-requests-queue";
+            var routingKey = _settings.ResponseQueueName!;
 
+            var json = JsonSerializer.Serialize(response);
+            var body = Encoding.UTF8.GetBytes(json);
             await Channel.BasicPublishAsync(
                 exchange: string.Empty,
                 routingKey: routingKey,
