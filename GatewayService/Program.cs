@@ -31,7 +31,7 @@ builder.Services
 
     .AddSingleton<RabbitMqConnection>()
     .AddScoped<QueueListener>()
-    .AddScoped<RabbitMqConsumerService>();
+    .AddHostedService<RabbitMqConsumerService>();
 
 // Add Swagger services
 builder.Services.AddEndpointsApiExplorer();
