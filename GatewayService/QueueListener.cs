@@ -4,7 +4,7 @@ using PointofSaleModels.Services;
 
 namespace GatewayService
 {
-    public class QueueListener(GatewayHub hub) : IQueueExecution
+    public class QueueListener(IHubContext<GatewayHub> hub) : IQueueExecution
     {
         public async Task OnMessage(RabbitMqTransport transport)
         {
