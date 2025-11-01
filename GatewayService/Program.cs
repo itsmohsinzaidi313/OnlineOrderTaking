@@ -28,9 +28,8 @@ builder.Services
               .AllowCredentials();
     });
 })
-
     .AddSingleton<RabbitMqConnection>()
-    .AddScoped<QueueListener>()
+    .AddSingleton<IQueueExecution, QueueListener>()
     .AddHostedService<RabbitMqConsumerService>();
 
 // Add Swagger services
