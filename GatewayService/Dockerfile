@@ -38,8 +38,4 @@ COPY --from=build /app/out .
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Development
 
-# Health check - use the actual health endpoint
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -fsS http://localhost:8080/api/health || exit 1
-
 ENTRYPOINT ["dotnet", "GatewayService.dll"]

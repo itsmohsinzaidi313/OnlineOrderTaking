@@ -27,6 +27,20 @@ namespace PointofSaleModels.Services
                await exec.OnMessage(obj);
                await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
            };
+           var settings = rabbitConnection._settings;
+            var requestQueue = !string.IsNullOrWhiteSpace(settings.RequestQueueName)
+                ? settings.RequestQueueName!
+                : "gateway-requests-queue";
+            await channel.BasicConsumeAsync(
+                queue: requestQueue,
+                autoAck: false,
+                consumerTag: string.Empty, 
+                noLocal: false,
+                exclusive: false,
+                arguments: null,
+                consumer: consumer,
+                cancellationToken: stoppingToken
+            );
         }
     }
 }

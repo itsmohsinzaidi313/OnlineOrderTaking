@@ -10,7 +10,7 @@ namespace PointofSaleModels.Services
 {
     public class RabbitMqConnection(IOptions<RabbitMqSettings> options) : IAsyncDisposable
     {
-        private readonly RabbitMqSettings _settings = options.Value;
+        internal readonly RabbitMqSettings _settings = options.Value;
         private IConnection? _connection;
         private IChannel? _channel;
 
@@ -26,6 +26,7 @@ namespace PointofSaleModels.Services
             var factory = new ConnectionFactory()
             {
                 HostName = _settings.HostName,
+                Port = _settings.Port,
                 UserName = _settings.UserName,
                 Password = _settings.Password,
             };
