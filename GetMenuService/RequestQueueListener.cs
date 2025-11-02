@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace GetMenuService
 {
-    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, RequestQueueAction listener) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection, listener)
+    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, IQueueAction listener) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection, listener)
     {
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {

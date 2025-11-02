@@ -28,8 +28,12 @@ builder.Services
     });
 })
     .AddScoped<RabbitMqConnection>()
-    .AddSingleton<IQueueAction, MenuServiceResponseAction>()
-    .AddSingleton<IQueueAction, JwtServiceResponseAction>()
+    // Register concrete action types so constructors that request them can be resolved
+    .AddSingleton<MenuServiceResponseAction>()
+    .AddSingleton<JwtServiceResponseAction>()
+    // Also keep the IQueueAction registrations (map to the concrete instances)
+    .AddSingleton<IQueueAction>(sp => sp.GetRequiredService<MenuServiceResponseAction>())
+    .AddSingleton<IQueueAction>(sp => sp.GetRequiredService<JwtServiceResponseAction>())
     .AddHostedService<MenuServiceResponseListener>()
     .AddHostedService<JwtServiceResponseListener>();
 
