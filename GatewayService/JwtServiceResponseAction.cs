@@ -7,7 +7,7 @@ namespace GatewayService
 {
     public class JwtServiceResponseAction(IHubContext<GatewayHub> hub) : IQueueAction
     {
-        string IQueueAction.QueueName() => RabbitMqQueues.JwtRequestQueue;
+        string IQueueAction.QueueName() => RabbitMqQueues.JwtResponseQueue;
 
         async Task IQueueAction.OnMessage(RabbitMqTransport transport)
         {

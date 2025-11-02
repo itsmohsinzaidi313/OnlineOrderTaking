@@ -30,6 +30,8 @@ namespace PointofSaleModels.Services
            };
             var settings = rabbitConnection._settings;
 
+            await rabbitConnection.EnsureQueueExistsAsync(QueueName);
+
             await channel.BasicConsumeAsync(
                 queue: QueueName,
                 autoAck: false,

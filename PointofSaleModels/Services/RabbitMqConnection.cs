@@ -30,19 +30,35 @@ namespace PointofSaleModels.Services
                 Password = _settings.Password,
             };
 
-            // ✅ Use new async connection method
             _connection = await factory.CreateConnectionAsync();
             Channel = await _connection.CreateChannelAsync();
         }
 
-        public async Task PublishResponseAsync<T>(T response, string routingKey)
+        public async Task EnsureQueueExistsAsync(string queueName)
         {
-            await Channel!.QueueDeclareAsync(
-                queue: routingKey,
+            if (Channel == null)
+            {
+                throw new InvalidOperationException("Channel is not initialized. Call InitializeAsync() first.");
+            }
+
+            await Channel.QueueDeclareAsync(
+                queue: queueName,
                 durable: true,
                 exclusive: false,
-                autoDelete: false
+                autoDelete: false,
+                arguments: null
             );
+        }
+
+        public async Task PublishResponseAsync<T>(T response, string routingKey)
+        {
+            await EnsureQueueExistsAsync(routingKey);
+
+            if (Channel == null)
+            {
+                await InitializeAsync();
+            }
+
             var props = new BasicProperties();
 
             var json = JsonSerializer.Serialize(response);
