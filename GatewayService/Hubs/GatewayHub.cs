@@ -5,7 +5,7 @@ using PointofSaleModels.Services;
 
 namespace GatewayService.Hubs
 {
-    public class GatewayHub(RabbitMqConnection rabbit, ILogger<GatewayHub> logger, IQueueExecution exec) : Hub
+    public class GatewayHub(RabbitMqConnection rabbit, ILogger<GatewayHub> logger) : Hub
     {
         public override async Task OnConnectedAsync()
         {
