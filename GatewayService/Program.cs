@@ -1,5 +1,4 @@
 using GatewayService;
-using GatewayService.Hubs;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;

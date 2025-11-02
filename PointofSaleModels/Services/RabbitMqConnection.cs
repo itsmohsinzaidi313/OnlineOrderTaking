@@ -35,13 +35,9 @@ namespace PointofSaleModels.Services
             _connection = await factory.CreateConnectionAsync();
             _channel = await _connection.CreateChannelAsync();
 
-            var requestQueue = !string.IsNullOrWhiteSpace(_settings.RequestQueueName)
-                ? _settings.RequestQueueName!
-                : "gateway-requests-queue";
+            var requestQueue = _settings.RequestQueueName ?? throw new InvalidOperationException("RequestQueueName is not configured");
 
-            var responseQueue = !string.IsNullOrWhiteSpace(_settings.ResponseQueueName)
-                ? _settings.ResponseQueueName!
-                : "gateway-responses-queue";
+            var responseQueue = _settings.ResponseQueueName ?? throw new InvalidOperationException("ResponseQueueName is not configured");
 
             // Declare both queues to ensure existence
             await _channel.QueueDeclareAsync(

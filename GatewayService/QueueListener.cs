@@ -1,5 +1,4 @@
-﻿using GatewayService.Hubs;
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using PointofSaleModels.Services;
 
 namespace GatewayService
