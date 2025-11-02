@@ -1,6 +1,5 @@
 using PointofSaleModels.Services;
 using System.Text.Json;
-using JwtTokenService.Services;
 
 namespace JwtTokenService.Services;
 

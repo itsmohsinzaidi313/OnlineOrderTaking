@@ -6,14 +6,9 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace JwtTokenService.Services;
 
-public class TokenService
+public class TokenService(IOptions<JwtSettings> options)
 {
-    private readonly JwtSettings _settings;
-
-    public TokenService(IOptions<JwtSettings> options)
-    {
-        _settings = options.Value;
-    }
+    private readonly JwtSettings _settings = options.Value;
 
     public string GenerateToken(string userId)
     {
