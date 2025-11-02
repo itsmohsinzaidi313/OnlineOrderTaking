@@ -27,7 +27,7 @@ builder.Services
               .AllowCredentials();
     });
 })
-    .AddScoped<RabbitMqConnection>()
+    .AddSingleton<RabbitMqConnection>()
     // Register concrete action types so constructors that request them can be resolved
     .AddSingleton<MenuServiceResponseAction>()
     .AddSingleton<JwtServiceResponseAction>()
