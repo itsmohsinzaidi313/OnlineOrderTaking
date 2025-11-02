@@ -1,13 +1,12 @@
-using GatewayService.Services;
-using GatewayService.Settings;
-using GatewayService.Hubs;
+using GatewayService;
+using PointofSaleModels.Services;
+using PointofSaleModels.Settings;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ"));
 builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("Redis"));
-// SignalR
 var signalR = builder.Services.AddSignalR();
 var redisConn = builder.Configuration.GetSection("Redis:ConnectionString").Value;
 if (!string.IsNullOrWhiteSpace(redisConn))
@@ -17,7 +16,8 @@ if (!string.IsNullOrWhiteSpace(redisConn))
         options.Configuration.ChannelPrefix = RedisChannel.Literal("GatewayService");
     });
 }
-builder.Services.AddCors(options =>
+builder.Services
+    .AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
@@ -26,9 +26,13 @@ builder.Services.AddCors(options =>
               .SetIsOriginAllowed(_ => true)
               .AllowCredentials();
     });
-});
-builder.Services.AddSingleton<RabbitMqConnection>();
-builder.Services.AddHostedService<ConsumerService>();
+})
+    .AddSingleton<RabbitMqConnection>()
+    .AddSingleton<IQueueExecution, QueueListener>()
+    .AddHostedService<RabbitMqConsumerService>();
+
+// Add Swagger services
+builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
