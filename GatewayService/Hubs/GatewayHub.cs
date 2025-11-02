@@ -34,7 +34,7 @@ namespace GatewayService.Hubs
 
             try
             {
-                await rabbit.PublishResponseAsync(obj, queueName: "services.getmenu.requests.queue");
+                await rabbit.PublishResponseAsync(obj, queueName: "services.getmenu.request-queue");
                 logger.LogInformation("Queued message for route {Route} from {ConnId}", route, Context.ConnectionId);
                 await Clients.Caller.SendAsync("Ack", new { status = "queued", route, id = Context.ConnectionId });
             }
