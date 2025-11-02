@@ -61,13 +61,12 @@ namespace PointofSaleModels.Services
             );
         }
 
-        public async Task PublishResponseAsync<T>(T response)
+        public async Task PublishResponseAsync<T>(T response, string? queueName = null)
         {
             await InitializeAsync();
 
             var props = new BasicProperties();
-
-            var routingKey = _settings.ResponseQueueName!;
+            var routingKey = queueName ?? _settings.ResponseQueueName!;
 
             var json = JsonSerializer.Serialize(response);
             var body = Encoding.UTF8.GetBytes(json);
