@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace PointofSaleModels.Services
 {
-    public interface IQueueExecution
+    public interface IQueueAction
     {
+        public string QueueName();
         public Task OnMessage(RabbitMqTransport transport);
     }
 }

@@ -24,8 +24,8 @@ builder.ConfigureAppConfiguration((hostingContext, config) =>
         )
         .Configure<RabbitMqSettings>(hostingContext.Configuration.GetSection("RabbitMQ"))
         .AddSingleton<RabbitMqConnection>()
-        .AddScoped<IQueueExecution, QueueListener>()
-        .AddHostedService<RabbitMqConsumerService>();
+        .AddScoped<IQueueAction, RequestQueueAction>()
+        .AddHostedService<RequestQueueListener>();
     });
 });
 builder.Build();

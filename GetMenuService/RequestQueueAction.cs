@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.DatabaseModels;
 using PointofSaleModels.Services;
+using PointofSaleModels.Settings;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,8 +10,9 @@ using System.Threading.Tasks;
 
 namespace GetMenuService
 {
-    internal class QueueListener(RestaurantErpWebContext dbContext, RabbitMqConnection connection) : IQueueExecution
+    internal class RequestQueueAction(RestaurantErpWebContext dbContext, RabbitMqConnection connection) : IQueueAction
     {
+        public string QueueName() => RabbitMqQueues.MenuRequestQueue;
         public async Task OnMessage(RabbitMqTransport transport)
         {
             List<object> responsePayload = [];
@@ -26,7 +28,7 @@ namespace GetMenuService
                 BranchId = transport.BranchId,
                 Payload = responsePayload
             };
-            await connection.PublishResponseAsync(response);
+            await connection.PublishResponseAsync(response, RabbitMqQueues.MenuResponseQueue);
         }
         private IEnumerable<object> GetMenuItems()
         {

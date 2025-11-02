@@ -20,9 +20,9 @@ var host = Host.CreateDefaultBuilder(args)
                 context.Configuration.GetConnectionString("Default"))
         )
         .Configure<RabbitMqSettings>(context.Configuration.GetSection("RabbitMQ"))
-        .AddSingleton<RabbitMqConnection>()
-        .AddScoped<IQueueExecution, QueueListener>()
-        .AddHostedService<RabbitMqConsumerService>();
+        .AddScoped<RabbitMqConnection>()
+        .AddSingleton<IQueueAction, RequestQueueAction>()
+        .AddHostedService<RequestQueueListener>();
     })
     .Build();
 

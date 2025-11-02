@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
 using PointofSaleModels.Services;
+using PointofSaleModels.Settings;
 
 namespace GatewayService
 {
@@ -34,7 +35,7 @@ namespace GatewayService
 
             try
             {
-                await rabbit.PublishResponseAsync(obj, queueName: "services.getmenu.request-queue");
+                await rabbit.PublishResponseAsync(obj, RabbitMqQueues.MenuRequestQueue);
                 logger.LogInformation("Queued message for route {Route} from {ConnId}", route, Context.ConnectionId);
                 await Clients.Caller.SendAsync("Ack", new { status = "queued", route, id = Context.ConnectionId });
             }
@@ -65,7 +66,7 @@ namespace GatewayService
 
             try
             {
-                await rabbit.PublishResponseAsync(obj, queueName: "services.jwt.request-queue");
+                await rabbit.PublishResponseAsync(obj, RabbitMqQueues.JwtRequestQueue);
                 logger.LogInformation("Queued JWT request for user {User} from {ConnId}", userId, Context.ConnectionId);
                 await Clients.Caller.SendAsync("Ack", new { status = "queued", route = "jwt.request", id = Context.ConnectionId });
             }

@@ -1,10 +1,13 @@
 using PointofSaleModels.Services;
+using PointofSaleModels.Settings;
 using System.Text.Json;
 
 namespace JwtTokenService.Services;
 
-internal class QueueListener(TokenService tokenService, RabbitMqConnection connection, Microsoft.Extensions.Logging.ILogger<QueueListener> logger) : PointofSaleModels.Services.IQueueExecution
+public class JwtRequestAction(TokenService tokenService, RabbitMqConnection connection, ILogger<JwtRequestAction> logger) : IQueueAction
 {
+    public string QueueName() => RabbitMqQueues.JwtRequestQueue;
+
     public async Task OnMessage(RabbitMqTransport transport)
     {
         logger.LogInformation("JwtTokenService: Received message for route {Route}", transport.Route);
@@ -24,10 +27,10 @@ internal class QueueListener(TokenService tokenService, RabbitMqConnection conne
             Route = "jwt.response",
             CompanyId = transport.CompanyId,
             BranchId = transport.BranchId,
-            Payload = new { token, userId }
+            Payload = token
         };
 
-        await connection.PublishResponseAsync(response);
+        await connection.PublishResponseAsync(response, RabbitMqQueues.JwtResponseQueue);
         logger.LogInformation("JwtTokenService: Published token response for user {User}", userId);
     }
 

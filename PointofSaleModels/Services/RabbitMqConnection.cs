@@ -12,13 +12,12 @@ namespace PointofSaleModels.Services
     {
         internal readonly RabbitMqSettings _settings = options.Value;
         private IConnection? _connection;
-        private IChannel? _channel;
+        public IChannel? Channel;
 
-        public IChannel Channel => _channel ?? throw new InvalidOperationException("RabbitMQ channel not initialized");
 
         public async Task InitializeAsync()
         {
-            if (_channel != null && _connection != null)
+            if (Channel != null && _connection != null)
             {
                 return;
             }
@@ -33,36 +32,18 @@ namespace PointofSaleModels.Services
 
             // ✅ Use new async connection method
             _connection = await factory.CreateConnectionAsync();
-            _channel = await _connection.CreateChannelAsync();
-
-            var requestQueue = _settings.RequestQueueName ?? throw new InvalidOperationException("RequestQueueName is not configured");
-
-            var responseQueue = _settings.ResponseQueueName ?? throw new InvalidOperationException("ResponseQueueName is not configured");
-
-            // Declare both queues to ensure existence
-            await _channel.QueueDeclareAsync(
-                queue: requestQueue,
-                durable: true,
-                exclusive: false,
-                autoDelete: false,
-                arguments: null
-            );
-
-            await _channel.QueueDeclareAsync(
-                queue: responseQueue,
-                durable: true,
-                exclusive: false,
-                autoDelete: false,
-                arguments: null
-            );
+            Channel = await _connection.CreateChannelAsync();
         }
 
-        public async Task PublishResponseAsync<T>(T response, string? queueName = null)
+        public async Task PublishResponseAsync<T>(T response, string routingKey)
         {
-            await InitializeAsync();
-
+            await Channel!.QueueDeclareAsync(
+                queue: routingKey,
+                durable: true,
+                exclusive: false,
+                autoDelete: false
+            );
             var props = new BasicProperties();
-            var routingKey = queueName ?? _settings.ResponseQueueName!;
 
             var json = JsonSerializer.Serialize(response);
             var body = Encoding.UTF8.GetBytes(json);
@@ -79,8 +60,8 @@ namespace PointofSaleModels.Services
         public async ValueTask DisposeAsync()
         {
             GC.SuppressFinalize(this);
-            if (_channel != null)
-                await _channel.CloseAsync();
+            if (Channel != null)
+                await Channel.CloseAsync();
 
             if (_connection != null)
                 await _connection.CloseAsync();

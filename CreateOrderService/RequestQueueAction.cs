@@ -1,13 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Application;
 using PointofSaleModels.Services;
+using PointofSaleModels.Settings;
 using Db = PointofSaleModels.DatabaseModels;
 using ValueType = PointofSaleModels.Application.ValueType;
 
 namespace CreateOrderService
 {
-    internal class QueueListener(Db.RestaurantErpWebContext dbContext) : IQueueExecution
+    internal class RequestQueueAction(Db.RestaurantErpWebContext dbContext) : IQueueAction
     {
+
+        public string QueueName() => RabbitMqQueues.OrderRequestQueue;
         public async Task OnMessage(RabbitMqTransport transport)
         {
             CustomerOrder order = transport.Payload as CustomerOrder;

@@ -11,8 +11,8 @@ builder.Services
 .AddSingleton<ConnectionRegistry>()
 .Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ"))
 .AddSingleton<RabbitMqConnection>()
-.AddScoped<IQueueExecution, QueueListener>()
-.AddHostedService<RabbitMqConsumerService>();
+.AddSingleton<IQueueAction, JwtRequestAction>()
+.AddHostedService<JwtTokenRequestListener>();
 
 var app = builder.Build();
 

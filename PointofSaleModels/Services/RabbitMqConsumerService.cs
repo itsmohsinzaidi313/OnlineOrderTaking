@@ -1,17 +1,18 @@
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client.Events;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 
 namespace PointofSaleModels.Services
 {
-    public class RabbitMqConsumerService(ILogger<RabbitMqConsumerService> logger, RabbitMqConnection rabbitConnection, IQueueExecution exec) : BackgroundService
+    public abstract class RabbitMqConsumerService<T>(ILogger<T> logger, RabbitMqConnection rabbitConnection, IQueueAction exec) : BackgroundService
     {
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        private readonly string QueueName = exec.QueueName();
+        public async Task Build(CancellationToken stoppingToken)
         {
             await rabbitConnection.InitializeAsync();
-            var channel = rabbitConnection.Channel;
+            var channel = rabbitConnection.Channel!;
             var consumer = new AsyncEventingBasicConsumer(channel);
 
             consumer.ReceivedAsync += async (sender, ea) =>
@@ -27,14 +28,12 @@ namespace PointofSaleModels.Services
                await exec.OnMessage(obj);
                await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
            };
-           var settings = rabbitConnection._settings;
-            var requestQueue = !string.IsNullOrWhiteSpace(settings.RequestQueueName)
-                ? settings.RequestQueueName!
-                : "gateway-requests-queue";
+            var settings = rabbitConnection._settings;
+
             await channel.BasicConsumeAsync(
-                queue: requestQueue,
+                queue: QueueName,
                 autoAck: false,
-                consumerTag: string.Empty, 
+                consumerTag: string.Empty,
                 noLocal: false,
                 exclusive: false,
                 arguments: null,
@@ -44,3 +43,4 @@ namespace PointofSaleModels.Services
         }
     }
 }
+
