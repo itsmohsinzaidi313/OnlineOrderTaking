@@ -7,24 +7,86 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
   <script>
     const log = (m) => document.getElementById('log').textContent += m + "\n";
-    const connection = new signalR.HubConnectionBuilder()
-      .withUrl("http://85.190.242.39:8090/gatewayHub")
-      // .withUrl("http://localhost:8090/gatewayHub")
-      .withAutomaticReconnect()
-      .build();
 
-    connection.on("Ack", (ack) => log("Ack: " + JSON.stringify(ack)));
-    connection.on("Response", (payload) => log("Response: " + JSON.stringify(payload)));
+    // Simple fetch wrapper that adds Authorization header when token is available
+    let jwtToken = null;
+    const authFetch = (url, opts = {}) => {
+      opts.headers = opts.headers || {};
+      if (jwtToken) opts.headers['Authorization'] = 'Bearer ' + jwtToken;
+      return fetch(url, opts);
+    };
 
-    connection.start().then(() => {
-      log("Connected to GatewayHub");
+    // Start an anonymous connection to request a JWT token, then reconnect with the token.
+    async function start() {
+      // initial anonymous connection
+      let conn = new signalR.HubConnectionBuilder()
+        .withUrl("http://85.190.242.39:8090/gatewayHub")
+        .withAutomaticReconnect()
+        .build();
+
+      conn.on("Ack", (ack) => log("Ack: " + JSON.stringify(ack)));
+      conn.on("JwtTokenResponse", (payload) => {
+        log("JwtTokenResponse: " + JSON.stringify(payload));
+        try {
+          // payload may be a string or object; support both
+          const token = typeof payload === 'string' ? payload : (payload?.token ?? payload?.jwt ?? payload?.accessToken ?? JSON.stringify(payload));
+          jwtToken = token;
+        } catch (e) {
+          log('Failed to parse JWT response: ' + e);
+        }
+      });
+
+      await conn.start();
+      log('Connected (anonymous) to GatewayHub');
+
+      // Request a token for a user id (change 'user1' as needed)
+      const requestedUserId = 'user1';
+      await conn.invoke('RequestJwtToken', requestedUserId);
+      log(`Requested JWT for user ${requestedUserId}. Waiting for JwtTokenResponse...`);
+
+      // Wait for the JwtTokenResponse to arrive (simple polling)
+      const waitUntil = Date.now() + 5000;
+      while (!jwtToken && Date.now() < waitUntil) {
+        await new Promise(r => setTimeout(r, 200));
+      }
+
+      if (!jwtToken) {
+        log('Did not receive JWT token within timeout. Proceeding without token.');
+        // keep using anonymous connection
+        setupSendHandler(conn);
+        return;
+      }
+
+      // We have a token — stop anonymous connection and create an authenticated one
+      await conn.stop();
+      log('Reconnecting with JWT token...');
+
+      conn = new signalR.HubConnectionBuilder()
+        .withUrl("http://85.190.242.39:8090/gatewayHub", { accessTokenFactory: () => jwtToken })
+        .withAutomaticReconnect()
+        .build();
+
+      conn.on("Ack", (ack) => log("Ack: " + JSON.stringify(ack)));
+      conn.on("Response", (payload) => log("Response: " + JSON.stringify(payload)));
+      conn.on("JwtTokenResponse", (p) => log("JwtTokenResponse: " + JSON.stringify(p)));
+
+      await conn.start();
+      log('Connected (authenticated) to GatewayHub');
+
+      setupSendHandler(conn);
+    }
+
+    function setupSendHandler(conn) {
       document.getElementById('send').onclick = () => {
         const route = "menu.get";
         const payload = { category: "all" };
-        connection.invoke("SendRequest", route, JSON.stringify(payload))
+        conn.invoke("SendRequest", route, JSON.stringify(payload))
           .catch(err => log("Send error: " + err.toString()));
       };
-    }).catch(err => log("Connect error: " + err.toString()));
+    }
+
+    // Kick off
+    start().catch(err => log('Connect error: ' + err.toString()));
   </script>
 </body>
 

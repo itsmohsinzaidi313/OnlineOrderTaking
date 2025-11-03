@@ -29,6 +29,7 @@ namespace GatewayService
                 Route = route,
                 Payload = payload,
                 ConnectionId = Context.ConnectionId,
+                UserId = GetUserIdFromContext(),
                 BranchId = 0,
                 CompanyId = 0
             };
@@ -60,6 +61,7 @@ namespace GatewayService
                 Route = "jwt.request",
                 Payload = new { userId },
                 ConnectionId = Context.ConnectionId,
+                UserId = userId,
                 BranchId = 0,
                 CompanyId = 0
             };
@@ -76,6 +78,11 @@ namespace GatewayService
                 await Clients.Caller.SendAsync("Ack", new { status = "error", message = ex.Message });
                 throw;
             }
+        }
+
+        private string GetUserIdFromContext()
+        {
+            return Context.User?.Claims.FirstOrDefault(c => c.Type == "userId")?.Value ?? string.Empty;
         }
     }
 }
