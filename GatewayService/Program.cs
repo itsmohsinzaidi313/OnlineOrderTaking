@@ -1,11 +1,14 @@
 using GatewayService;
-using GatewayService.Models;
+// using GatewayService.Models; // already imported above
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using PointofSaleModels.Application;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
+using Microsoft.Extensions.Options;
+using GatewayService.Models;
+using System.Security.Cryptography;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Runtime;
@@ -16,6 +19,24 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ"));
 builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("Redis"));
+// Bind Jwt settings from configuration (appsettings.json or environment variables)
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+
+// Ensure environment variables are used as a fallback when appsettings.json does not provide values.
+builder.Services.PostConfigure<JwtSettings>(opts =>
+{
+    if (string.IsNullOrWhiteSpace(opts.Key))
+        opts.Key = Environment.GetEnvironmentVariable("JWT__KEY") ?? opts.Key;
+    if (string.IsNullOrWhiteSpace(opts.Issuer))
+        opts.Issuer = Environment.GetEnvironmentVariable("JWT__ISSUER") ?? opts.Issuer;
+    if (string.IsNullOrWhiteSpace(opts.Audience))
+        opts.Audience = Environment.GetEnvironmentVariable("JWT__AUDIENCE") ?? opts.Audience;
+    if (opts.ExpireMinutes == 0)
+    {
+        var env = Environment.GetEnvironmentVariable("JWT__EXPIREMINUTES");
+        if (int.TryParse(env, out var m)) opts.ExpireMinutes = m;
+    }
+});
 
 // Ensure environment variables are used as a fallback when appsettings.json does not provide values.
 builder.Services.PostConfigure<RabbitMqSettings>(opts =>
@@ -65,23 +86,38 @@ builder.Services
     .AddSingleton<IQueueAction>(sp => sp.GetRequiredService<MenuServiceResponseAction>())
     .AddHostedService<MenuServiceResponseListener>();
 
+builder.Services.AddAuthentication();
+builder.Services.AddAuthorization();
+// Add Swagger services
+builder.Services.AddEndpointsApiExplorer();
+
+// Configure JWT Bearer authentication using the bound JwtSettings
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var jwtSettings = jwtSection.Get<JwtSettings>() ?? new JwtSettings();
+if (string.IsNullOrWhiteSpace(jwtSettings.Key) || string.IsNullOrWhiteSpace(jwtSettings.Issuer) || string.IsNullOrWhiteSpace(jwtSettings.Audience))
+{
+    // Do not throw here; token endpoint will validate presence and return an error if missing. Write a small startup note.
+    Console.WriteLine("Jwt settings appear incomplete; ensure Jwt:Key, Jwt:Issuer and Jwt:Audience are configured if you want to generate tokens.");
+}
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters = new TokenValidationParameters
+        if (!string.IsNullOrWhiteSpace(jwtSettings.Key))
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
-        };
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
+                ValidateIssuer = true,
+                ValidIssuer = jwtSettings.Issuer,
+                ValidateAudience = true,
+                ValidAudience = jwtSettings.Audience,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
+        }
     });
-
-// Add Swagger services
-builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
@@ -93,46 +129,54 @@ app.UseAuthorization();
 
 app.MapHub<GatewayHub>("/gatewayHub");
 
+// Minimal API endpoint to generate JWT tokens
+app.MapPost("/generate-token", (IOptions<JwtSettings> options) =>
+{
+    var jwt = options.Value;
+    if (string.IsNullOrWhiteSpace(jwt.Key) || string.IsNullOrWhiteSpace(jwt.Issuer) || string.IsNullOrWhiteSpace(jwt.Audience) || jwt.ExpireMinutes <= 0)
+    {
+        return Results.BadRequest(new { error = "Jwt settings are not properly configured. Please set Jwt:Key, Jwt:Issuer, Jwt:Audience and Jwt:ExpireMinutes." });
+    }
+
+    // Generate a random user id in the format 4chars-4chars (total length 9)
+    const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    var part1 = new char[4];
+    var part2 = new char[4];
+    for (int i = 0; i < 4; i++)
+    {
+        part1[i] = chars[RandomNumberGenerator.GetInt32(chars.Length)];
+        part2[i] = chars[RandomNumberGenerator.GetInt32(chars.Length)];
+    }
+    var userId = new string(part1) + "-" + new string(part2);
+
+    var claims = new List<Claim>
+    {
+        new Claim(JwtRegisteredClaimNames.Sid, userId),
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+        new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+    };
+
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key));
+    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+    var expires = DateTime.UtcNow.AddMinutes(jwt.ExpireMinutes);
+
+    var token = new JwtSecurityToken(
+        issuer: jwt.Issuer,
+        audience: jwt.Audience,
+        claims: claims,
+        expires: expires,
+        signingCredentials: creds);
+
+    var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+
+    return Results.Ok(new { token = tokenString, userId });
+});
+
 // Log whether SignalR Redis backplane is enabled
 var configuredRedis = app.Configuration["Redis:ConnectionString"];
 if (!string.IsNullOrWhiteSpace(configuredRedis))
 {
     app.Logger.LogInformation("SignalR backplane enabled via Redis at {RedisEndpoint}", configuredRedis);
 }
-
-// Add the minimal API endpoint for generating JWT tokens
-app.MapPost("/generate-token", (UserCredentials credentials, IConfiguration config) =>
-{
-    // Validate user credentials (hardcoded for simplicity)
-    if (credentials.Username != "admin" || credentials.Password != "password")
-    {
-        return Results.Unauthorized();
-    }
-    var _settings = config.GetSection("Jwt").Get<JwtSettings>() ?? throw new Exception("JWT settings not configured");
-    var userId = $"{Guid.NewGuid().ToString("N")[..4]}-{Guid.NewGuid().ToString("N")[..4]}";
-    // Generate JWT token
-    var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, userId),
-            new Claim("userId", userId)
-        };
-
-    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Key));
-    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-    var expires = DateTime.UtcNow.AddMinutes(_settings.ExpireMinutes <= 0 ? 60 : _settings.ExpireMinutes);
-
-    var token = new JwtSecurityToken(
-        issuer: _settings.Issuer,
-        audience: _settings.Audience,
-        claims: claims,
-        expires: expires,
-        signingCredentials: creds
-    );
-
-    var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-
-    return Results.Ok(new { Token = tokenString });
-});
 
 app.Run();
