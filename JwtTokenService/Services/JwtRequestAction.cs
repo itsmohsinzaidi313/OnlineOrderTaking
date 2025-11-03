@@ -24,6 +24,8 @@ public class JwtRequestAction(TokenService tokenService, RabbitMqConnection conn
         var response = new RabbitMqTransport
         {
             ConnectionId = transport.ConnectionId,
+            // Include the target user id so the Gateway can route the response to the correct user
+            UserId = userId,
             Route = "jwt.response",
             CompanyId = transport.CompanyId,
             BranchId = transport.BranchId,

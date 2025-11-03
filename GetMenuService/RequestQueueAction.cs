@@ -23,6 +23,8 @@ namespace GetMenuService
             var response = new RabbitMqTransport
             {
                 ConnectionId = transport.ConnectionId,
+                // Preserve the UserId so the Gateway can route responses by user when present
+                UserId = transport.UserId,
                 Route = "menu.response",
                 CompanyId = transport.CompanyId,
                 BranchId = transport.BranchId,

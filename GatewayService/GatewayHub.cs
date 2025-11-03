@@ -82,7 +82,17 @@ namespace GatewayService
 
         private string GetUserIdFromContext()
         {
-            return Context.User?.Claims.FirstOrDefault(c => c.Type == "userId")?.Value ?? string.Empty;
+            if (Context.User == null) return string.Empty;
+
+            // Check common claim types that JWT providers use for user id
+            var claimTypes = new[] { "userId", "sub" };
+            foreach (var ct in claimTypes)
+            {
+                var claim = Context.User.Claims.FirstOrDefault(c => string.Equals(c.Type, ct, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrWhiteSpace(claim?.Value)) return claim.Value!;
+            }
+
+            return string.Empty;
         }
     }
 }
