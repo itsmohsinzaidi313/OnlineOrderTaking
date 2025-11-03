@@ -15,5 +15,6 @@ namespace PointofSaleModels.Settings
         public const string MenuResponseQueue = $"{Services}.{MenuService}.{Response}";
         public const string OrderRequestQueue = $"{Services}.{OrderService}.{Request}";
         public const string OrderResponseQueue = $"{Services}.{OrderService}.{Response}";
+        public const string JwtDecryptQueue = $"{GatewayService}.{JwtService}.{Request}.decrypt";
     }
 }

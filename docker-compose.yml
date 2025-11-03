@@ -236,7 +236,6 @@ services:
       haproxy:
         condition: service_healthy
   
-
 volumes:
   etcd_data:
   patroni1_data:

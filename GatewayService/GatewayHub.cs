@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.SignalR;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.Extensions.Primitives;
 
 namespace GatewayService
 {
@@ -80,14 +83,59 @@ namespace GatewayService
 
         private string GetUserIdFromContext()
         {
-            if (Context.User == null) return string.Empty;
-
-            // Check common claim types that JWT providers use for user id
-            var claimTypes = new[] { "userId", "sub" };
-            foreach (var ct in claimTypes)
+            // Prefer authenticated principal
+            if (Context.User?.Identity != null && Context.User.Identity.IsAuthenticated)
             {
-                var claim = Context.User.Claims.FirstOrDefault(c => string.Equals(c.Type, ct, StringComparison.OrdinalIgnoreCase));
-                if (!string.IsNullOrWhiteSpace(claim?.Value)) return claim.Value!;
+                // Check several common claim types that JWT providers use for user id
+                var claimTypes = new[] { ClaimTypes.NameIdentifier, "nameid", "userId", "userid", "user_id", "sub" };
+                foreach (var ct in claimTypes)
+                {
+                    var claim = Context.User.Claims.FirstOrDefault(c => string.Equals(c.Type, ct, StringComparison.OrdinalIgnoreCase));
+                    if (!string.IsNullOrWhiteSpace(claim?.Value)) return claim.Value!;
+                }
+            }
+
+            // If there's no authenticated principal (common with SignalR when token is passed via query string),
+            // attempt to read the access_token from the HTTP context and parse the JWT without validating signature
+            var http = Context.GetHttpContext();
+            if (http == null) return string.Empty;
+
+            string? token = null;
+
+            // 1) Query string parameter used by SignalR clients: access_token
+            if (http.Request.Query.TryGetValue("access_token", out StringValues v) && !StringValues.IsNullOrEmpty(v))
+            {
+                token = v.ToString();
+            }
+
+            // 2) Authorization header as fallback
+            if (string.IsNullOrWhiteSpace(token) && http.Request.Headers.TryGetValue("Authorization", out var authHeader) && !StringValues.IsNullOrEmpty(authHeader))
+            {
+                var header = authHeader.ToString();
+                if (header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                    token = header.Substring("Bearer ".Length).Trim();
+            }
+
+            if (string.IsNullOrWhiteSpace(token)) return string.Empty;
+
+            try
+            {
+                var handler = new JwtSecurityTokenHandler();
+                var jwt = handler.ReadJwtToken(token);
+                var claimCandidates = new[] { ClaimTypes.NameIdentifier, "nameid", "userId", "userid", "user_id", "sub" };
+                foreach (var ct in claimCandidates)
+                {
+                    var claim = jwt.Claims.FirstOrDefault(c => string.Equals(c.Type, ct, StringComparison.OrdinalIgnoreCase));
+                    if (!string.IsNullOrWhiteSpace(claim?.Value)) return claim.Value!;
+                }
+
+                // As a last resort try the standard 'sub' registered name
+                var sub = jwt.Claims.FirstOrDefault(c => string.Equals(c.Type, JwtRegisteredClaimNames.Sub, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrWhiteSpace(sub?.Value)) return sub.Value!;
+            }
+            catch
+            {
+                // If the token is malformed, swallow and return empty (caller will treat as unauthenticated)
             }
 
             return string.Empty;
