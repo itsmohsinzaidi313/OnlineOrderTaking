@@ -15,6 +15,12 @@ services:
       - etcd_data:/etcd-data
     networks:
       - patroni-net
+    healthcheck:
+      # Check etcd HTTP health endpoint on port 2379
+      test: ["CMD", "curl", "-f", "http://localhost:2379/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Patroni Node 1
   patroni1:
@@ -48,12 +54,6 @@ services:
       - patroni-net
     depends_on:
       - etcd
-    healthcheck:
-      # Run the bundled healthcheck script inside the Patroni image
-      test: ["CMD", "/usr/local/bin/patroni-healthcheck.sh"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   # Patroni Node 2  
   patroni2:
@@ -87,12 +87,6 @@ services:
     depends_on:
       - etcd
       - patroni1
-    healthcheck:
-      # Run the bundled healthcheck script inside the Patroni image
-      test: ["CMD", "/usr/local/bin/patroni-healthcheck.sh"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   # Patroni Node 3
   patroni3:
@@ -126,12 +120,6 @@ services:
     depends_on:
       - etcd
       - patroni1
-    healthcheck:
-      # Run the bundled healthcheck script inside the Patroni image
-      test: ["CMD", "/usr/local/bin/patroni-healthcheck.sh"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   # HAProxy for load balancing
   haproxy:
