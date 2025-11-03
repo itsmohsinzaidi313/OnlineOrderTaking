@@ -12,6 +12,7 @@ using System.Security.Cryptography;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Runtime;
+using System.Threading.Tasks;
 using System.Security.Claims;
 using System.Text;
 
@@ -117,6 +118,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 ClockSkew = TimeSpan.Zero
             };
         }
+        // Allow SignalR clients to send the JWT as an "access_token" query string
+        // parameter (used by the JS SignalR client's accessTokenFactory on WebSockets).
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"].ToString();
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/gatewayHub"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 
 var app = builder.Build();

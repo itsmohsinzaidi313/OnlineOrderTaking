@@ -6,6 +6,8 @@ using System.Security.Claims;
 
 namespace GatewayService
 {
+
+    [Authorize]
     public class GatewayHub(RabbitMqConnection rabbit, ILogger<GatewayHub> logger) : Hub
     {
         public override async Task OnConnectedAsync()
@@ -20,8 +22,7 @@ namespace GatewayService
             }
             await base.OnConnectedAsync();
         }
-
-        [Authorize]
+        
         public async Task SendRequest(string route, string payload)
         {
             await rabbit.InitializeAsync();
