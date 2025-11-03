@@ -16,64 +16,59 @@
       return fetch(url, opts);
     };
 
-    // Start an anonymous connection to request a JWT token, then reconnect with the token.
-    async function start() {
-      // initial anonymous connection
-      let conn = new signalR.HubConnectionBuilder()
-        .withUrl("http://85.190.242.39:8090/gatewayHub")
-        .withAutomaticReconnect()
-        .build();
-
-      conn.on("Ack", (ack) => log("Ack: " + JSON.stringify(ack)));
-      conn.on("JwtTokenResponse", (payload) => {
-        log("JwtTokenResponse: " + JSON.stringify(payload));
-        try {
-          // payload may be a string or object; support both
-          const token = typeof payload === 'string' ? payload : (payload?.token ?? payload?.jwt ?? payload?.accessToken ?? JSON.stringify(payload));
-          jwtToken = token;
-        } catch (e) {
-          log('Failed to parse JWT response: ' + e);
+    // Try loading token from sessionStorage only
+    async function loadTokenFromStorageOrFile() {
+      try {
+        const s = sessionStorage.getItem('jwtToken');
+        if (s) {
+          jwtToken = s;
+          log('Loaded JWT from sessionStorage');
         }
-      });
-
-      await conn.start();
-      log('Connected (anonymous) to GatewayHub');
-
-      // Request a token for a user id (change 'user1' as needed)
-      const requestedUserId = 'user1';
-      await conn.invoke('RequestJwtToken', requestedUserId);
-      log(`Requested JWT for user ${requestedUserId}. Waiting for JwtTokenResponse...`);
-
-      // Wait for the JwtTokenResponse to arrive (simple polling)
-      const waitUntil = Date.now() + 5000;
-      while (!jwtToken && Date.now() < waitUntil) {
-        await new Promise(r => setTimeout(r, 200));
+      } catch (e) {
+        log('sessionStorage read failed: ' + e);
       }
+    }
 
-      if (!jwtToken) {
-        log('Did not receive JWT token within timeout. Proceeding without token.');
-        // keep using anonymous connection
-        setupSendHandler(conn);
-        return;
+    // Build a connection; when token is provided, use accessTokenFactory
+    function buildConnection(token) {
+      const builder = new signalR.HubConnectionBuilder().withAutomaticReconnect();
+      if (token) {
+        builder.withUrl("http://85.190.242.39:8090/gatewayHub", { accessTokenFactory: () => token });
+      } else {
+        builder.withUrl("http://85.190.242.39:8090/gatewayHub");
       }
+      return builder.build();
+    }
 
-      // We have a token — stop anonymous connection and create an authenticated one
-      await conn.stop();
-      log('Reconnecting with JWT token...');
-
-      conn = new signalR.HubConnectionBuilder()
-        .withUrl("http://85.190.242.39:8090/gatewayHub", { accessTokenFactory: () => jwtToken })
-        .withAutomaticReconnect()
-        .build();
-
+    function setupCommonHandlers(conn) {
       conn.on("Ack", (ack) => log("Ack: " + JSON.stringify(ack)));
       conn.on("Response", (payload) => log("Response: " + JSON.stringify(payload)));
-      conn.on("JwtTokenResponse", (p) => log("JwtTokenResponse: " + JSON.stringify(p)));
+      conn.on("JwtTokenResponse", async (payload) => {
+        log("JwtTokenResponse: " + JSON.stringify(payload));
+        try {
+          const token = typeof payload === 'string' ? payload : (payload?.token ?? payload?.jwt ?? payload?.accessToken ?? null);
+          if (!token) return;
+          // save token and persist
+          jwtToken = token;
+          try { sessionStorage.setItem('jwtToken', token); log('Saved JWT to sessionStorage'); } catch (e) { log('Failed to save JWT to sessionStorage: ' + e); }
 
-      await conn.start();
-      log('Connected (authenticated) to GatewayHub');
+          // if current connection is anonymous, reconnect with token
+          if (conn && conn.state === signalR.HubConnectionState.Connected) {
+            try {
+              await conn.stop();
+              log('Stopped anonymous connection; reconnecting with JWT token...');
+            } catch (e) { log('Error stopping connection: ' + e); }
 
-      setupSendHandler(conn);
+            const authConn = buildConnection(jwtToken);
+            setupCommonHandlers(authConn);
+            await authConn.start();
+            log('Connected (authenticated) to GatewayHub');
+            setupSendHandler(authConn);
+          }
+        } catch (e) {
+          log('Failed to parse or handle JWT response: ' + e);
+        }
+      });
     }
 
     function setupSendHandler(conn) {
@@ -83,6 +78,39 @@
         conn.invoke("SendRequest", route, JSON.stringify(payload))
           .catch(err => log("Send error: " + err.toString()));
       };
+    }
+
+    // Start: load token (from sessionStorage or token.txt). If token exists, connect authenticated.
+    async function start() {
+      await loadTokenFromStorageOrFile();
+
+      if (jwtToken) {
+        // connect authenticated immediately
+        const conn = buildConnection(jwtToken);
+        setupCommonHandlers(conn);
+        await conn.start();
+        log('Connected (authenticated) to GatewayHub');
+        setupSendHandler(conn);
+        return;
+      }
+
+      // No token: start anonymous connection and request a token
+      const conn = buildConnection(null);
+      setupCommonHandlers(conn);
+      await conn.start();
+      log('Connected (anonymous) to GatewayHub');
+
+      // Request a token for a user id (change 'user1' as needed)
+      const requestedUserId = 'user1';
+      try {
+        await conn.invoke('RequestJwtToken', requestedUserId);
+        log(`Requested JWT for user ${requestedUserId}. Waiting for JwtTokenResponse...`);
+      } catch (e) {
+        log('RequestJwtToken invoke failed: ' + e);
+      }
+
+      // If JwtTokenResponse doesn't arrive, keep anonymous connection (handlers above will perform reconnect when token comes)
+      setupSendHandler(conn);
     }
 
     // Kick off
