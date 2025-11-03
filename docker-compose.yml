@@ -132,6 +132,11 @@ services:
       - patroni1
       - patroni2
       - patroni3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8404"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   getmenuservice:
     build:
@@ -142,7 +147,7 @@ services:
       - patroni-net
     depends_on:
       haproxy:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
 
@@ -222,7 +227,8 @@ services:
     networks:
       - patroni-net
     depends_on:
-      - haproxy
+      haproxy:
+        condition: service_healthy
   
 
 volumes:
