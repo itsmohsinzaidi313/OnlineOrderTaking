@@ -1,5 +1,3 @@
-using System.Text;
-using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;

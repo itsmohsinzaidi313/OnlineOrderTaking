@@ -58,7 +58,7 @@ bootstrap:
   - host all all 12.0.0.0/8 md5
 
 postgresql:
-  listen: ${PATRONI_POSTGRESQL_LISTEN:-0.0.0.0:5432}
+  listen: ${PATRONI_POSTGRESQL_LISTEN:-0.0.0.0:5433}
   connect_address: ${PATRONI_POSTGRESQL_CONNECT_ADDRESS}
   data_dir: ${PATRONI_POSTGRESQL_DATA_DIR:-/var/lib/postgresql/data/pgdata}
   pgpass: /tmp/pgpass

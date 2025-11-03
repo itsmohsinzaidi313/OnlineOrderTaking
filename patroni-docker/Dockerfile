@@ -24,5 +24,5 @@ RUN ln -s /opt/patroni-venv/bin/patronictl /usr/local/bin/patronictl
 # Create entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-EXPOSE 8008 5432
+EXPOSE 8008 5433
 ENTRYPOINT ["/entrypoint.sh"]

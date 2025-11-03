@@ -33,9 +33,9 @@
     function buildConnection(token) {
       const builder = new signalR.HubConnectionBuilder().withAutomaticReconnect();
       if (token) {
-        builder.withUrl("http://85.190.242.39:8090/gatewayHub", { accessTokenFactory: () => token });
+        builder.withUrl("http://localhost:8090/gatewayHub", { accessTokenFactory: () => token });
       } else {
-        builder.withUrl("http://85.190.242.39:8090/gatewayHub");
+        builder.withUrl("http://localhost:8090/gatewayHub");
       }
       return builder.build();
     }

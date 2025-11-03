@@ -24,23 +24,23 @@ services:
     container_name: patroni1
     hostname: patroni1
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgrespass
-      - POSTGRES_DB=mydb
-      - PGDATA=/var/lib/postgresql/data/pgdata
-      - PATRONI_SCOPE=postgres-cluster
-      - PATRONI_NAME=patroni1
-      - PATRONI_NAMESPACE=/service/
-      - PATRONI_ETCD3_HOSTS=etcd:2379
-      - PATRONI_RESTAPI_LISTEN=0.0.0.0:8008
-      - PATRONI_RESTAPI_CONNECT_ADDRESS=patroni1:8008
-      - PATRONI_POSTGRESQL_LISTEN=0.0.0.0:5432
-      - PATRONI_POSTGRESQL_CONNECT_ADDRESS=patroni1:5432
-      - PATRONI_POSTGRESQL_DATA_DIR=/var/lib/postgresql/data/pgdata
-      - PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_USERNAME=replicator
-      - PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_PASSWORD=replicatorpass
-      - PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME=postgres
-      - PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD=postgrespass
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgrespass"
+      POSTGRES_DB: "mydb"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+      PATRONI_SCOPE: "postgres-cluster"
+      PATRONI_NAME: "patroni1"
+      PATRONI_NAMESPACE: "/service/"
+      PATRONI_ETCD3_HOSTS: "etcd:2379"
+      PATRONI_RESTAPI_LISTEN: "0.0.0.0:8008"
+      PATRONI_RESTAPI_CONNECT_ADDRESS: "patroni1:8008"
+      PATRONI_POSTGRESQL_LISTEN: "0.0.0.0:5433"
+      PATRONI_POSTGRESQL_CONNECT_ADDRESS: "patroni1:5433"
+      PATRONI_POSTGRESQL_DATA_DIR: "/var/lib/postgresql/data/pgdata"
+      PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_USERNAME: "replicator"
+      PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_PASSWORD: "replicatorpass"
+      PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME: "postgres"
+      PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD: "postgrespass"
     volumes:
       - patroni1_data:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
@@ -57,23 +57,23 @@ services:
     container_name: patroni2
     hostname: patroni2
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgrespass
-      - POSTGRES_DB=mydb
-      - PGDATA=/var/lib/postgresql/data/pgdata
-      - PATRONI_SCOPE=postgres-cluster
-      - PATRONI_NAME=patroni2
-      - PATRONI_NAMESPACE=/service/
-      - PATRONI_ETCD3_HOSTS=etcd:2379
-      - PATRONI_RESTAPI_LISTEN=0.0.0.0:8008
-      - PATRONI_RESTAPI_CONNECT_ADDRESS=patroni2:8008
-      - PATRONI_POSTGRESQL_LISTEN=0.0.0.0:5432
-      - PATRONI_POSTGRESQL_CONNECT_ADDRESS=patroni2:5432
-      - PATRONI_POSTGRESQL_DATA_DIR=/var/lib/postgresql/data/pgdata
-      - PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_USERNAME=replicator
-      - PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_PASSWORD=replicatorpass
-      - PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME=postgres
-      - PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD=postgrespass
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgrespass"
+      POSTGRES_DB: "mydb"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+      PATRONI_SCOPE: "postgres-cluster"
+      PATRONI_NAME: "patroni2"
+      PATRONI_NAMESPACE: "/service/"
+      PATRONI_ETCD3_HOSTS: "etcd:2379"
+      PATRONI_RESTAPI_LISTEN: "0.0.0.0:8008"
+      PATRONI_RESTAPI_CONNECT_ADDRESS: "patroni2:8008"
+      PATRONI_POSTGRESQL_LISTEN: "0.0.0.0:5433"
+      PATRONI_POSTGRESQL_CONNECT_ADDRESS: "patroni2:5433"
+      PATRONI_POSTGRESQL_DATA_DIR: "/var/lib/postgresql/data/pgdata"
+      PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_USERNAME: "replicator"
+      PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_PASSWORD: "replicatorpass"
+      PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME: "postgres"
+      PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD: "postgrespass"
     volumes:
       - patroni2_data:/var/lib/postgresql/data
     networks:
@@ -90,23 +90,23 @@ services:
     container_name: patroni3
     hostname: patroni3
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgrespass
-      - POSTGRES_DB=mydb
-      - PGDATA=/var/lib/postgresql/data/pgdata
-      - PATRONI_SCOPE=postgres-cluster
-      - PATRONI_NAME=patroni3
-      - PATRONI_NAMESPACE=/service/
-      - PATRONI_ETCD3_HOSTS=etcd:2379
-      - PATRONI_RESTAPI_LISTEN=0.0.0.0:8008
-      - PATRONI_RESTAPI_CONNECT_ADDRESS=patroni3:8008
-      - PATRONI_POSTGRESQL_LISTEN=0.0.0.0:5432
-      - PATRONI_POSTGRESQL_CONNECT_ADDRESS=patroni3:5432
-      - PATRONI_POSTGRESQL_DATA_DIR=/var/lib/postgresql/data/pgdata
-      - PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_USERNAME=replicator
-      - PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_PASSWORD=replicatorpass
-      - PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME=postgres
-      - PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD=postgrespass
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgrespass"
+      POSTGRES_DB: "mydb"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+      PATRONI_SCOPE: "postgres-cluster"
+      PATRONI_NAME: "patroni3"
+      PATRONI_NAMESPACE: "/service/"
+      PATRONI_ETCD3_HOSTS: "etcd:2379"
+      PATRONI_RESTAPI_LISTEN: "0.0.0.0:8008"
+      PATRONI_RESTAPI_CONNECT_ADDRESS: "patroni3:8008"
+      PATRONI_POSTGRESQL_LISTEN: "0.0.0.0:5433"
+      PATRONI_POSTGRESQL_CONNECT_ADDRESS: "patroni3:5433"
+      PATRONI_POSTGRESQL_DATA_DIR: "/var/lib/postgresql/data/pgdata"
+      PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_USERNAME: "replicator"
+      PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_PASSWORD: "replicatorpass"
+      PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME: "postgres"
+      PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD: "postgrespass"
     volumes:
       - patroni3_data:/var/lib/postgresql/data
     networks:
@@ -122,7 +122,7 @@ services:
       dockerfile: Dockerfile
     container_name: haproxy
     ports:
-      - "5432:5432"   # PostgreSQL
+      - "5433:5433"   # PostgreSQL (host port 5433 -> container 5433)
       - "8404:8404"   # HAProxy stats
     volumes:
       - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
@@ -204,7 +204,7 @@ services:
     container_name: seedingservice
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=haproxy;Port=5432;Database=ProductsDb;Username=postgres;Password=postgrespass
+      - ConnectionStrings__DefaultConnection=Host=haproxy;Port=5433;Database=ProductsDb;Username=postgres;Password=postgrespass
     ports:
       - "8091:8080"
     networks:
