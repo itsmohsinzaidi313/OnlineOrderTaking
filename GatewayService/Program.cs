@@ -8,14 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ"));
 builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("Redis"));
 var signalR = builder.Services.AddSignalR();
-var redisConn = builder.Configuration.GetSection("Redis:ConnectionString").Value;
-if (!string.IsNullOrWhiteSpace(redisConn))
+var redisConn = builder.Configuration.GetSection("Redis:ConnectionString").Value ?? throw new InvalidOperationException("Redis connection string not configured");
+signalR.AddStackExchangeRedis(redisConn, options =>
 {
-    signalR.AddStackExchangeRedis(redisConn, options =>
-    {
-        options.Configuration.ChannelPrefix = RedisChannel.Literal("GatewayService");
-    });
-}
+    options.Configuration.ChannelPrefix = RedisChannel.Literal("GatewayService");
+});
 builder.Services
     .AddCors(options =>
 {
