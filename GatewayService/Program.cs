@@ -2,13 +2,39 @@ using GatewayService;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ"));
 builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("Redis"));
+
+// Ensure environment variables are used as a fallback when appsettings.json does not provide values.
+builder.Services.PostConfigure<RabbitMqSettings>(opts =>
+{
+    if (string.IsNullOrWhiteSpace(opts.HostName))
+        opts.HostName = Environment.GetEnvironmentVariable("RABBITMQ__HOSTNAME") ?? opts.HostName;
+    if (opts.Port == 0)
+    {
+        var portEnv = Environment.GetEnvironmentVariable("RABBITMQ__PORT");
+        if (int.TryParse(portEnv, out var p)) opts.Port = p;
+    }
+    if (string.IsNullOrWhiteSpace(opts.UserName))
+        opts.UserName = Environment.GetEnvironmentVariable("RABBITMQ__USERNAME") ?? opts.UserName;
+    if (string.IsNullOrWhiteSpace(opts.Password))
+        opts.Password = Environment.GetEnvironmentVariable("RABBITMQ__PASSWORD") ?? opts.Password;
+});
+
+builder.Services.PostConfigure<RedisSettings>(opts =>
+{
+    if (string.IsNullOrWhiteSpace(opts.ConnectionString))
+        opts.ConnectionString = Environment.GetEnvironmentVariable("REDIS__CONNECTIONSTRING") ?? opts.ConnectionString;
+});
 var signalR = builder.Services.AddSignalR();
-var redisConn = builder.Configuration.GetSection("Redis:ConnectionString").Value ?? throw new InvalidOperationException("Redis connection string not configured");
+// Prefer appsettings value, fallback to environment variable REDIS__CONNECTIONSTRING
+var redisConn = builder.Configuration["Redis:ConnectionString"] ?? Environment.GetEnvironmentVariable("REDIS__CONNECTIONSTRING");
+if (string.IsNullOrWhiteSpace(redisConn))
+    throw new InvalidOperationException("Redis connection string not configured (check appsettings.json or REDIS__CONNECTIONSTRING env var)");
 signalR.AddStackExchangeRedis(redisConn, options =>
 {
     options.Configuration.ChannelPrefix = RedisChannel.Literal("GatewayService");

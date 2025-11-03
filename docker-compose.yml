@@ -161,6 +161,12 @@ services:
     container_name: gatewayservice
     ports:
       - "8090:8080"
+    environment:
+      - REDIS__CONNECTIONSTRING=redis:6379,password=StrongRedisPass!123,abortConnect=false
+      - RABBITMQ__HOSTNAME=rabbitmq
+      - RABBITMQ__PORT=5672
+      - RABBITMQ__USERNAME=appuser
+      - RABBITMQ__PASSWORD=StrongRabbitPass!123
     networks:
       - patroni-net
     depends_on:
