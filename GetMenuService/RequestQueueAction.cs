@@ -39,16 +39,16 @@ namespace GetMenuService
             var connection = dbContext.Database.GetDbConnection();
             var command = connection.CreateCommand();
 
-            logger.LogDebug("Preparing SQL command: {CommandText}", command.CommandText);
+            logger.LogInformation("Preparing SQL command: {CommandText}", command.CommandText);
             command.CommandText = @"SELECT ""Id"", ""Name"", ""Price"" FROM ""Products""";
             if (connection.State == System.Data.ConnectionState.Open)
             {
-            logger.LogDebug("Database connection is open, closing before proceeding.");
+            logger.LogInformation("Database connection is open, closing before proceeding.");
             connection.Close();
             }
-            logger.LogDebug("Opening database connection...");
+            logger.LogInformation("Opening database connection...");
             connection.Open();
-            logger.LogDebug("Executing SQL command...");
+            logger.LogInformation("Executing SQL command...");
             var reader = command.ExecuteReader();
             int rowCount = 0;
             while (reader.Read())
