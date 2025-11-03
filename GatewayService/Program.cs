@@ -91,6 +91,7 @@ builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 // Add Swagger services
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddControllers();
 
 // Configure JWT Bearer authentication using the bound JwtSettings
 var jwtSection = builder.Configuration.GetSection("Jwt");
@@ -145,48 +146,8 @@ app.UseAuthorization();
 
 app.MapHub<GatewayHub>("/gatewayHub");
 
-// Minimal API endpoint to generate JWT tokens
-app.MapPost("/generate-token", (IOptions<JwtSettings> options) =>
-{
-    var jwt = options.Value;
-    if (string.IsNullOrWhiteSpace(jwt.Key) || string.IsNullOrWhiteSpace(jwt.Issuer) || string.IsNullOrWhiteSpace(jwt.Audience) || jwt.ExpireMinutes <= 0)
-    {
-        return Results.BadRequest(new { error = "Jwt settings are not properly configured. Please set Jwt:Key, Jwt:Issuer, Jwt:Audience and Jwt:ExpireMinutes." });
-    }
-
-    // Generate a random user id in the format 4chars-4chars (total length 9)
-    const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    var part1 = new char[4];
-    var part2 = new char[4];
-    for (int i = 0; i < 4; i++)
-    {
-        part1[i] = chars[RandomNumberGenerator.GetInt32(chars.Length)];
-        part2[i] = chars[RandomNumberGenerator.GetInt32(chars.Length)];
-    }
-    var userId = new string(part1) + "-" + new string(part2);
-
-    var claims = new List<Claim>
-    {
-        new Claim(JwtRegisteredClaimNames.Sub, userId),
-        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-        new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
-    };
-
-    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key));
-    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-    var expires = DateTime.UtcNow.AddMinutes(jwt.ExpireMinutes);
-
-    var token = new JwtSecurityToken(
-        issuer: jwt.Issuer,
-        audience: jwt.Audience,
-        claims: claims,
-        expires: expires,
-        signingCredentials: creds);
-
-    var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-
-    return Results.Ok(new { token = tokenString, userId });
-});
+// Controller endpoints are used for token generation and refresh.
+app.MapControllers();
 
 // Log whether SignalR Redis backplane is enabled
 var configuredRedis = app.Configuration["Redis:ConnectionString"];
@@ -196,3 +157,4 @@ if (!string.IsNullOrWhiteSpace(configuredRedis))
 }
 
 app.Run();
+    
