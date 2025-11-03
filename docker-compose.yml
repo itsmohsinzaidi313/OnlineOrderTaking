@@ -141,8 +141,10 @@ services:
     networks:
       - patroni-net
     depends_on:
-      - haproxy
-      - rabbitmq
+      haproxy:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   jwttokenservice:
     build:
@@ -152,7 +154,8 @@ services:
     networks:
       - patroni-net
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
 
   gatewayservice:
     build:
