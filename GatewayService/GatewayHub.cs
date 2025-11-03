@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.SignalR;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 
 namespace GatewayService
 {
@@ -53,9 +55,18 @@ namespace GatewayService
         private string ExtractUserClaims()
         {
             var claims = Context.User?.Claims;
-            var name = claims?.Where(x => x.Type == ClaimTypes.Sid).FirstOrDefault()?.Value ?? string.Empty;
+            if (claims == null)
+                return string.Empty;
 
-            return name ?? string.Empty;
+            // Try a few possible claim type names. Depending on JWT mapping behaviors the claim
+            // may appear as the registered 'sid', as ClaimTypes.Sid, as NameIdentifier or simply 'sid'.
+            var userClaim = claims.FirstOrDefault(c =>
+                string.Equals(c.Type, JwtRegisteredClaimNames.Sid, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(c.Type, ClaimTypes.Sid, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(c.Type, ClaimTypes.NameIdentifier, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(c.Type, "sid", StringComparison.OrdinalIgnoreCase));
+
+            return userClaim?.Value ?? string.Empty;
         }
     }
 }
