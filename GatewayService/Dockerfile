@@ -32,6 +32,7 @@ RUN chown -R appuser /app
 USER appuser
 
 WORKDIR /app
+RUN rm -rf /app/out/appsettings.*.json
 COPY --from=build /app/out .
 
 ENTRYPOINT ["dotnet", "GatewayService.dll"]
