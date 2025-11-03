@@ -152,7 +152,6 @@ services:
     networks:
       - patroni-net
     depends_on:
-      - haproxy
       - rabbitmq
 
   gatewayservice:
@@ -165,9 +164,8 @@ services:
     networks:
       - patroni-net
     depends_on:
-      - getmenuservice
-      - redis
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
 
   # Redis cache
   redis:
@@ -192,6 +190,11 @@ services:
     ports:
       - "5672:5672"   # AMQP
       - "15672:15672" # Management UI
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
