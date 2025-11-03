@@ -32,7 +32,6 @@ services:
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgrespass"
-      POSTGRES_DB: "mydb"
       PGDATA: "/var/lib/postgresql/data/pgdata"
       PATRONI_SCOPE: "postgres-cluster"
       PATRONI_NAME: "patroni1"
@@ -65,7 +64,6 @@ services:
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgrespass"
-      POSTGRES_DB: "mydb"
       PGDATA: "/var/lib/postgresql/data/pgdata"
       PATRONI_SCOPE: "postgres-cluster"
       PATRONI_NAME: "patroni2"
@@ -98,7 +96,6 @@ services:
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgrespass"
-      POSTGRES_DB: "mydb"
       PGDATA: "/var/lib/postgresql/data/pgdata"
       PATRONI_SCOPE: "postgres-cluster"
       PATRONI_NAME: "patroni3"

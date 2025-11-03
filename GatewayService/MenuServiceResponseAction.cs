@@ -10,14 +10,14 @@ namespace GatewayService
         public async Task OnMessage(RabbitMqTransport transport)
         {
             logger.LogInformation("Gateway: Received message");
-            // If the transport contains a UserId, send to that user (all connections for the user).
             if (!string.IsNullOrWhiteSpace(transport.UserId))
             {
+                logger.LogInformation("Gateway: Sending response to user {UserId}", transport.UserId);
                 await hub.Clients.User(transport.UserId).SendAsync("Response", transport.Payload);
                 return;
             }
 
-            // Fallback to the original behavior (send to a single connection id)
+            logger.LogInformation("Gateway: Sending response to connection {ConnId}", transport.ConnectionId);
             await hub.Clients.Client(transport.ConnectionId)
                 .SendAsync("Response", transport.Payload);
         }
