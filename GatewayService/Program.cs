@@ -1,8 +1,16 @@
 using GatewayService;
+using GatewayService.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using PointofSaleModels.Application;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
 using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.Runtime;
+using System.Security.Claims;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,12 +61,24 @@ builder.Services
     .AddSingleton<RabbitMqConnection>()
     // Register concrete action types so constructors that request them can be resolved
     .AddSingleton<MenuServiceResponseAction>()
-    .AddSingleton<JwtServiceResponseAction>()
     // Also keep the IQueueAction registrations (map to the concrete instances)
     .AddSingleton<IQueueAction>(sp => sp.GetRequiredService<MenuServiceResponseAction>())
-    .AddSingleton<IQueueAction>(sp => sp.GetRequiredService<JwtServiceResponseAction>())
-    .AddHostedService<MenuServiceResponseListener>()
-    .AddHostedService<JwtServiceResponseListener>();
+    .AddHostedService<MenuServiceResponseListener>();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
+        };
+    });
 
 // Add Swagger services
 builder.Services.AddEndpointsApiExplorer();
@@ -68,6 +88,9 @@ var app = builder.Build();
 app.UseRouting();
 app.UseCors();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapHub<GatewayHub>("/gatewayHub");
 
 // Log whether SignalR Redis backplane is enabled
@@ -76,5 +99,40 @@ if (!string.IsNullOrWhiteSpace(configuredRedis))
 {
     app.Logger.LogInformation("SignalR backplane enabled via Redis at {RedisEndpoint}", configuredRedis);
 }
+
+// Add the minimal API endpoint for generating JWT tokens
+app.MapPost("/generate-token", (UserCredentials credentials, IConfiguration config) =>
+{
+    // Validate user credentials (hardcoded for simplicity)
+    if (credentials.Username != "admin" || credentials.Password != "password")
+    {
+        return Results.Unauthorized();
+    }
+    var _settings = config.GetSection("Jwt").Get<JwtSettings>() ?? throw new Exception("JWT settings not configured");
+    var userId = $"{Guid.NewGuid().ToString("N")[..4]}-{Guid.NewGuid().ToString("N")[..4]}";
+    // Generate JWT token
+    var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, userId),
+            new Claim("userId", userId)
+        };
+
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Key));
+    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+    var expires = DateTime.UtcNow.AddMinutes(_settings.ExpireMinutes <= 0 ? 60 : _settings.ExpireMinutes);
+
+    var token = new JwtSecurityToken(
+        issuer: _settings.Issuer,
+        audience: _settings.Audience,
+        claims: claims,
+        expires: expires,
+        signingCredentials: creds
+    );
+
+    var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+
+    return Results.Ok(new { Token = tokenString });
+});
 
 app.Run();

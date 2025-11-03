@@ -157,17 +157,6 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  jwttokenservice:
-    build:
-      context: .
-      dockerfile: ./JwtTokenService/Dockerfile
-    container_name: jwttokenservice
-    networks:
-      - patroni-net
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-
   gatewayservice:
     build:
       context: .
