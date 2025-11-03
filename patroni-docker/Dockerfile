@@ -24,5 +24,8 @@ RUN ln -s /opt/patroni-venv/bin/patronictl /usr/local/bin/patronictl
 # Create entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+# Copy the Patroni healthcheck wrapper into the image
+COPY patroni-healthcheck.sh /usr/local/bin/patroni-healthcheck.sh
+RUN chmod +x /usr/local/bin/patroni-healthcheck.sh
 EXPOSE 8008 5433
 ENTRYPOINT ["/entrypoint.sh"]
