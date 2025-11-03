@@ -165,6 +165,8 @@ services:
     ports:
       - "8090:8080"
     environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
       - REDIS__CONNECTIONSTRING=redis:6379,password=StrongRedisPass!123,abortConnect=false
       - RABBITMQ__HOSTNAME=rabbitmq
       - RABBITMQ__PORT=5672
