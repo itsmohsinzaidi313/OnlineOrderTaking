@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using PointofSaleModels.DatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace GetMenuService
 {
-    internal class RequestQueueAction(RestaurantErpWebContext dbContext, RabbitMqConnection connection) : IQueueAction
+    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, RestaurantErpWebContext dbContext, RabbitMqConnection connection) : IQueueAction
     {
         public string QueueName() => RabbitMqQueues.MenuRequestQueue;
         public async Task OnMessage(RabbitMqTransport transport)
@@ -34,27 +35,39 @@ namespace GetMenuService
         }
         private IEnumerable<object> GetMenuItems()
         {
-            Console.WriteLine("📂 Fetching menu items from database...");
+            logger.LogInformation("📂 Fetching menu items from database...");
             var connection = dbContext.Database.GetDbConnection();
             var command = connection.CreateCommand();
 
+            logger.LogDebug("Preparing SQL command: {CommandText}", command.CommandText);
             command.CommandText = @"SELECT ""Id"", ""Name"", ""Price"" FROM ""Products""";
             if (connection.State == System.Data.ConnectionState.Open)
             {
-                connection.Close();
+            logger.LogDebug("Database connection is open, closing before proceeding.");
+            connection.Close();
             }
+            logger.LogDebug("Opening database connection...");
             connection.Open();
+            logger.LogDebug("Executing SQL command...");
             var reader = command.ExecuteReader();
+            int rowCount = 0;
             while (reader.Read())
             {
-                yield return new
-                {
-                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                    Name = reader.GetString(reader.GetOrdinal("Name")),
-                    Price = reader.GetDecimal(reader.GetOrdinal("Price"))
-                };
+            rowCount++;
+            logger.LogTrace("Fetched row {Row}: Id={Id}, Name={Name}, Price={Price}",
+                rowCount,
+                reader.GetInt32(reader.GetOrdinal("Id")),
+                reader.GetString(reader.GetOrdinal("Name")),
+                reader.GetDecimal(reader.GetOrdinal("Price"))
+            );
+            yield return new
+            {
+                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                Name = reader.GetString(reader.GetOrdinal("Name")),
+                Price = reader.GetDecimal(reader.GetOrdinal("Price"))
+            };
             }
-            Console.WriteLine("✅ Menu items fetched successfully.");
+            logger.LogInformation("✅ Menu items fetched successfully. Total items: {RowCount}", rowCount);
         }
     }
 }
