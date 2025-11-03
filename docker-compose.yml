@@ -135,12 +135,9 @@ services:
     networks:
       - patroni-net
     depends_on:
-      patroni1:
-        condition: service_healthy
-      patroni2:
-        condition: service_healthy
-      patroni3:
-        condition: service_healthy
+      - patroni1
+      - patroni2
+      - patroni3
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8404"]
       interval: 10s
