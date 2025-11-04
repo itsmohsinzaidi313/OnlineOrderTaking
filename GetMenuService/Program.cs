@@ -17,8 +17,14 @@ var host = Host.CreateDefaultBuilder(args)
         services
         .AddDbContext<RestaurantErpWebContext>(
             options => options.UseNpgsql(
-                context.Configuration.GetConnectionString("Default"))
-        )
+                context.Configuration.GetConnectionString("Default"),
+                    npgsqlOptions =>
+                    {
+                        npgsqlOptions.EnableRetryOnFailure(
+                            maxRetryCount: 5,
+                            maxRetryDelay: TimeSpan.FromSeconds(5),
+                            errorCodesToAdd: null);
+                    }))
         .Configure<RabbitMqSettings>(context.Configuration.GetSection("RabbitMQ"))
         .AddSingleton<RabbitMqConnection>()
         .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()

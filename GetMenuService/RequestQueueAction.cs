@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using PointofSaleModels.DatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
@@ -67,7 +68,30 @@ namespace GetMenuService
                 }
 
                 logger.LogInformation("Executing SQL command...");
-                await using var reader = await command.ExecuteReaderAsync();
+                NpgsqlDataReader? reader = null;
+                int retries = 3;
+                for (int attempt = 0; attempt < retries; attempt++)
+                {
+                    try
+                    {
+                        reader = (NpgsqlDataReader)await command.ExecuteReaderAsync();
+                        break;
+                    }
+                    catch (Exception ex) when (attempt < retries - 1)
+                    {
+                        logger.LogWarning(ex, "Failed to execute reader on attempt {Attempt}, retrying...", attempt + 1);
+                        if (connection.State == System.Data.ConnectionState.Open)
+                        {
+                            await connection.CloseAsync();
+                        }
+                        await connection.OpenAsync();
+                    }
+                }
+                if (reader == null)
+                {
+                    throw new Exception("Failed to execute reader after all retries");
+                }
+
                 int rowCount = 0;
                 while (await reader.ReadAsync())
                 {
@@ -89,6 +113,8 @@ namespace GetMenuService
                 }
 
                 logger.LogInformation("✅ Menu items fetched successfully. Total items: {RowCount}", rowCount);
+
+                await reader.DisposeAsync();
             }
             finally
             {
