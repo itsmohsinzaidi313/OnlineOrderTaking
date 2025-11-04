@@ -3,15 +3,10 @@ using Microsoft.Extensions.Logging;
 using PointofSaleModels.DatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GetMenuService
 {
-    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, RestaurantErpWebContext dbContext, RabbitMqConnection connection) : IQueueAction
+    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, RestaurantErpWebContext dbContext, IRabbitMqPublisher publisher) : IQueueAction
     {
         public string QueueName() => RabbitMqQueues.MenuRequestQueue;
         public async Task OnMessage(RabbitMqTransport transport)
@@ -31,7 +26,7 @@ namespace GetMenuService
                 BranchId = transport.BranchId,
                 Payload = responsePayload
             };
-            await connection.PublishResponseAsync(response, RabbitMqQueues.MenuResponseQueue);
+            await publisher.PublishToQueueAsync(RabbitMqQueues.MenuResponseQueue, response);
         }
         private IEnumerable<object> GetMenuItems()
         {

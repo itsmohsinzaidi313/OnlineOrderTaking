@@ -2,18 +2,10 @@ using GatewayService;
 // using GatewayService.Models; // already imported above
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using PointofSaleModels.Application;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
-using Microsoft.Extensions.Options;
 using GatewayService.Models;
-using System.Security.Cryptography;
-using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Runtime;
-using System.Threading.Tasks;
-using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -81,6 +73,7 @@ builder.Services
     });
 })
     .AddSingleton<RabbitMqConnection>()
+    .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
     // Register concrete action types so constructors that request them can be resolved
     .AddSingleton<MenuServiceResponseAction>()
     // Also keep the IQueueAction registrations (map to the concrete instances)

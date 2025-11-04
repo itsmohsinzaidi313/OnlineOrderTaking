@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace PointofSaleModels.DatabaseModels;
+﻿namespace PointofSaleModels.DatabaseModels;
 
 public partial class PayableReceivableVoucherMaster
 {

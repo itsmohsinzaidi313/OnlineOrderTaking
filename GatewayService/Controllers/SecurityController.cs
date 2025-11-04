@@ -1,16 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.Http;
-using PointofSaleModels.Settings;
 using GatewayService.Models;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
 using System.Security.Cryptography;
-using System.Collections.Generic;
-using System;
-using System.Threading.Tasks;
 
 namespace GatewayService.Controllers
 {

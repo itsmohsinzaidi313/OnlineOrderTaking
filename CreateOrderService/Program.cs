@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using PointofSaleModels.Application;
 using PointofSaleModels.DatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
@@ -23,7 +22,8 @@ builder.ConfigureAppConfiguration((hostingContext, config) =>
                 hostingContext.Configuration.GetConnectionString("Default"))
         )
         .Configure<RabbitMqSettings>(hostingContext.Configuration.GetSection("RabbitMQ"))
-        .AddSingleton<RabbitMqConnection>()
+    .AddSingleton<RabbitMqConnection>()
+    .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
         .AddSingleton<IQueueAction, RequestQueueAction>()
         .AddHostedService<RequestQueueListener>();
     });

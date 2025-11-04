@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using PointofSaleModels.Application;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
@@ -7,13 +8,18 @@ using ValueType = PointofSaleModels.Application.ValueType;
 
 namespace CreateOrderService
 {
-    internal class RequestQueueAction(Db.RestaurantErpWebContext dbContext) : IQueueAction
+    internal class RequestQueueAction(Db.RestaurantErpWebContext dbContext, ILogger<RequestQueueAction> logger) : IQueueAction
     {
 
         public string QueueName() => RabbitMqQueues.OrderRequestQueue;
         public async Task OnMessage(RabbitMqTransport transport)
         {
-            CustomerOrder order = transport.Payload as CustomerOrder;
+            var order = transport.GetPayload<CustomerOrder>();
+            if (order == null)
+            {
+                logger.LogWarning("Invalid or missing order payload for company {CompanyId}, branch {BranchId}", transport.CompanyId, transport.BranchId);
+                throw new InvalidOperationException("Invalid order payload");
+            }
             await SaveOrderAsync(transport.CompanyId, transport.BranchId, order);
         }
 
