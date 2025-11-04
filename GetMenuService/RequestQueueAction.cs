@@ -11,11 +11,27 @@ namespace GetMenuService
         public string QueueName() => RabbitMqQueues.MenuRequestQueue;
         public async Task OnMessage(RabbitMqTransport transport)
         {
-            List<object> responsePayload = [];
-            foreach (var item in GetMenuItems())
+            object payload;
+            try
             {
-                responsePayload.Add(item);
+                List<object> responsePayload = [];
+                foreach (var item in GetMenuItems())
+                {
+                    responsePayload.Add(item);
+                }
+                payload = responsePayload;
             }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to fetch menu items.");
+                payload = new
+                {
+                    error = true,
+                    message = "Failed to fetch menu items.",
+                    details = ex.Message
+                };
+            }
+
             var response = new RabbitMqTransport
             {
                 ConnectionId = transport.ConnectionId,
@@ -24,7 +40,7 @@ namespace GetMenuService
                 Route = "menu.response",
                 CompanyId = transport.CompanyId,
                 BranchId = transport.BranchId,
-                Payload = responsePayload
+                Payload = payload
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.MenuResponseQueue, response);
         }
@@ -44,25 +60,37 @@ namespace GetMenuService
             logger.LogInformation("Opening database connection...");
             connection.Open();
             logger.LogInformation("Executing SQL command...");
-            var reader = command.ExecuteReader();
+            using var reader = command.ExecuteReader();
             int rowCount = 0;
-            while (reader.Read())
+            try
             {
-            rowCount++;
-            logger.LogTrace("Fetched row {Row}: Id={Id}, Name={Name}, Price={Price}",
-                rowCount,
-                reader.GetInt32(reader.GetOrdinal("Id")),
-                reader.GetString(reader.GetOrdinal("Name")),
-                reader.GetDecimal(reader.GetOrdinal("Price"))
-            );
-            yield return new
-            {
-                Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                Name = reader.GetString(reader.GetOrdinal("Name")),
-                Price = reader.GetDecimal(reader.GetOrdinal("Price"))
-            };
+                while (reader.Read())
+                {
+                    rowCount++;
+                    logger.LogTrace("Fetched row {Row}: Id={Id}, Name={Name}, Price={Price}",
+                        rowCount,
+                        reader.GetInt32(reader.GetOrdinal("Id")),
+                        reader.GetString(reader.GetOrdinal("Name")),
+                        reader.GetDecimal(reader.GetOrdinal("Price"))
+                    );
+                    yield return new
+                    {
+                        Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                        Name = reader.GetString(reader.GetOrdinal("Name")),
+                        Price = reader.GetDecimal(reader.GetOrdinal("Price"))
+                    };
+                }
+                logger.LogInformation("✅ Menu items fetched successfully. Total items: {RowCount}", rowCount);
             }
-            logger.LogInformation("✅ Menu items fetched successfully. Total items: {RowCount}", rowCount);
+            finally
+            {
+                // Ensure the connection is closed after enumeration finishes or on error
+                if (connection.State == System.Data.ConnectionState.Open)
+                {
+                    connection.Close();
+                }
+                command.Dispose();
+            }
         }
     }
 }
