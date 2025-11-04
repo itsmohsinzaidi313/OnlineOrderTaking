@@ -9,26 +9,24 @@ namespace GetMenuService
     internal class RequestQueueAction(ILogger<RequestQueueAction> logger, RestaurantErpWebContext dbContext, IRabbitMqPublisher publisher) : IQueueAction
     {
         public string QueueName() => RabbitMqQueues.MenuRequestQueue;
+
         public async Task OnMessage(RabbitMqTransport transport)
         {
             object payload;
             try
             {
-                List<object> responsePayload = [];
-                foreach (var item in GetMenuItems())
-                {
-                    responsePayload.Add(item);
-                }
+                var responsePayload = await GetMenuItemsAsync();
                 payload = responsePayload;
             }
             catch (Exception ex)
             {
+                // Log full exception (stack trace and inner exceptions) to help diagnose stream/connection issues
                 logger.LogError(ex, "Failed to fetch menu items.");
                 payload = new
                 {
                     error = true,
                     message = "Failed to fetch menu items.",
-                    details = ex.Message
+                    details = ex.ToString()
                 };
             }
 
@@ -44,53 +42,72 @@ namespace GetMenuService
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.MenuResponseQueue, response);
         }
-        private IEnumerable<object> GetMenuItems()
+
+        private async Task<List<object>> GetMenuItemsAsync()
         {
             logger.LogInformation("📂 Fetching menu items from database...");
-            var connection = dbContext.Database.GetDbConnection();
-            var command = connection.CreateCommand();
 
-            logger.LogInformation("Preparing SQL command: {CommandText}", command.CommandText);
+            var results = new List<object>();
+
+            var connection = dbContext.Database.GetDbConnection();
+
+            var command = connection.CreateCommand();
             command.CommandText = @"SELECT ""Id"", ""Name"", ""Price"" FROM ""Products""";
-            if (connection.State == System.Data.ConnectionState.Open)
-            {
-            logger.LogInformation("Database connection is open, closing before proceeding.");
-            connection.Close();
-            }
-            logger.LogInformation("Opening database connection...");
-            connection.Open();
-            logger.LogInformation("Executing SQL command...");
-            using var reader = command.ExecuteReader();
-            int rowCount = 0;
+
             try
             {
-                while (reader.Read())
+                if (connection.State != System.Data.ConnectionState.Open)
+                {
+                    logger.LogInformation("Opening database connection...");
+                    await connection.OpenAsync();
+                }
+                else
+                {
+                    logger.LogInformation("Database connection already open, reusing connection.");
+                }
+
+                logger.LogInformation("Executing SQL command...");
+                await using var reader = await command.ExecuteReaderAsync();
+                int rowCount = 0;
+                while (await reader.ReadAsync())
                 {
                     rowCount++;
-                    logger.LogTrace("Fetched row {Row}: Id={Id}, Name={Name}, Price={Price}",
-                        rowCount,
-                        reader.GetInt32(reader.GetOrdinal("Id")),
-                        reader.GetString(reader.GetOrdinal("Name")),
-                        reader.GetDecimal(reader.GetOrdinal("Price"))
-                    );
-                    yield return new
+                    var id = reader.GetInt32(reader.GetOrdinal("Id"));
+                    var nameOrdinal = reader.GetOrdinal("Name");
+                    string? name = reader.IsDBNull(nameOrdinal) ? null : reader.GetString(nameOrdinal);
+                    var priceOrdinal = reader.GetOrdinal("Price");
+                    decimal? price = reader.IsDBNull(priceOrdinal) ? null : reader.GetDecimal(priceOrdinal);
+
+                    logger.LogTrace("Fetched row {Row}: Id={Id}, Name={Name}, Price={Price}", rowCount, id, name, price);
+
+                    results.Add(new
                     {
-                        Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                        Name = reader.GetString(reader.GetOrdinal("Name")),
-                        Price = reader.GetDecimal(reader.GetOrdinal("Price"))
-                    };
+                        Id = id,
+                        Name = name,
+                        Price = price
+                    });
                 }
+
                 logger.LogInformation("✅ Menu items fetched successfully. Total items: {RowCount}", rowCount);
             }
             finally
             {
-                // Ensure the connection is closed after enumeration finishes or on error
-                if (connection.State == System.Data.ConnectionState.Open)
+                try
                 {
-                    connection.Close();
+                    if (connection.State == System.Data.ConnectionState.Open)
+                    {
+                        await connection.CloseAsync();
+                    }
                 }
-                command.Dispose();
+                catch (Exception closeEx)
+                {
+                    // Log but do not rethrow; closing failure shouldn't crash the enumerator caller
+                    logger.LogWarning(closeEx, "Failed to close database connection after fetching menu items.");
+                }
+                try { command.Dispose(); } catch { }
             }
+
+            return results;
         }
     }
 }
