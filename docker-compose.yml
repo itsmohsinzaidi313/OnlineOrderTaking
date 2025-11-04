@@ -148,7 +148,7 @@ services:
       dockerfile: ./GetMenuService/Dockerfile
     container_name: getmenuservice
     environment:
-      - ConnectionStrings__Default=Host=haproxy;Port=5434;Database=ProductsDb;Username=postgres;Password=postgrespass;Target Session Attributes=read-only
+      - ConnectionStrings__Default=Host=haproxy;Port=5434;Database=ProductsDb;Username=postgres;Password=postgrespass;
     networks:
       - patroni-net
     depends_on:
@@ -220,7 +220,7 @@ services:
     container_name: seedingservice
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=haproxy;Port=5433;Database=ProductsDb;Username=postgres;Password=postgrespass;Target Session Attributes=read-write
+      - ConnectionStrings__DefaultConnection=Host=haproxy;Port=5433;Database=ProductsDb;Username=postgres;Password=postgrespass;
     ports:
       - "8091:8080"
     networks:

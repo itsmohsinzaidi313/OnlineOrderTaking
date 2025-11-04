@@ -364,7 +364,6 @@ curl -X POST http://localhost:8080/products \
 
 Recommendations:
 - Services that perform writes (e.g., the main microservice, seeding service) should use port 5433.
-- Read-only services (e.g., `getmenuservice`, analytics, reporting) should use port 5434 and may set `Target Session Attributes=read-only` in their connection string.
 
 If you expose these ports via Docker Compose, make sure `docker-compose.yml` maps both 5433 and 5434 for HAProxy (this repo already configures both).
 
