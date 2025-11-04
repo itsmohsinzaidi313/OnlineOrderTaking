@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using Microservice;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 

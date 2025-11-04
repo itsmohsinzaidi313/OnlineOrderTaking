@@ -153,6 +153,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      seedingservice:
+        condition: service_started
 
   gatewayservice:
     build:
@@ -174,8 +176,6 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-      seedingservice:
-        condition: service_started
 
   # Redis cache
   redis:
