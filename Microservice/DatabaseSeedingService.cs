@@ -22,8 +22,8 @@ public class DatabaseSeedingService
         // Ensure we are connected to a writable primary before attempting schema changes.
         // In HA setups (Patroni, replicas) connections can land on a replica which will
         // reject CREATE TABLE with "cannot execute CREATE TABLE in a read-only transaction".
-        await EnsureConnectedToPrimaryAsync(context, logger);
         await context.Database.EnsureCreatedAsync();
+        await EnsureConnectedToPrimaryAsync(context, logger);
         if (context.Departments.Count() > 0)
         {
             logger.LogInformation("Database already seeded. Skipping seeding process.");
