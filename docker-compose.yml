@@ -126,6 +126,7 @@ services:
     container_name: haproxy
     ports:
       - "5433:5433"   # PostgreSQL (host port 5433 -> container 5433)
+      - "5434:5434"   # PostgreSQL read-only frontend (host port 5434 -> container 5434)
       - "8404:8404"   # HAProxy stats
     volumes:
       - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
@@ -146,6 +147,8 @@ services:
       context: .
       dockerfile: ./GetMenuService/Dockerfile
     container_name: getmenuservice
+    environment:
+      - ConnectionStrings__Default=Host=haproxy;Port=5434;Database=ProductsDb;Username=postgres;Password=postgrespass;Target Session Attributes=read-only
     networks:
       - patroni-net
     depends_on:
@@ -217,7 +220,7 @@ services:
     container_name: seedingservice
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=haproxy;Port=5433;Database=ProductsDb;Username=postgres;Password=postgrespass
+      - ConnectionStrings__DefaultConnection=Host=haproxy;Port=5433;Database=ProductsDb;Username=postgres;Password=postgrespass;Target Session Attributes=read-write
     ports:
       - "8091:8080"
     networks:

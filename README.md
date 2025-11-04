@@ -357,6 +357,17 @@ curl -X POST http://localhost:8080/products \
 - **8080**: Microservice API
 - **8404**: HAProxy stats interface
 
+## HAProxy ports (read/write separation)
+
+- Host port 5433 -> HAProxy `pg_rw` frontend: routes to the current primary (use for write operations and services that require read-write access).
+- Host port 5434 -> HAProxy `pg_ro` frontend: routes to replicas (use for read-only/reporting services to reduce load on the primary).
+
+Recommendations:
+- Services that perform writes (e.g., the main microservice, seeding service) should use port 5433.
+- Read-only services (e.g., `getmenuservice`, analytics, reporting) should use port 5434 and may set `Target Session Attributes=read-only` in their connection string.
+
+If you expose these ports via Docker Compose, make sure `docker-compose.yml` maps both 5433 and 5434 for HAProxy (this repo already configures both).
+
 ## Connection Details
 
 - **Database Host**: haproxy (from within Docker network) or localhost (from host)
