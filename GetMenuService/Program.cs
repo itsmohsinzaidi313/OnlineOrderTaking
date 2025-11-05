@@ -6,18 +6,22 @@ using Microsoft.Extensions.Hosting;
 using PointofSaleModels.DatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
+using StackExchange.Redis;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((context, config) =>
     {
-        config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+        config.Sources.Clear();
+        config.AddEnvironmentVariables();
     })
     .ConfigureServices((context, services) =>
     {
+        var dbConnectionString = context.Configuration.GetConnectionString("Default");
+
         services
         .AddDbContext<RestaurantErpWebContext>(
             options => options.UseNpgsql(
-                context.Configuration.GetConnectionString("Default"),
+                dbConnectionString,
                     npgsqlOptions =>
                     {
                         npgsqlOptions.EnableRetryOnFailure(
@@ -25,7 +29,7 @@ var host = Host.CreateDefaultBuilder(args)
                             maxRetryDelay: TimeSpan.FromSeconds(5),
                             errorCodesToAdd: null);
                     }))
-        .Configure<RabbitMqSettings>(context.Configuration.GetSection("RabbitMQ"))
+        .Configure<RabbitMqSettings>(context.Configuration.GetSection("RABBITMQ"))
         .AddSingleton<RabbitMqConnection>()
         .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
         .AddSingleton<IQueueAction, RequestQueueAction>()

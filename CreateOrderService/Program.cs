@@ -8,24 +8,32 @@ using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 
 var builder = Host.CreateDefaultBuilder(args);
+
 builder.ConfigureAppConfiguration((hostingContext, config) =>
 {
-    config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+    config.AddEnvironmentVariables();
 })
-.ConfigureServices((hostingContext, services) =>
+.ConfigureServices((context, services) =>
 {
-    services.AddDbContext<RestaurantErpWebContext>(options =>
-    {
-        services
-        .AddDbContext<RestaurantErpWebContext>(
-            options => options.UseNpgsql(
-                hostingContext.Configuration.GetConnectionString("Default"))
-        )
-        .Configure<RabbitMqSettings>(hostingContext.Configuration.GetSection("RabbitMQ"))
+    var dbConnectionString = context.Configuration.GetConnectionString("Default");
+
+    services
+    .AddDbContext<RestaurantErpWebContext>(
+        options => options.UseNpgsql(
+            dbConnectionString,
+                npgsqlOptions =>
+                {
+                    npgsqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(5),
+                        errorCodesToAdd: null);
+                }))
+    .Configure<RabbitMqSettings>(context.Configuration.GetSection("RABBITMQ"))
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
-        .AddSingleton<IQueueAction, RequestQueueAction>()
-        .AddHostedService<RequestQueueListener>();
-    });
+    .AddSingleton<IQueueAction, RequestQueueAction>()
+    .AddHostedService<RequestQueueListener>();
 });
-builder.Build();
+
+var host = builder.Build();
+await host.RunAsync();
