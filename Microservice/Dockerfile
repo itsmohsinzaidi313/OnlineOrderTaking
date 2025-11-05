@@ -24,7 +24,7 @@ COPY --from=build /app/out .
 # Set environment variables
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Development
-ENV ConnectionStrings__DefaultConnection="Host=haproxy;Port=5432;Database=mydb;Username=postgres;Password=postgrespass;"
+ENV ConnectionStrings__DefaultConnection="Host=haproxy;Port=5433;Database=mydb;Username=postgres;Password=postgrespass;"
 
 # Health check - use the actual health endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using Microservice;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,8 +22,14 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Add EF Core with PostgreSQL + resilient retries for transient failures (e.g., Patroni failover)
+// Allow multiple env var naming conventions used across docker-compose files.
+var productDbConnection = builder.Configuration.GetConnectionString("Default");
+
+if (string.IsNullOrWhiteSpace(productDbConnection))
+    throw new InvalidOperationException("Products DB connection string not configured. Provide ConnectionStrings:Default env vars.");
+
 builder.Services.AddDbContext<ProductsDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+    options.UseNpgsql(productDbConnection,
         npgsqlOptions =>
         {
             npgsqlOptions.EnableRetryOnFailure(

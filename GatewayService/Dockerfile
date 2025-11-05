@@ -32,10 +32,7 @@ RUN chown -R appuser /app
 USER appuser
 
 WORKDIR /app
+RUN rm -rf /app/out/appsettings.*.json
 COPY --from=build /app/out .
-
-# Set environment variables
-ENV ASPNETCORE_URLS=http://+:8080
-ENV ASPNETCORE_ENVIRONMENT=Development
 
 ENTRYPOINT ["dotnet", "GatewayService.dll"]

@@ -34,8 +34,4 @@ USER appuser
 WORKDIR /app
 COPY --from=build /app/out .
 
-# Set environment variables
-ENV ASPNETCORE_URLS=http://+:8080
-ENV ASPNETCORE_ENVIRONMENT=Development
-
 ENTRYPOINT ["dotnet", "GetMenuService.dll"]

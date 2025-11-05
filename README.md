@@ -96,7 +96,7 @@ curl -X POST http://localhost:8080/products \
 
 | Service | Port | Description |
 |---------|------|-------------|
-| HAProxy (PostgreSQL) | 5432 | Primary database connection |
+| HAProxy (PostgreSQL) | 5433 | Primary database connection |
 | Patroni1 (Direct) | 5433 | Direct connection to node 1 |
 | Patroni2 (Direct) | 5434 | Direct connection to node 2 |
 | Patroni1 REST API | 8008 | Patroni management API |
@@ -108,7 +108,7 @@ curl -X POST http://localhost:8080/products \
 ## Connection Details
 
 - **Database Host**: localhost (via HAProxy)
-- **Database Port**: 5432
+- **Database Port**: 5433
 - **Database Name**: mydb
 - **Username**: postgres
 - **Password**: postgrespass
@@ -353,14 +353,24 @@ curl -X POST http://localhost:8080/products \
 
 ## Ports
 
-- **5432**: PostgreSQL (through HAProxy)
+- **5433**: PostgreSQL (through HAProxy)
 - **8080**: Microservice API
 - **8404**: HAProxy stats interface
+
+## HAProxy ports (read/write separation)
+
+- Host port 5433 -> HAProxy `pg_rw` frontend: routes to the current primary (use for write operations and services that require read-write access).
+- Host port 5434 -> HAProxy `pg_ro` frontend: routes to replicas (use for read-only/reporting services to reduce load on the primary).
+
+Recommendations:
+- Services that perform writes (e.g., the main microservice, seeding service) should use port 5433.
+
+If you expose these ports via Docker Compose, make sure `docker-compose.yml` maps both 5433 and 5434 for HAProxy (this repo already configures both).
 
 ## Connection Details
 
 - **Database Host**: haproxy (from within Docker network) or localhost (from host)
-- **Database Port**: 5432
+- **Database Port**: 5433
 - **Database Name**: mydb
 - **Username**: postgres
 - **Password**: postgrespass

@@ -90,7 +90,7 @@ function Show-Status {
     
     # Show connection info
     Write-Host "`nConnection Information:" -ForegroundColor Yellow
-    Write-Host "Primary connection: localhost:5432"
+    Write-Host "Primary connection: localhost:5433"
     Write-Host "Patroni1 direct: localhost:5433"
     Write-Host "Patroni2 direct: localhost:5434"
     Write-Host "Patroni1 REST API: http://localhost:8008"

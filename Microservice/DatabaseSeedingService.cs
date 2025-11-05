@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Data.Common;
 
 namespace Microservice;
 
@@ -16,8 +17,13 @@ public class DatabaseSeedingService
         // Create a scope here and resolve the DbContext and logger for the entire seeding run.
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ProductsDbContext>();
-        await context.Database.EnsureCreatedAsync();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<DatabaseSeedingService>>();
+
+        // Ensure we are connected to a writable primary before attempting schema changes.
+        // In HA setups (Patroni, replicas) connections can land on a replica which will
+        // reject CREATE TABLE with "cannot execute CREATE TABLE in a read-only transaction".
+        await context.Database.EnsureCreatedAsync();
+        await EnsureConnectedToPrimaryAsync(context, logger);
         if (context.Departments.Count() > 0)
         {
             logger.LogInformation("Database already seeded. Skipping seeding process.");
@@ -42,6 +48,58 @@ public class DatabaseSeedingService
         {
             logger.LogError(ex, "An error occurred while seeding the database.");
             throw;
+        }
+    }
+
+    private static async Task EnsureConnectedToPrimaryAsync(ProductsDbContext context, ILogger logger)
+    {
+        const int maxAttempts = 30; // ~30 * 1s = 30s max wait (exponential backoff applied)
+        var attempt = 0;
+        var delay = 1000;
+
+        while (true)
+        {
+            attempt++;
+            try
+            {
+                DbConnection? conn = context.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
+                    await conn.OpenAsync();
+
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT pg_is_in_recovery();"; // returns true on replicas
+                var result = await cmd.ExecuteScalarAsync();
+
+                if (result is bool inRecovery)
+                {
+                    if (!inRecovery)
+                    {
+                        logger.LogInformation("Connected to primary (writable). Proceeding with migrations/seeding.");
+                        return;
+                    }
+
+                    logger.LogWarning("Connected to a replica (read-only). Will retry until primary is available. Attempt {Attempt}.", attempt);
+                }
+                else
+                {
+                    // If we can't determine the recovery state, conservatively proceed only after some retries
+                    logger.LogWarning("pg_is_in_recovery() returned unexpected value ({Result}). Attempt {Attempt}.", result, attempt);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Error while checking primary/replica state. Attempt {Attempt}.", attempt);
+            }
+
+            if (attempt >= maxAttempts)
+            {
+                logger.LogError("Unable to detect a writable primary after {MaxAttempts} attempts. Aborting schema creation to avoid read-only errors.", maxAttempts);
+                throw new InvalidOperationException("Writable primary not available for schema creation.");
+            }
+
+            await Task.Delay(delay);
+            // simple exponential backoff, cap it
+            delay = Math.Min(delay * 2, 5000);
         }
     }
 

@@ -23,7 +23,7 @@ function Show-Status {
     
     Write-Host "`n=== Service Endpoints ===" -ForegroundColor Green
     Write-Host "Microservice API: http://localhost:8080" -ForegroundColor Cyan
-    Write-Host "PostgreSQL (via HAProxy): localhost:5432" -ForegroundColor Cyan
+    Write-Host "PostgreSQL (via HAProxy): localhost:5433" -ForegroundColor Cyan
 }
 
 function Start-Services {
