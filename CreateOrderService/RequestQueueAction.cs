@@ -20,7 +20,7 @@ namespace CreateOrderService
                 logger.LogWarning("Invalid or missing order payload for company {CompanyId}, branch {BranchId}", transport.CompanyId, transport.BranchId);
                 throw new InvalidOperationException("Invalid order payload");
             }
-            await SaveOrderAsync(transport.CompanyId, transport.BranchId, order);
+            await SaveOrderAsync(int.Parse(transport.CompanyId), int.Parse(transport.BranchId), order);
         }
 
         internal async Task<string> SaveOrderAsync(int companyId, int branchId, CustomerOrder order)

@@ -5,8 +5,8 @@ namespace PointofSaleModels.Services
         public string ConnectionId { get; set; } = string.Empty;
         public string UserId { get; set; } = string.Empty;
         public string Route { get; set; } = string.Empty;
-        public int CompanyId { get; set; }
-        public int BranchId { get; set; }
+        public string CompanyId { get; set; } = string.Empty;
+        public string BranchId { get; set; } = string.Empty;
         public object Payload { get; set; } = default!;
     }
 }

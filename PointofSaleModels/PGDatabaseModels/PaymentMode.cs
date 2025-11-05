@@ -1,0 +1,35 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace PointofSaleModels.PGDatabaseModels;
+
+public partial class PaymentMode
+{
+    public int PaymentModeId { get; set; }
+
+    public string? PaymentModeName { get; set; }
+
+    public int? CompanyId { get; set; }
+
+    public bool IsActive { get; set; }
+
+    public bool IsFoc { get; set; }
+
+    public bool? IsPosType { get; set; }
+
+    public bool? IsCashType { get; set; }
+
+    public bool IsThirdParty { get; set; }
+
+    public bool InstantDiscount { get; set; }
+
+    public bool IsCreditType { get; set; }
+
+    public bool IsPartyAccount { get; set; }
+
+    public string? Description { get; set; }
+
+    public virtual SetupCompany? Company { get; set; }
+
+    public virtual ICollection<Gst> Gsts { get; set; } = new List<Gst>();
+}
