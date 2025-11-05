@@ -221,8 +221,9 @@ services:
 
   adminer:
     image: adminer
+    container_name: adminer
     ports:
-      - "8088:8088"
+      - "8088:8080"
     environment:
       - ADMINER_DEFAULT_SERVER=haproxy
     networks:
