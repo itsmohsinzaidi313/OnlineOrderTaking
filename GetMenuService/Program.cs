@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using PointofSaleModels.DatabaseModels;
+using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
@@ -19,7 +19,7 @@ var host = Host.CreateDefaultBuilder(args)
         var dbConnectionString = context.Configuration.GetConnectionString("Default");
 
         services
-        .AddDbContext<RestaurantErpWebContext>(
+        .AddDbContext<PgDbContext>(
             options => options.UseNpgsql(
                 dbConnectionString,
                     npgsqlOptions =>
