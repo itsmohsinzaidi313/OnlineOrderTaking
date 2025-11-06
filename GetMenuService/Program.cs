@@ -11,7 +11,7 @@ using StackExchange.Redis;
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((context, config) =>
     {
-        config.AddJsonFile("appsettings.development.json", optional: true, reloadOnChange: true);
+        config.AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
         config.AddEnvironmentVariables();
     })
     .ConfigureServices((context, services) =>
