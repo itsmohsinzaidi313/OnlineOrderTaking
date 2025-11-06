@@ -16,7 +16,7 @@ namespace GetMenuService
             object payload;
             try
             {
-                var responsePayload = await GetMenuItemsAsync();
+                var responsePayload = await GetMenuItemsAsync(transport.CompanyId);
                 payload = responsePayload;
             }
             catch (Exception ex)
@@ -43,13 +43,13 @@ namespace GetMenuService
             await publisher.PublishToQueueAsync(RabbitMqQueues.MenuResponseQueue, response);
         }
 
-        private async Task<List<object>> GetMenuItemsAsync()
+        private async Task<List<object>> GetMenuItemsAsync(string companyId)
         {
             logger.LogInformation("📂 Fetching menu items from database...");
 
             var results = new List<object>();
 
-            await foreach (var element in impl.GetMenuAsync(companyId: 1))
+            await foreach (var element in impl.GetMenuAsync(companyId: int.Parse(companyId)))
             {
                 results.Add(element);
             }
