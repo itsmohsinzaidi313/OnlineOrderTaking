@@ -16,7 +16,11 @@ var host = Host.CreateDefaultBuilder(args)
     })
     .ConfigureServices((context, services) =>
     {
-        var dbConnectionString = context.Configuration.GetConnectionString("Default");
+        var dbConnectionString = context.Configuration.GetConnectionString("Postgres")
+            ?? throw new InvalidOperationException("Postgres connection string is not configured.");
+
+        var redisConnectionString = context.Configuration.GetConnectionString("Redis")
+        ?? throw new InvalidOperationException("Redis connection string is not configured.");
 
         services
         .AddDbContext<PgDbContext>(
@@ -32,11 +36,7 @@ var host = Host.CreateDefaultBuilder(args)
         .Configure<RabbitMqSettings>(context.Configuration.GetSection("RABBITMQ"))
         .AddSingleton<RabbitMqConnection>()
         .AddSingleton<Implementation>()
-        .AddSingleton<IConnectionMultiplexer>(sp =>
-        {
-            var configuration = ConfigurationOptions.Parse(context.Configuration.GetConnectionString("Redis")!, true);
-            return ConnectionMultiplexer.Connect(configuration);
-        })
+        .AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString))
         .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
         .AddSingleton<IQueueAction, RequestQueueAction>()
         .AddHostedService<RequestQueueListener>();

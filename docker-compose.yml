@@ -148,7 +148,8 @@ services:
       dockerfile: ./GetMenuService/Dockerfile
     container_name: getmenuservice
     environment:
-      - ConnectionStrings__Default=${ROSQLCONNECTION}
+      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - ConnectionStrings__Redis=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}

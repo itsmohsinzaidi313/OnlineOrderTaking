@@ -11,9 +11,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
 // Bind settings
-builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RABBITMQ"))
-                .Configure<RedisSettings>(builder.Configuration.GetSection("REDIS"))
-                .Configure<JwtSettings>(builder.Configuration.GetSection("JWT"));
+builder.Services
+    .Configure<RabbitMqSettings>(builder.Configuration.GetSection("RABBITMQ"))
+    .Configure<RedisSettings>(builder.Configuration.GetSection("REDIS"))
+    .Configure<JwtSettings>(builder.Configuration.GetSection("JWT"));
 
 var redisSettings = builder.Configuration.GetSection("REDIS").Get<RedisSettings>() ?? new RedisSettings();
 
@@ -28,8 +29,13 @@ builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
     .AddSingleton<MenuServiceResponseAction>()
-    .AddSingleton<IQueueAction>(sp => sp.GetRequiredService<MenuServiceResponseAction>())
+    .AddSingleton<IQueueAction>(context => context.GetRequiredService<MenuServiceResponseAction>())
     .AddHostedService<MenuServiceResponseListener>()
+    .AddSingleton<IConnectionMultiplexer>(context =>
+    {
+        var configuration = ConfigurationOptions.Parse(redisSettings.ConnectionString, true);
+        return ConnectionMultiplexer.Connect(configuration);
+    })
     .AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
