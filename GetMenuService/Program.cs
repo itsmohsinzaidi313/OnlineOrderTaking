@@ -31,6 +31,12 @@ var host = Host.CreateDefaultBuilder(args)
                     }))
         .Configure<RabbitMqSettings>(context.Configuration.GetSection("RABBITMQ"))
         .AddSingleton<RabbitMqConnection>()
+        .AddSingleton<Implementation>()
+        .AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var configuration = ConfigurationOptions.Parse(context.Configuration.GetConnectionString("Redis")!, true);
+            return ConnectionMultiplexer.Connect(configuration);
+        })
         .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
         .AddSingleton<IQueueAction, RequestQueueAction>()
         .AddHostedService<RequestQueueListener>();
