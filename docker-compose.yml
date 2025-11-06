@@ -229,7 +229,7 @@ services:
       - patroni-net
       - pos-net
     volumes:
-      - cloudbeaver_data:/opt/cloudbeaver/workspace
+      - /home/userone/cloudbeaver:/opt/cloudbeaver/workspace
     depends_on:
       haproxy:
         condition: service_healthy
@@ -241,7 +241,6 @@ volumes:
   patroni3_data:
   redis_data:
   rabbitmq_data:
-  cloudbeaver_data:
 
 networks:
   pos-net:
