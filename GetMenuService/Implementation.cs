@@ -1,11 +1,10 @@
-using Db = PointofSaleModels.DatabaseModels;
+using Db = PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.Application;
-using PointofSaleModels.PGDatabaseModels;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GetMenuService;
 
-internal class Implementation(IServiceProvider service, PgDbContext dbContext)
+internal class Implementation(IServiceProvider service, Db.PgDbContext dbContext)
 {
     internal async IAsyncEnumerable<Category> GetMenuAsync(int companyId, int branchId = 0)
     {
@@ -24,7 +23,7 @@ internal class Implementation(IServiceProvider service, PgDbContext dbContext)
         Task.Run(() =>
         {
             using var scope = service.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<Db.RestaurantErpWebContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
             dbSizes.AddRange(from a in dbContext.ProductSizes
                              where a.CompanyId == companyId
                              select a);
@@ -32,7 +31,7 @@ internal class Implementation(IServiceProvider service, PgDbContext dbContext)
         Task.Run(() =>
         {
             using var scope = service.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<Db.RestaurantErpWebContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
             dbFlavours.AddRange(from a in dbContext.Flavours
                                 where a.CompanyId == companyId
                                 select a);
@@ -40,7 +39,7 @@ internal class Implementation(IServiceProvider service, PgDbContext dbContext)
         Task.Run(() =>
         {
             using var scope = service.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<Db.RestaurantErpWebContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
             dbProducts.AddRange(from a in dbContext.Products
                                 join b in dbContext.ProductCategories on a.ProductCategoryId equals b.CategoryId
                                 where b.CompanyId == companyId
@@ -49,7 +48,7 @@ internal class Implementation(IServiceProvider service, PgDbContext dbContext)
         Task.Run(() =>
         {
             using var scope = service.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<Db.RestaurantErpWebContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
             dbDealItemDetails.AddRange(from a in dbContext.DealItemDetails
                                        join c in dbContext.ProductDetails on a.ProductDetailId equals c.ProductDetailId
                                        join d in dbContext.Products on c.ProductId equals d.ProductId
@@ -60,7 +59,7 @@ internal class Implementation(IServiceProvider service, PgDbContext dbContext)
         Task.Run(() =>
         {
             using var scope = service.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<Db.RestaurantErpWebContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
             dbDealDescription.AddRange(from a in dbContext.DealDescriptions
                                        join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
                                        join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
@@ -72,7 +71,7 @@ internal class Implementation(IServiceProvider service, PgDbContext dbContext)
         Task.Run(() =>
         {
             using var scope = service.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<Db.RestaurantErpWebContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
             dbDealDescriptionProducts.AddRange(from a in dbContext.DealDescriptions
                                                join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
                                                join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
@@ -86,11 +85,9 @@ internal class Implementation(IServiceProvider service, PgDbContext dbContext)
         Task.Run(() =>
         {
             using var scope = service.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<Db.RestaurantErpWebContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
             dbDepartments = (from a in dbContext.ProductCategories
-                            join b in dbContext.Departments on a.DepartmentId equals b.DepartmentId
-                            where b.CompanyId == companyId
-                            select new { a.CategoryId, b.DepartmentName }).ToDictionary(x => x.CategoryId, x => x.DepartmentName ?? "N/A");
+                            select new { a.CategoryId, a.DepartmentId }).ToDictionary(x => x.CategoryId, x => x.DepartmentId.ToString() ?? "N/A");
         }),
     };
         if (branchId > 0)
@@ -99,7 +96,7 @@ internal class Implementation(IServiceProvider service, PgDbContext dbContext)
                 Task.Run(() =>
                 {
                     using var scope = service.CreateScope();
-                    var dbContext = scope.ServiceProvider.GetRequiredService<Db.RestaurantErpWebContext>();
+                    var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
                     dbProductDetails.AddRange(from a in dbContext.ProductDetails
                                               join b in dbContext.Products on a.ProductId equals b.ProductId
                                               join c in dbContext.ProductCategories on b.ProductCategoryId equals c.CategoryId
@@ -115,7 +112,7 @@ internal class Implementation(IServiceProvider service, PgDbContext dbContext)
                 Task.Run(() =>
                 {
                     using var scope = service.CreateScope();
-                    var dbContext = scope.ServiceProvider.GetRequiredService<Db.RestaurantErpWebContext>();
+                    var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
                     dbProductDetails.AddRange(from a in dbContext.ProductDetails
                                               join b in dbContext.Products on a.ProductId equals b.ProductId
                                               join c in dbContext.ProductCategories on b.ProductCategoryId equals c.CategoryId
