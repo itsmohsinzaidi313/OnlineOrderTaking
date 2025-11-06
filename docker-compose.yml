@@ -220,20 +220,6 @@ services:
     networks:
       - patroni-net
 
-  cloudbeaver:
-    image: dbeaver/cloudbeaver:latest
-    container_name: cloudbeaver
-    ports:
-      - "8088:8978"
-    networks:
-      - patroni-net
-      - pos_postgres_container_pos-net
-    volumes:
-      - /home/userone/cloudbeaver:/opt/cloudbeaver/workspace
-    depends_on:
-      haproxy:
-        condition: service_healthy
-
 volumes:
   etcd_data:
   patroni1_data:
@@ -243,7 +229,5 @@ volumes:
   rabbitmq_data:
 
 networks:
-  pos_postgres_container_pos-net:
-    external: true
   patroni-net:
     driver: bridge
