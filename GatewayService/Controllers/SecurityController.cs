@@ -23,7 +23,7 @@ namespace GatewayService.Controllers
 
             // Generate a random user id in the format 4chars-4chars
             var userId = CreateRandomUserId();
-            var token = CreateTokenForUser(userId);
+            var token = CreateTokenForUser(userId, "1165", "0");
             return Ok(new { token, userId });
         }
 
@@ -59,7 +59,7 @@ namespace GatewayService.Controllers
                 if (string.IsNullOrWhiteSpace(userId))
                     return BadRequest(new { error = "Token does not contain a subject (user id)." });
 
-                var newToken = CreateTokenForUser(userId);
+                var newToken = CreateTokenForUser(userId, "1165", "0");
                 return Ok(new { token = newToken, userId });
             }
             catch (SecurityTokenException)
@@ -84,12 +84,12 @@ namespace GatewayService.Controllers
             return string.IsNullOrWhiteSpace(bodyToken) ? null : bodyToken;
         }
 
-        private string CreateTokenForUser(string userId)
+        private string CreateTokenForUser(string userId, string companyId, string branchId)
         {
             var claims = new List<Claim>
             {
-                new("cid", "1165"), // CompanyId
-                new("bid", "7890"), // BranchId
+                new("cid", companyId),
+                new("bid", branchId),
                 new(ClaimTypes.NameIdentifier, userId),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
