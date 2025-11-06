@@ -227,7 +227,7 @@ services:
       - "8088:8978"
     networks:
       - patroni-net
-      - pos-net
+      - pos_postgres_container_pos-net
     volumes:
       - /home/userone/cloudbeaver:/opt/cloudbeaver/workspace
     depends_on:
@@ -244,7 +244,6 @@ volumes:
 
 networks:
   pos_postgres_container_pos-net:
-    name: pos-net
     external: true
   patroni-net:
     driver: bridge
