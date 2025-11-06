@@ -1,15 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using PointofSaleModels.Application;
 using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using StackExchange.Redis;
 
 namespace GetMenuService
 {
-    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, IRabbitMqPublisher publisher, IDatabase redis) : IQueueAction
+    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, IRabbitMqPublisher publisher) : IQueueAction
     {
         public string QueueName() => RabbitMqQueues.MenuRequestQueue;
 
@@ -32,7 +30,7 @@ namespace GetMenuService
                     details = ex.ToString()
                 };
             }
-            redis.StringSet(transport.UserId, payload);
+
             var response = new RabbitMqTransport
             {
                 ConnectionId = transport.ConnectionId,
@@ -45,14 +43,18 @@ namespace GetMenuService
             await publisher.PublishToQueueAsync(RabbitMqQueues.MenuResponseQueue, response);
         }
 
-        private async IAsyncEnumerable<Category> GetMenuItemsAsync()
+        private async Task<List<object>> GetMenuItemsAsync()
         {
             logger.LogInformation("📂 Fetching menu items from database...");
 
+            var results = new List<object>();
+
             await foreach (var element in impl.GetMenuAsync(companyId: 1))
             {
-                yield return element;
+                results.Add(element);
             }
+
+            return results;
         }
     }
 }
