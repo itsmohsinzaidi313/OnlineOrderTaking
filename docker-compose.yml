@@ -244,6 +244,6 @@ volumes:
 
 networks:
   pos-net:
-    driver: bridge
+    driver: external
   patroni-net:
     driver: bridge
