@@ -18,8 +18,12 @@ namespace GetMenuService
             object payload;
             try
             {
-                var responsePayload = await GetMenuItemsAsync(transport.CompanyId);
-                payload = responsePayload;
+                var menuItems = new List<Category>();
+                await foreach (var item in GetMenuItemsAsync(transport.CompanyId))
+                {
+                    menuItems.Add(item);
+                }
+                payload = menuItems;
             }
             catch (Exception ex)
             {
@@ -32,7 +36,6 @@ namespace GetMenuService
                     details = ex.ToString()
                 };
             }
-            redis.StringSet(transport.UserId, payload);
             var response = new RabbitMqTransport
             {
                 ConnectionId = transport.ConnectionId,
@@ -49,9 +52,7 @@ namespace GetMenuService
         {
             logger.LogInformation("📂 Fetching menu items from database...");
 
-            var results = new List<object>();
-
-            await foreach (var element in impl.GetMenuAsync(companyId: 1))
+            await foreach (var element in impl.GetMenuAsync(companyId: int.Parse(companyId)))
             {
                 yield return element;
             }
