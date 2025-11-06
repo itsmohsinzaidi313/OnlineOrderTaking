@@ -243,7 +243,8 @@ volumes:
   rabbitmq_data:
 
 networks:
-  pos-net:
+  pos_postgres_container_pos-net:
+    name: pos-net
     external: true
   patroni-net:
     driver: bridge
