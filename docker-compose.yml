@@ -243,5 +243,7 @@ volumes:
   cloudbeaver_data:
 
 networks:
+  pos-net:
+    driver: bridge
   patroni-net:
     driver: bridge
