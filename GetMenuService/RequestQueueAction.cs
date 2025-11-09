@@ -1,13 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using PointofSaleModels.DatabaseModels;
+using PointofSaleModels.Application;
+using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
+using StackExchange.Redis;
 
 namespace GetMenuService
 {
-    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, RestaurantErpWebContext dbContext, IRabbitMqPublisher publisher) : IQueueAction
+    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, IRabbitMqPublisher publisher) : IQueueAction
     {
         public string QueueName() => RabbitMqQueues.MenuRequestQueue;
 
@@ -16,8 +18,12 @@ namespace GetMenuService
             object payload;
             try
             {
-                var responsePayload = await GetMenuItemsAsync();
-                payload = responsePayload;
+                var menuItems = new List<Category>();
+                await foreach (var item in GetMenuItemsAsync(transport.CompanyId))
+                {
+                    menuItems.Add(item);
+                }
+                payload = menuItems;
             }
             catch (Exception ex)
             {
@@ -30,11 +36,9 @@ namespace GetMenuService
                     details = ex.ToString()
                 };
             }
-
             var response = new RabbitMqTransport
             {
                 ConnectionId = transport.ConnectionId,
-                // Preserve the UserId so the Gateway can route responses by user when present
                 UserId = transport.UserId,
                 Route = "menu.response",
                 CompanyId = transport.CompanyId,
@@ -44,96 +48,14 @@ namespace GetMenuService
             await publisher.PublishToQueueAsync(RabbitMqQueues.MenuResponseQueue, response);
         }
 
-        private async Task<List<object>> GetMenuItemsAsync()
+        private async IAsyncEnumerable<Category> GetMenuItemsAsync(string companyId)
         {
             logger.LogInformation("📂 Fetching menu items from database...");
 
-            var results = new List<object>();
-
-            var connection = dbContext.Database.GetDbConnection();
-
-            var command = connection.CreateCommand();
-            command.CommandText = @"SELECT ""Id"", ""Name"", ""Price"" FROM ""Products""";
-
-            try
+            await foreach (var element in impl.GetMenuAsync(companyId: int.Parse(companyId)))
             {
-                if (connection.State != System.Data.ConnectionState.Open)
-                {
-                    logger.LogInformation("Opening database connection...");
-                    await connection.OpenAsync();
-                }
-                else
-                {
-                    logger.LogInformation("Database connection already open, reusing connection.");
-                }
-
-                logger.LogInformation("Executing SQL command...");
-                NpgsqlDataReader? reader = null;
-                int retries = 3;
-                for (int attempt = 0; attempt < retries; attempt++)
-                {
-                    try
-                    {
-                        reader = (NpgsqlDataReader)await command.ExecuteReaderAsync();
-                        break;
-                    }
-                    catch (Exception ex) when (attempt < retries - 1)
-                    {
-                        logger.LogWarning(ex, "Failed to execute reader on attempt {Attempt}, retrying...", attempt + 1);
-                        if (connection.State == System.Data.ConnectionState.Open)
-                        {
-                            await connection.CloseAsync();
-                        }
-                        await connection.OpenAsync();
-                    }
-                }
-                if (reader == null)
-                {
-                    throw new Exception("Failed to execute reader after all retries");
-                }
-
-                int rowCount = 0;
-                while (await reader.ReadAsync())
-                {
-                    rowCount++;
-                    var id = reader.GetInt32(reader.GetOrdinal("Id"));
-                    var nameOrdinal = reader.GetOrdinal("Name");
-                    string? name = reader.IsDBNull(nameOrdinal) ? null : reader.GetString(nameOrdinal);
-                    var priceOrdinal = reader.GetOrdinal("Price");
-                    decimal? price = reader.IsDBNull(priceOrdinal) ? null : reader.GetDecimal(priceOrdinal);
-
-                    logger.LogTrace("Fetched row {Row}: Id={Id}, Name={Name}, Price={Price}", rowCount, id, name, price);
-
-                    results.Add(new
-                    {
-                        Id = id,
-                        Name = name,
-                        Price = price
-                    });
-                }
-
-                logger.LogInformation("✅ Menu items fetched successfully. Total items: {RowCount}", rowCount);
-
-                await reader.DisposeAsync();
+                yield return element;
             }
-            finally
-            {
-                try
-                {
-                    if (connection.State == System.Data.ConnectionState.Open)
-                    {
-                        await connection.CloseAsync();
-                    }
-                }
-                catch (Exception closeEx)
-                {
-                    // Log but do not rethrow; closing failure shouldn't crash the enumerator caller
-                    logger.LogWarning(closeEx, "Failed to close database connection after fetching menu items.");
-                }
-                try { command.Dispose(); } catch { }
-            }
-
-            return results;
         }
     }
 }

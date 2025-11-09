@@ -1,0 +1,41 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace PointofSaleModels.PGDatabaseModels;
+
+public partial class BranchMaster
+{
+    public int BranchId { get; set; }
+
+    public string BranchName { get; set; } = null!;
+
+    public int CompanyId { get; set; }
+
+    public int? CityId { get; set; }
+
+    public string? CityName { get; set; }
+
+    public bool? IsEnable { get; set; }
+
+    public string? Ntnnumber { get; set; }
+
+    public TimeOnly? BusinessDayStartTime { get; set; }
+
+    public TimeOnly? BusinessDayEndTime { get; set; }
+
+    public bool? IsCallCenter { get; set; }
+
+    public string? BranchAddress { get; set; }
+
+    public string? BranchPhoneNumber { get; set; }
+
+    public bool? IsActive { get; set; }
+
+    public virtual ICollection<BranchDetail> BranchDetails { get; set; } = new List<BranchDetail>();
+
+    public virtual SetupCompany Company { get; set; } = null!;
+
+    public virtual ICollection<ProductDetailBranchMapping> ProductDetailBranchMappings { get; set; } = new List<ProductDetailBranchMapping>();
+
+    public virtual ICollection<ProductDetailOrderSourcePriceMapping> ProductDetailOrderSourcePriceMappings { get; set; } = new List<ProductDetailOrderSourcePriceMapping>();
+}

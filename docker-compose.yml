@@ -148,7 +148,8 @@ services:
       dockerfile: ./GetMenuService/Dockerfile
     container_name: getmenuservice
     environment:
-      - ConnectionStrings__Default=${ROSQLCONNECTION}
+      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - ConnectionStrings__Redis=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
@@ -160,8 +161,6 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-      seedingservice:
-        condition: service_started
 
   gatewayservice:
     build:
@@ -220,22 +219,6 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - patroni-net
-
-  seedingservice:
-    build:
-      context: ./Microservice
-      dockerfile: Dockerfile
-    container_name: seedingservice
-    environment:
-      - ASPNETCORE_ENVIRONMENT=${SEEDINGSERVICE_ASPNETCORE_ENVIRONMENT}
-      - ConnectionStrings__Default=${RWSQLCONNECTION}
-    ports:
-      - "8091:8080"
-    networks:
-      - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
 
 volumes:
   etcd_data:

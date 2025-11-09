@@ -4,18 +4,59 @@ using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+using StackExchange.Redis;
 
 namespace GatewayService
 {
 
     [Authorize]
-    public class GatewayHub(IRabbitMqPublisher publisher, ILogger<GatewayHub> logger) : Hub
+    public class GatewayHub(IRabbitMqPublisher publisher, ILogger<GatewayHub> logger, IConnectionMultiplexer redis) : Hub
     {
         public override async Task OnConnectedAsync()
         {
+            await SetupShop();
             await base.OnConnectedAsync();
         }
-        
+
+        private async Task SetupShop()
+        {
+            string userId = ExtractUserClaims();
+            string connectionId = Context.ConnectionId;
+
+            var db = redis.GetDatabase();
+
+            // mark online (overwrite previous any)
+            await db.StringSetAsync($"user:{userId}:connection", connectionId);
+
+            // try pending delivery
+            var pendingKey = $"pending:{userId}";
+            long pendingCount = await db.ListLengthAsync(pendingKey);
+
+            if (pendingCount > 0)
+            {
+                // fetch all
+                var items = await db.ListRangeAsync(pendingKey, 0, -1);
+
+                // deliver
+                foreach (var item in items)
+                {
+                    await Clients.Client(connectionId).SendAsync("response", item);
+                }
+
+                // cleanup
+                await db.KeyDeleteAsync(pendingKey);
+            }
+        }
+
+        public override async Task OnDisconnectedAsync(Exception? ex)
+        {
+            string userId = ExtractUserClaims();
+            var db = redis.GetDatabase();
+            await db.KeyDeleteAsync($"user:{userId}:connection");
+
+            await base.OnDisconnectedAsync(ex);
+        }
+
         public async Task SendRequest(string route, string payload)
         {
             var obj = new RabbitMqTransport
@@ -24,8 +65,8 @@ namespace GatewayService
                 Payload = payload,
                 ConnectionId = Context.ConnectionId,
                 UserId = ExtractUserClaims(),
-                BranchId = 0,
-                CompanyId = 0
+                BranchId = ExtractBranchIdClaims(),
+                CompanyId = ExtractCompanyIdClaims()
             };
 
             try
@@ -44,19 +85,18 @@ namespace GatewayService
 
         private string ExtractUserClaims()
         {
-            var claims = Context.User?.Claims;
-            if (claims == null)
-                return string.Empty;
+            return Context.User?.Claims.FirstOrDefault(c =>
+                string.Equals(c.Type, ClaimTypes.NameIdentifier, StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty;
+        }
 
-            // Try a few possible claim type names. Depending on JWT mapping behaviors the claim
-            // may appear as the registered 'sid', as ClaimTypes.Sid, as NameIdentifier or simply 'sid'.
-            var userClaim = claims.FirstOrDefault(c =>
-                string.Equals(c.Type, JwtRegisteredClaimNames.Sid, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(c.Type, ClaimTypes.Sid, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(c.Type, ClaimTypes.NameIdentifier, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(c.Type, "sid", StringComparison.OrdinalIgnoreCase));
+        private string ExtractCompanyIdClaims()
+        {
+            return Context.User?.Claims.FirstOrDefault(x => string.Equals(x.Type, "cid", StringComparison.OrdinalIgnoreCase))?.Value ?? "0";
+        }
 
-            return userClaim?.Value ?? string.Empty;
+        private string ExtractBranchIdClaims()
+        {
+            return Context.User?.Claims.FirstOrDefault(x => string.Equals(x.Type, "bid", StringComparison.OrdinalIgnoreCase))?.Value ?? "0";
         }
     }
 }

@@ -11,16 +11,9 @@ namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class SecurityController : ControllerBase
+    public class SecurityController(IOptions<JwtSettings> jwtOptions, ILogger<SecurityController> logger) : ControllerBase
     {
-        private readonly JwtSettings _jwt;
-        private readonly ILogger<SecurityController> _logger;
-
-        public SecurityController(IOptions<JwtSettings> jwtOptions, ILogger<SecurityController> logger)
-        {
-            _jwt = jwtOptions.Value;
-            _logger = logger;
-        }
+        private readonly JwtSettings _jwt = jwtOptions.Value;
 
         [HttpPost("generate-token")]
         public IActionResult GenerateToken()
@@ -30,7 +23,7 @@ namespace GatewayService.Controllers
 
             // Generate a random user id in the format 4chars-4chars
             var userId = CreateRandomUserId();
-            var token = CreateTokenForUser(userId);
+            var token = CreateTokenForUser(userId, "1165", "0");
             return Ok(new { token, userId });
         }
 
@@ -66,7 +59,7 @@ namespace GatewayService.Controllers
                 if (string.IsNullOrWhiteSpace(userId))
                     return BadRequest(new { error = "Token does not contain a subject (user id)." });
 
-                var newToken = CreateTokenForUser(userId);
+                var newToken = CreateTokenForUser(userId, "1165", "0");
                 return Ok(new { token = newToken, userId });
             }
             catch (SecurityTokenException)
@@ -75,7 +68,7 @@ namespace GatewayService.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error refreshing token");
+                logger.LogError(ex, "Error refreshing token");
                 return StatusCode(500);
             }
         }
@@ -91,13 +84,15 @@ namespace GatewayService.Controllers
             return string.IsNullOrWhiteSpace(bodyToken) ? null : bodyToken;
         }
 
-        private string CreateTokenForUser(string userId)
+        private string CreateTokenForUser(string userId, string companyId, string branchId)
         {
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, userId),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+                new("cid", companyId),
+                new("bid", branchId),
+                new(ClaimTypes.NameIdentifier, userId),
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key));
@@ -127,7 +122,7 @@ namespace GatewayService.Controllers
             return new string(part1) + "-" + new string(part2);
         }
 
-        private IActionResult? ValidateJwtOrBad()
+        private BadRequestObjectResult? ValidateJwtOrBad()
         {
             if (string.IsNullOrWhiteSpace(_jwt.Key) || string.IsNullOrWhiteSpace(_jwt.Issuer) || string.IsNullOrWhiteSpace(_jwt.Audience) || _jwt.ExpireMinutes <= 0)
             {
