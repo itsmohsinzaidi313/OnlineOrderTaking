@@ -9,7 +9,7 @@ using StackExchange.Redis;
 
 namespace GetMenuService
 {
-    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, IRabbitMqPublisher publisher, IDatabase redis) : IQueueAction
+    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, IRabbitMqPublisher publisher) : IQueueAction
     {
         public string QueueName() => RabbitMqQueues.MenuRequestQueue;
 
