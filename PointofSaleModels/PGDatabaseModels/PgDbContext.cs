@@ -4,16 +4,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace PointofSaleModels.PGDatabaseModels;
 
-public partial class BuilderburgerContext : DbContext
+public partial class PgDbContext : DbContext
 {
-    public BuilderburgerContext()
+    public PgDbContext()
     {
     }
 
-    public BuilderburgerContext(DbContextOptions<BuilderburgerContext> options)
+    public PgDbContext(DbContextOptions<PgDbContext> options)
         : base(options)
     {
     }
+
+    public virtual DbSet<OrderNumberSequence> OrderNumberSequences { get; set; }
 
     public virtual DbSet<Area> Areas { get; set; }
 

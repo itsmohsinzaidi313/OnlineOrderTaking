@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using PointofSaleModels.DatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
+using StackExchange.Redis;
 
 var builder = Host.CreateDefaultBuilder(args);
 
@@ -17,6 +18,8 @@ builder.ConfigureAppConfiguration((hostingContext, config) =>
 {
     var dbConnectionString = context.Configuration.GetConnectionString("Default");
 
+    var redisConnectionString = context.Configuration.GetConnectionString("Redis")
+    ?? throw new InvalidOperationException("Redis connection string is not configured.");
     services
     .AddDbContext<RestaurantErpWebContext>(
         options => options.UseNpgsql(
@@ -30,6 +33,8 @@ builder.ConfigureAppConfiguration((hostingContext, config) =>
                 }))
     .Configure<RabbitMqSettings>(context.Configuration.GetSection("RABBITMQ"))
     .AddSingleton<RabbitMqConnection>()
+    .AddSingleton<Implementation>()
+    .AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString))
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
     .AddSingleton<IQueueAction, RequestQueueAction>()
     .AddHostedService<RequestQueueListener>();

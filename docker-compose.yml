@@ -162,6 +162,26 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  createorderservice:
+    build:
+      context: .
+      dockerfile: ./CreateOrderService/Dockerfile
+    container_name: createorderservice
+    environment:
+      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - ConnectionStrings__Redis=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - patroni-net
+    depends_on:
+      haproxy:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
   gatewayservice:
     build:
       context: .
