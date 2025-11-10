@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PointofSaleModels.DatabaseModels;
+using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
@@ -21,7 +22,7 @@ builder.ConfigureAppConfiguration((hostingContext, config) =>
     var redisConnectionString = context.Configuration.GetConnectionString("Redis")
     ?? throw new InvalidOperationException("Redis connection string is not configured.");
     services
-    .AddDbContext<RestaurantErpWebContext>(
+    .AddDbContext<PgDbContext>(
         options => options.UseNpgsql(
             dbConnectionString,
                 npgsqlOptions =>
