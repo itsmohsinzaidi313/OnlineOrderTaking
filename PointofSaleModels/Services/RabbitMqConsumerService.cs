@@ -21,7 +21,7 @@ namespace PointofSaleModels.Services
             consumer.ReceivedAsync += async (sender, ea) =>
            {
                var message = Encoding.UTF8.GetString(ea.Body.ToArray());
-               logger.LogInformation("📥 Received request: {Message}", message);
+               logger.LogInformation("📥 Received request");
                RabbitMqTransport? obj = null;
                try
                {
