@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace PointofSaleModels.PGDatabaseModels;
 
-public partial class PgDbContext : DbContext
+public partial class BuilderburgerContext : DbContext
 {
-    public PgDbContext()
+    public BuilderburgerContext()
     {
     }
 
-    public PgDbContext(DbContextOptions<PgDbContext> options)
+    public BuilderburgerContext(DbContextOptions<BuilderburgerContext> options)
         : base(options)
     {
     }
@@ -26,6 +26,12 @@ public partial class PgDbContext : DbContext
     public virtual DbSet<CategoryAvailability> CategoryAvailabilities { get; set; }
 
     public virtual DbSet<City> Cities { get; set; }
+
+    public virtual DbSet<Customer> Customers { get; set; }
+
+    public virtual DbSet<CustomerAddressDetail> CustomerAddressDetails { get; set; }
+
+    public virtual DbSet<CustomerPhone> CustomerPhones { get; set; }
 
     public virtual DbSet<DealDescription> DealDescriptions { get; set; }
 
@@ -46,6 +52,10 @@ public partial class PgDbContext : DbContext
     public virtual DbSet<Flavour> Flavours { get; set; }
 
     public virtual DbSet<Gst> Gsts { get; set; }
+
+    public virtual DbSet<OrderDetail> OrderDetails { get; set; }
+
+    public virtual DbSet<OrderMaster> OrderMasters { get; set; }
 
     public virtual DbSet<OrderModeCompanyMapping> OrderModeCompanyMappings { get; set; }
 
@@ -159,6 +169,83 @@ public partial class PgDbContext : DbContext
             entity.Property(e => e.CityName).HasMaxLength(150);
         });
 
+        modelBuilder.Entity<Customer>(entity =>
+        {
+            entity.HasKey(e => e.CustomerId).HasName("customer_pkey");
+
+            entity.ToTable("customer");
+
+            entity.Property(e => e.Cnic).HasColumnName("CNIC");
+            entity.Property(e => e.Gst)
+                .HasMaxLength(50)
+                .HasColumnName("GST");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsPrimary).HasDefaultValue(false);
+            entity.Property(e => e.Ntn)
+                .HasMaxLength(50)
+                .HasColumnName("NTN");
+            entity.Property(e => e.Sst)
+                .HasMaxLength(50)
+                .HasColumnName("SST");
+            entity.Property(e => e.Title).HasMaxLength(50);
+
+            entity.HasOne(d => d.Company).WithMany(p => p.Customers)
+                .HasForeignKey(d => d.CompanyId)
+                .HasConstraintName("fk_customer_setup_company");
+
+            entity.HasOne(d => d.Phone).WithMany(p => p.Customers)
+                .HasForeignKey(d => d.PhoneId)
+                .HasConstraintName("fk_customer_customer_phone");
+        });
+
+        modelBuilder.Entity<CustomerAddressDetail>(entity =>
+        {
+            entity.HasKey(e => e.CustomerAddressId).HasName("customer_address_detail_pkey");
+
+            entity.ToTable("customer_address_detail");
+
+            entity.Property(e => e.BlockFloor).HasMaxLength(50);
+            entity.Property(e => e.Building).HasMaxLength(200);
+            entity.Property(e => e.CompanyName).HasMaxLength(255);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsPrimary).HasDefaultValue(false);
+            entity.Property(e => e.LandMark).HasMaxLength(200);
+            entity.Property(e => e.RoomHouse).HasMaxLength(50);
+            entity.Property(e => e.StreetRowLane).HasMaxLength(100);
+
+            entity.HasOne(d => d.Area).WithMany(p => p.CustomerAddressDetails)
+                .HasForeignKey(d => d.AreaId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_customer_address_detail_area");
+
+            entity.HasOne(d => d.City).WithMany(p => p.CustomerAddressDetails)
+                .HasForeignKey(d => d.CityId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_customer_address_detail_city");
+
+            entity.HasOne(d => d.Company).WithMany(p => p.CustomerAddressDetails)
+                .HasForeignKey(d => d.CompanyId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_customer_address_detail_setup_company");
+
+            entity.HasOne(d => d.Phone).WithMany(p => p.CustomerAddressDetails)
+                .HasForeignKey(d => d.PhoneId)
+                .HasConstraintName("fk_customer_address_detail_customer_phone");
+        });
+
+        modelBuilder.Entity<CustomerPhone>(entity =>
+        {
+            entity.HasKey(e => e.PhoneId).HasName("customer_phone_pkey");
+
+            entity.ToTable("customer_phone");
+
+            entity.Property(e => e.PhoneNumber).HasMaxLength(50);
+
+            entity.HasOne(d => d.Company).WithMany(p => p.CustomerPhones)
+                .HasForeignKey(d => d.CompanyId)
+                .HasConstraintName("fk_customer_phone_setup_company");
+        });
+
         modelBuilder.Entity<DealDescription>(entity =>
         {
             entity.HasKey(e => e.DealDescId).HasName("deal_description_pkey");
@@ -176,17 +263,11 @@ public partial class PgDbContext : DbContext
             entity.ToTable("deal_item_detail");
 
             entity.Property(e => e.DealItemId).ValueGeneratedNever();
-            entity.Property(e => e.DealOptionName).HasMaxLength(200);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
 
             entity.HasOne(d => d.ProductDetail).WithMany(p => p.DealItemDetails)
                 .HasForeignKey(d => d.ProductDetailId)
                 .HasConstraintName("fk_dealitemdetail_productdetail");
-
-            entity.HasOne(d => d.Size).WithMany(p => p.DealItemDetails)
-                .HasForeignKey(d => d.SizeId)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("fk_dealitemdetail_productsize");
         });
 
         modelBuilder.Entity<Discount>(entity =>
@@ -198,13 +279,8 @@ public partial class PgDbContext : DbContext
             entity.Property(e => e.DiscountId).ValueGeneratedNever();
             entity.Property(e => e.DiscountCapEnd).HasPrecision(18, 2);
             entity.Property(e => e.DiscountCapStart).HasPrecision(18, 2);
-            entity.Property(e => e.DiscountName).HasMaxLength(255);
-            entity.Property(e => e.EndDate).HasColumnType("timestamp without time zone");
             entity.Property(e => e.IsActiveInOdms).HasColumnName("IsActiveInODMS");
             entity.Property(e => e.IsActiveInPos).HasColumnName("IsActiveInPOS");
-            entity.Property(e => e.StartDate).HasColumnType("timestamp without time zone");
-            entity.Property(e => e.VocherCodeEnd).HasMaxLength(100);
-            entity.Property(e => e.VocherCodeStart).HasMaxLength(100);
         });
 
         modelBuilder.Entity<DiscountBranchMapping>(entity =>
@@ -310,6 +386,86 @@ public partial class PgDbContext : DbContext
                 .HasConstraintName("fk_gst_payment_mode");
         });
 
+        modelBuilder.Entity<OrderDetail>(entity =>
+        {
+            entity.HasKey(e => e.OrderDetailId).HasName("order_detail_pkey");
+
+            entity.ToTable("order_detail");
+
+            entity.Property(e => e.Gstid).HasColumnName("GSTId");
+            entity.Property(e => e.IsKot).HasDefaultValue(false);
+            entity.Property(e => e.IsTopping).HasDefaultValue(false);
+            entity.Property(e => e.PriceWithGst).HasColumnName("PriceWithGST");
+            entity.Property(e => e.PriceWithoutGst).HasColumnName("PriceWithoutGST");
+
+            entity.HasOne(d => d.DealItem).WithMany(p => p.OrderDetails)
+                .HasForeignKey(d => d.DealItemId)
+                .HasConstraintName("fk_order_detail_deal_item_detail");
+
+            entity.HasOne(d => d.Discount).WithMany(p => p.OrderDetails)
+                .HasForeignKey(d => d.DiscountId)
+                .HasConstraintName("fk_order_detail_discount");
+
+            entity.HasOne(d => d.Gst).WithMany(p => p.OrderDetails)
+                .HasForeignKey(d => d.Gstid)
+                .HasConstraintName("fk_order_detail_gst");
+
+            entity.HasOne(d => d.OrderMaster).WithMany(p => p.OrderDetails)
+                .HasForeignKey(d => d.OrderMasterId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_order_detail_order_master");
+
+            entity.HasOne(d => d.ProductDetail).WithMany(p => p.OrderDetails)
+                .HasForeignKey(d => d.ProductDetailId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_order_detail_product_detail");
+        });
+
+        modelBuilder.Entity<OrderMaster>(entity =>
+        {
+            entity.HasKey(e => e.OrderMasterId).HasName("order_master_pkey");
+
+            entity.ToTable("order_master");
+
+            entity.Property(e => e.AlternateNumber).HasMaxLength(50);
+            entity.Property(e => e.BankName).HasMaxLength(50);
+            entity.Property(e => e.CardNumber).HasMaxLength(50);
+            entity.Property(e => e.Clinumber).HasColumnName("CLINumber");
+            entity.Property(e => e.Gstamount).HasColumnName("GSTAmount");
+            entity.Property(e => e.Gstid).HasColumnName("GSTId");
+            entity.Property(e => e.Gstpercent).HasColumnName("GSTPercent");
+            entity.Property(e => e.IsSyncToPos).HasDefaultValue(false);
+            entity.Property(e => e.OrderNumber).HasMaxLength(500);
+            entity.Property(e => e.OrderSourceValue).HasMaxLength(250);
+            entity.Property(e => e.OrderTime).HasPrecision(6);
+            entity.Property(e => e.ReceivedAmount).HasColumnName("Received_Amount");
+            entity.Property(e => e.TotalAmountWithGst).HasColumnName("TotalAmountWithGST");
+            entity.Property(e => e.TotalAmountWithoutGst).HasColumnName("TotalAmountWithoutGST");
+            entity.Property(e => e.VoucherCode).HasMaxLength(50);
+
+            entity.HasOne(d => d.Area).WithMany(p => p.OrderMasters)
+                .HasForeignKey(d => d.AreaId)
+                .HasConstraintName("fk_order_master_area");
+
+            entity.HasOne(d => d.Branch).WithMany(p => p.OrderMasters)
+                .HasForeignKey(d => d.BranchId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_order_master_branch_master");
+
+            entity.HasOne(d => d.Company).WithMany(p => p.OrderMasters)
+                .HasForeignKey(d => d.CompanyId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_order_master_setup_company");
+
+            entity.HasOne(d => d.Gst).WithMany(p => p.OrderMasters)
+                .HasForeignKey(d => d.Gstid)
+                .HasConstraintName("fk_order_master_gst");
+
+            entity.HasOne(d => d.PreviousOrderMaster).WithMany(p => p.InversePreviousOrderMaster)
+                .HasForeignKey(d => d.PreviousOrderMasterId)
+                .HasConstraintName("fk_order_master_previous_order");
+        });
+
         modelBuilder.Entity<OrderModeCompanyMapping>(entity =>
         {
             entity.HasKey(e => e.OrderModeMappingId).HasName("order_mode_company_mapping_pkey");
@@ -330,7 +486,7 @@ public partial class PgDbContext : DbContext
 
             entity.ToTable("payment_mode");
 
-            entity.Property(e => e.PaymentModeName).HasMaxLength(150);
+            entity.Property(e => e.PaymentMode1).HasColumnName("PaymentMode");
 
             entity.HasOne(d => d.Company).WithMany(p => p.PaymentModes)
                 .HasForeignKey(d => d.CompanyId)

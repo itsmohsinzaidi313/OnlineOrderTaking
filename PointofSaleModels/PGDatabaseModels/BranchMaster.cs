@@ -35,6 +35,8 @@ public partial class BranchMaster
 
     public virtual SetupCompany Company { get; set; } = null!;
 
+    public virtual ICollection<OrderMaster> OrderMasters { get; set; } = new List<OrderMaster>();
+
     public virtual ICollection<ProductDetailBranchMapping> ProductDetailBranchMappings { get; set; } = new List<ProductDetailBranchMapping>();
 
     public virtual ICollection<ProductDetailOrderSourcePriceMapping> ProductDetailOrderSourcePriceMappings { get; set; } = new List<ProductDetailOrderSourcePriceMapping>();

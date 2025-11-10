@@ -23,5 +23,9 @@ public partial class Gst
 
     public virtual SetupCompany? Company { get; set; }
 
+    public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+
+    public virtual ICollection<OrderMaster> OrderMasters { get; set; } = new List<OrderMaster>();
+
     public virtual PaymentMode? PaymentMode { get; set; }
 }

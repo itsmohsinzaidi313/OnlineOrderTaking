@@ -20,4 +20,8 @@ public partial class Area
     public bool? IsEnable { get; set; }
 
     public bool? IsActive { get; set; }
+
+    public virtual ICollection<CustomerAddressDetail> CustomerAddressDetails { get; set; } = new List<CustomerAddressDetail>();
+
+    public virtual ICollection<OrderMaster> OrderMasters { get; set; } = new List<OrderMaster>();
 }

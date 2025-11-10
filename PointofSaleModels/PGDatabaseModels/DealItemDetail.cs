@@ -25,7 +25,7 @@ public partial class DealItemDetail
 
     public int? MaxQuantity { get; set; }
 
-    public virtual ProductDetail ProductDetail { get; set; } = null!;
+    public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
 
-    public virtual ProductSize? Size { get; set; }
+    public virtual ProductDetail ProductDetail { get; set; } = null!;
 }

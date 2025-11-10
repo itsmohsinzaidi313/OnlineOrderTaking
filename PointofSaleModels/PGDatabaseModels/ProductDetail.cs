@@ -55,6 +55,8 @@ public partial class ProductDetail
 
     public virtual ICollection<ProductDetail> InverseParentProductDetail { get; set; } = new List<ProductDetail>();
 
+    public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+
     public virtual ProductDetail? ParentProductDetail { get; set; }
 
     public virtual Product Product { get; set; } = null!;

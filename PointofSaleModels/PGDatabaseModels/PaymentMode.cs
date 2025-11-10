@@ -7,7 +7,7 @@ public partial class PaymentMode
 {
     public int PaymentModeId { get; set; }
 
-    public string? PaymentModeName { get; set; }
+    public string? PaymentMode1 { get; set; }
 
     public int? CompanyId { get; set; }
 
