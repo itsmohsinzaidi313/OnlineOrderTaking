@@ -148,6 +148,7 @@ internal class Implementation(IServiceProvider service, Db.PgDbContext dbContext
                 var item = new MenuItem
                 {
                     Id = dbProduct.ProductId,
+                    CategoryId = dbProduct.ProductCategoryId.ToString() ?? "0",
                     Name = dbProduct.ProductName ?? "N/A",
                     Image = dbProduct.ProductImage ?? "N/A",
                     DepartmentName = dbDepartments[dbProduct.ProductCategoryId ?? 0] ?? "N/A",
@@ -184,14 +185,15 @@ internal class Implementation(IServiceProvider service, Db.PgDbContext dbContext
                         };
                         foreach (var dbDescription in dbDealDescription.Where(x => x.DealItemId == dbDealItem.DealItemId))
                         {
+                            var list = (from x in dbProductDetails
+                                        join y in dbProducts on x.ProductId equals y.ProductId
+                                        where x.ProductDetailId == dbDescription.ProductDetailId
+                                        select y).ToList();
                             var itemOption = new ItemOption
                             {
                                 Id = dbDescription.ProductDetailId ?? 0,
                                 Price = dbDescription.Price ?? 0.0,
-                                Name = (from x in dbProductDetails
-                                        join y in dbProducts on x.ProductId equals y.ProductId
-                                        where x.ProductDetailId == dbDescription.ProductDetailId
-                                        select y).First().ProductName,
+                                Name = list.First().ProductName ?? string.Empty,
                             };
                             itemChoice.ItemOptions.Add(itemOption);
                         }
