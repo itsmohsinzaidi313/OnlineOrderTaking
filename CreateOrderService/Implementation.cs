@@ -12,7 +12,7 @@ class Implementation(Db.PgDbContext dbContext)
     internal async Task<string> SaveOrderAsync(int companyId, int branchId, CustomerOrder order)
     {
         var orderMaster = await GetOrderMasterAsync(companyId, branchId, order);
-        await SetDeliveryOrder(branchId, orderMaster, order);
+        await SetOnlineOrder(branchId, orderMaster, order);
         return await SaveOrderAsync(orderMaster);
     }
 
@@ -53,7 +53,7 @@ class Implementation(Db.PgDbContext dbContext)
             }
         }
 
-        var orderNumber = $"{prefix}{next.ToString("D4")}";
+        var orderNumber = $"{prefix}{next:D4}";
 
         await dbContext.OrderNumberSequences.AddAsync(new Db.OrderNumberSequence
         {
@@ -118,13 +118,14 @@ class Implementation(Db.PgDbContext dbContext)
             Cover = order.Persons,
             SpecialInstruction = order.Description,
         };
-        foreach (var orderDetail in GetOrderDetails(order.User.Id, order.Items))
+        foreach (var orderDetail in GetOrderDetails(order.Items))
         {
             orderMaster.OrderDetails.Add(orderDetail);
         }
         return orderMaster;
     }
-    private static List<Db.OrderDetail> GetOrderDetails(int userId, List<MenuItem> items)
+
+    private static List<Db.OrderDetail> GetOrderDetails(List<MenuItem> items)
     {
         var list = new List<Db.OrderDetail>();
         foreach (var item in items)
@@ -164,7 +165,7 @@ class Implementation(Db.PgDbContext dbContext)
         return list;
     }
 
-    private async Task SetDeliveryOrder(int branchId, Db.OrderMaster orderMaster, CustomerOrder order)
+    private async Task SetOnlineOrder(int branchId, Db.OrderMaster orderMaster, CustomerOrder order)
     {
         var customer = order.Customer ?? throw new Exception("Invalid customer information");
         if (customer.Addresses == null || customer.Addresses.Count == 0)
@@ -214,9 +215,10 @@ class Implementation(Db.PgDbContext dbContext)
             await dbContext.SaveChangesAsync();
         }
         orderMaster.CustomerAddressId = dbCustomerAddress.CustomerAddressId;
-        orderMaster.RiderId = order.Rider?.Id;
-        orderMaster.DeliveryCharges = order.DeliveryCharges?.Value;
+        // orderMaster.RiderId = order.Rider?.Id;
+        // orderMaster.DeliveryCharges = order.DeliveryCharges?.Value;
     }
+
     internal (int, int) GetCityId_AreaId_ByBranchId(int barnchId)
     {
         int areaId = dbContext.BranchDetails.Where(x => x.BranchId.Equals(barnchId)).Select(x => x.AreaId).FirstOrDefault();

@@ -61,16 +61,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         }
 
         // Allow SignalR to receive token via "access_token" query for websocket transport
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = ctx =>
-            {
-                var accessToken = ctx.Request.Query["access_token"].ToString();
-                if (!string.IsNullOrEmpty(accessToken) && ctx.HttpContext.Request.Path.StartsWithSegments("/gatewayHub"))
-                    ctx.Token = accessToken;
-                return Task.CompletedTask;
-            }
-        };
+        // options.Events = new JwtBearerEvents
+        // {
+        //     OnMessageReceived = ctx =>
+        //     {
+        //         var accessToken = ctx.Request.Query["access_token"].ToString();
+        //         if (!string.IsNullOrEmpty(accessToken) && ctx.HttpContext.Request.Path.StartsWithSegments("/gatewayHub"))
+        //             ctx.Token = accessToken;
+        //         return Task.CompletedTask;
+        //     }
+        // };
     });
 
 builder.Services.AddAuthorization();
