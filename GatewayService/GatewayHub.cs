@@ -9,7 +9,7 @@ using StackExchange.Redis;
 namespace GatewayService
 {
 
-    [Authorize]
+    [AllowAnonymous]
     public class GatewayHub(IRabbitMqPublisher publisher, ILogger<GatewayHub> logger, IConnectionMultiplexer redis) : Hub
     {
         public override async Task OnConnectedAsync()
