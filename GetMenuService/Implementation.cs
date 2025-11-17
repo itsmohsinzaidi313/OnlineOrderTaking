@@ -199,6 +199,10 @@ internal class Implementation(IServiceProvider service, Db.PgDbContext dbContext
                         }
                         variation.ItemChoices.Add(itemChoice);
                     }
+                    if (item.Price == 0.0 || item.Price > variation.Price)
+                    {
+                        item.Price = variation.Price;
+                    }
                     item.Variations.Add(variation);
                 }
                 category.Items.Add(item);
