@@ -7,9 +7,10 @@ namespace GatewayService.ServiceResponseListeners
     public class CreateOrderServiceResponseAction(Implementation implementation) : IQueueAction
     {
         public string QueueName() => RabbitMqQueues.OrderResponseQueue;
-        public async Task OnMessage(ServicePayload svcPayload)
+        public async Task OnMessage(string svcPayload)
         {
-            await implementation.ExecuteHandler(QueueName(), svcPayload);
+            var payload = System.Text.Json.JsonSerializer.Deserialize<CreateOrderServicePayload>(svcPayload);
+            await implementation.ExecuteHandler(QueueName(), payload);
         }
     }
 }

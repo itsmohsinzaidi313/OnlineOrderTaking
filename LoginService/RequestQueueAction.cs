@@ -8,13 +8,13 @@ using App = PointofSaleModels.Application;
 
 namespace LoginService
 {
-    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, IRabbitMqPublisher publisher, Db.PgDbContext context) : IQueueAction
+    internal class RequestQueueAction(IRabbitMqPublisher publisher, Db.PgDbContext context) : IQueueAction
     {
         public string QueueName() => RabbitMqQueues.LoginRequestQueue;
 
-        public async Task OnMessage(ServicePayload svcpayload)
+        public async Task OnMessage(string svcpayload)
         {
-            var payload = svcpayload.GetPayload<LoginServicePayload>();
+            var payload = System.Text.Json.JsonSerializer.Deserialize<LoginServicePayload>(svcpayload);
             var phoneNumber = payload.Customer.Contact;
             var customerPhone = await context.CustomerPhones
                 .FirstOrDefaultAsync(c => c.PhoneNumber == phoneNumber);
@@ -31,7 +31,7 @@ namespace LoginService
                         Contact = customerPhone.PhoneNumber,
                         Name = customer.CustomerName,
                         PhoneId = customerPhone.PhoneId,
-                        SelectedAddress = customerAddresses.FirstOrDefault(x => x.IsPrimary).CompleteAddress ,
+                        SelectedAddress = customerAddresses.FirstOrDefault(x => x.IsPrimary).CompleteAddress,
                         Addresses = customerAddresses.Select(ca => ca.CompleteAddress).ToList(),
                     }
                 };

@@ -10,9 +10,9 @@ namespace GetMenuService
     {
         public string QueueName() => RabbitMqQueues.MenuRequestQueue;
 
-        public async Task OnMessage(ServicePayload transport)
+        public async Task OnMessage(string transport)
         {
-            var requestPayload = transport.GetPayload<GetMenuServicePayload>();
+            var requestPayload = System.Text.Json.JsonSerializer.Deserialize<GetMenuServicePayload>(transport);
             object payload;
             try
             {

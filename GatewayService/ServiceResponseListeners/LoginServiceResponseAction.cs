@@ -7,9 +7,10 @@ namespace GatewayService.ServiceResponseListeners
     public class LoginServiceResponseAction(Implementation implementation) : IQueueAction
     {
         public string QueueName() => RabbitMqQueues.LoginResponseQueue;
-        public async Task OnMessage(ServicePayload svcPayload)
+        public async Task OnMessage(string svcPayload)
         {
-            await implementation.ExecuteHandler(QueueName(), svcPayload);
+            var payload = System.Text.Json.JsonSerializer.Deserialize<LoginServicePayload>(svcPayload);
+            await implementation.ExecuteHandler(QueueName(), payload);
         }
     }
 }

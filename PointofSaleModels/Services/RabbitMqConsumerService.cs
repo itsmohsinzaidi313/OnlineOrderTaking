@@ -23,17 +23,15 @@ namespace PointofSaleModels.Services
            {
                var message = Encoding.UTF8.GetString(ea.Body.ToArray());
                logger.LogInformation("📥 Received request");
-               ServicePayload? obj = null;
                try
                {
-                   obj = JsonSerializer.Deserialize<ServicePayload>(message, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                   if (obj == null)
+                   if (string.IsNullOrWhiteSpace(message))
                    {
                        logger.LogWarning("⚠️ Received null or invalid message.");
                        await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: false);
                        return;
                    }
-                   await exec.OnMessage(obj);
+                   await exec.OnMessage(message);
                    await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
                }
                catch (OperationCanceledException)

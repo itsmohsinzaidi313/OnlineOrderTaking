@@ -9,9 +9,9 @@ namespace CreateOrderService
     {
 
         public string QueueName() => RabbitMqQueues.OrderRequestQueue;
-        public async Task OnMessage(ServicePayload transport)
+        public async Task OnMessage(string transport)
         {
-            var payload = transport.GetPayload<CreateOrderServicePayload>();
+            var payload = System.Text.Json.JsonSerializer.Deserialize<CreateOrderServicePayload>(transport);
             if (payload == null)
             {
                 logger.LogWarning("Invalid or missing order payload for company {CompanyId}, branch {BranchId}", payload.RestaurantId, payload.BranchId);
