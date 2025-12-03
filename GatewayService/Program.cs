@@ -37,6 +37,7 @@ builder.Services
         var configuration = ConfigurationOptions.Parse(redisSettings.ConnectionString, true);
         return ConnectionMultiplexer.Connect(configuration);
     })
+    .AddSingleton<Implementation>()
     .AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
