@@ -49,9 +49,6 @@ namespace GatewayService
 
             if (pendingCount > 0)
             {
-                // fetch all
-                var items = await db.ListRangeAsync(pendingKey);
-
                 // deliver
                 for (int i = 0; i < pendingCount; i++)
                 {
