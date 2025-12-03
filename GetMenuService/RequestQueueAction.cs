@@ -1,11 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Npgsql;
+﻿using Microsoft.Extensions.Logging;
 using PointofSaleModels.Application;
-using PointofSaleModels.PGDatabaseModels;
+using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using StackExchange.Redis;
 
 namespace GetMenuService
 {
@@ -13,13 +10,14 @@ namespace GetMenuService
     {
         public string QueueName() => RabbitMqQueues.MenuRequestQueue;
 
-        public async Task OnMessage(RabbitMqTransport transport)
+        public async Task OnMessage(ServicePayload transport)
         {
+            var requestPayload = transport.GetPayload<GetMenuServicePayload>();
             object payload;
             try
             {
                 var menuItems = new List<Category>();
-                await foreach (var item in GetMenuItemsAsync(transport.CompanyId))
+                await foreach (var item in GetMenuItemsAsync(requestPayload.RestaurantId))
                 {
                     menuItems.Add(item);
                 }
@@ -36,23 +34,18 @@ namespace GetMenuService
                     details = ex.ToString()
                 };
             }
-            var response = new RabbitMqTransport
+            var response = new GetMenuServicePayload(requestPayload)
             {
-                ConnectionId = transport.ConnectionId,
-                UserId = transport.UserId,
-                Route = "menu.response",
-                CompanyId = transport.CompanyId,
-                BranchId = transport.BranchId,
-                Payload = payload
+                Menu = payload
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.MenuResponseQueue, response);
         }
 
-        private async IAsyncEnumerable<Category> GetMenuItemsAsync(string companyId)
+        private async IAsyncEnumerable<Category> GetMenuItemsAsync(int companyId)
         {
             logger.LogInformation("📂 Fetching menu items from database...");
 
-            await foreach (var element in impl.GetMenuAsync(companyId: int.Parse(companyId)))
+            await foreach (var element in impl.GetMenuAsync(companyId: companyId))
             {
                 yield return element;
             }

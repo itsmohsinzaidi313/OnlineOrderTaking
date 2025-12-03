@@ -6,6 +6,7 @@ using PointofSaleModels.Settings;
 using StackExchange.Redis;
 using GatewayService.Models;
 using System.Text;
+using GatewayService.ServiceResponseListeners;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();

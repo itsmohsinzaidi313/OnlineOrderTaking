@@ -4,6 +4,7 @@ using RabbitMQ.Client.Events;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
+using PointofSaleModels.ServicePayloads;
 
 namespace PointofSaleModels.Services
 {
@@ -22,10 +23,10 @@ namespace PointofSaleModels.Services
            {
                var message = Encoding.UTF8.GetString(ea.Body.ToArray());
                logger.LogInformation("📥 Received request");
-               RabbitMqTransport? obj = null;
+               ServicePayload? obj = null;
                try
                {
-                   obj = JsonSerializer.Deserialize<RabbitMqTransport>(message, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                   obj = JsonSerializer.Deserialize<ServicePayload>(message, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                    if (obj == null)
                    {
                        logger.LogWarning("⚠️ Received null or invalid message.");
@@ -45,7 +46,7 @@ namespace PointofSaleModels.Services
                    await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: false);
                }
            };
-            await RabbitMqConnection.EnsureQueueExistsAsync(channel, QueueName);
+            await rabbitConnection.EnsureQueueExistsAsync(QueueName);
 
             await channel.BasicConsumeAsync(
                 queue: QueueName,
@@ -68,7 +69,7 @@ namespace PointofSaleModels.Services
             }
             finally
             {
-                try { await channel.CloseAsync(); } catch { /* ignore */ }
+                try { await channel?.CloseAsync(stoppingToken); } catch { /* ignore */ }
             }
         }
     }
