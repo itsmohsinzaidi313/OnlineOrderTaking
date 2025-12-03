@@ -1,22 +1,57 @@
+using RabbitMQ.Client;
+using System.Text;
+using System.Text.Json;
+
 namespace PointofSaleModels.Services
 {
-    public class RabbitMqPublisher : IRabbitMqPublisher
+    public class RabbitMqPublisher(RabbitMqConnection conn) : IRabbitMqPublisher
     {
-        private readonly RabbitMqConnection _conn;
-
-        public RabbitMqPublisher(RabbitMqConnection conn)
+        public async Task PublishToQueueAsync<T>(string queueName, T message, string? correlationId = null, IDictionary<string, object?>? headers = null, CancellationToken cancellationToken = default)
         {
-            _conn = conn;
+            await PublishAsync(message, queueName, string.Empty, correlationId, null, headers, cancellationToken);
         }
 
-        public Task PublishAsync<T>(T message, string routingKey, string exchange = "", string? correlationId = null, string? replyTo = null, IDictionary<string, object?>? headers = null, CancellationToken cancellationToken = default)
-        {
-            return _conn.PublishAsync(message, routingKey, exchange, correlationId, replyTo, headers, cancellationToken);
-        }
 
-        public Task PublishToQueueAsync<T>(string queueName, T message, string? correlationId = null, IDictionary<string, object?>? headers = null, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Generalized publish method supporting exchange, routing, correlation and headers.
+        /// </summary>
+        private async Task PublishAsync<T>(T message, string routingKey, string exchange = "", string? correlationId = null, string? replyTo = null, IDictionary<string, object?>? headers = null, CancellationToken cancellationToken = default)
         {
-            return _conn.PublishAsync(message, queueName, string.Empty, correlationId, null, headers, cancellationToken);
+            // Use a scoped channel for publishing to avoid thread-safety issues.
+            var channel = await conn.CreateChannelAsync();
+            try
+            {
+                if (string.IsNullOrWhiteSpace(exchange))
+                {
+                    // Ensure the destination queue exists when using the default exchange.
+                    await conn.EnsureQueueExistsAsync(routingKey);
+                }
+
+                var props = new BasicProperties
+                {
+                    ContentType = "application/json",
+                    DeliveryMode = DeliveryModes.Persistent,
+                    CorrelationId = correlationId,
+                    ReplyTo = replyTo,
+                    Headers = headers
+                };
+
+                var json = JsonSerializer.Serialize(message);
+                var body = Encoding.UTF8.GetBytes(json);
+
+                await channel.BasicPublishAsync(
+                    exchange: exchange ?? string.Empty,
+                    routingKey: routingKey,
+                    mandatory: false,
+                    basicProperties: props,
+                    body: body,
+                    cancellationToken: cancellationToken
+                );
+            }
+            finally
+            {
+                try { await channel?.CloseAsync(cancellationToken); } catch { /* ignore */ }
+            }
         }
     }
 }

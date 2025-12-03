@@ -1,6 +1,6 @@
 ﻿using PointofSaleModels.Services;
 
-namespace GatewayService
+namespace GatewayService.ServiceResponseListeners
 {
     public class MenuServiceResponseListener(ILogger<MenuServiceResponseListener> logger, RabbitMqConnection rabbitConnection, MenuServiceResponseAction listener) : RabbitMqConsumerService<MenuServiceResponseListener>(logger, rabbitConnection, listener)
     {

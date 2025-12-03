@@ -6,9 +6,11 @@ using PointofSaleModels.Settings;
 using StackExchange.Redis;
 using GatewayService.Models;
 using System.Text;
+using GatewayService.ServiceResponseListeners;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
+builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
 
 // Bind settings
 builder.Services
@@ -36,6 +38,7 @@ builder.Services
         var configuration = ConfigurationOptions.Parse(redisSettings.ConnectionString, true);
         return ConnectionMultiplexer.Connect(configuration);
     })
+    .AddSingleton<Implementation>()
     .AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();

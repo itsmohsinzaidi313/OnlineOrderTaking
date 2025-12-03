@@ -1,8 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
-using PointofSaleModels.Application;
+using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using Db = PointofSaleModels.DatabaseModels;
 
 namespace CreateOrderService
 {
@@ -10,15 +9,15 @@ namespace CreateOrderService
     {
 
         public string QueueName() => RabbitMqQueues.OrderRequestQueue;
-        public async Task OnMessage(RabbitMqTransport transport)
+        public async Task OnMessage(string transport)
         {
-            var order = transport.GetPayload<CustomerOrder>();
-            if (order == null)
+            var payload = System.Text.Json.JsonSerializer.Deserialize<CreateOrderServicePayload>(transport);
+            if (payload == null)
             {
-                logger.LogWarning("Invalid or missing order payload for company {CompanyId}, branch {BranchId}", transport.CompanyId, transport.BranchId);
+                logger.LogWarning("Invalid or missing order payload for company {CompanyId}, branch {BranchId}", payload.RestaurantId, payload.BranchId);
                 throw new InvalidOperationException("Invalid order payload");
             }
-            await impl.SaveOrderAsync(int.Parse(transport.CompanyId), int.Parse(transport.BranchId), order);
+            await impl.SaveOrderAsync(payload.RestaurantId, payload.BranchId, payload.Order!);
         }
     }
 }
