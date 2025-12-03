@@ -16,7 +16,7 @@ namespace GatewayService
             string userId = ExtractUserIdFromClaims();
             string connectionId = Context.ConnectionId;
             await implementation.SetUserOnlineAsync(userId, connectionId);
-            await implementation.SendPendingPayload(userId, connectionId);
+            _ = implementation.SendPendingPayload(userId, connectionId);
             await base.OnConnectedAsync();
         }
 
@@ -27,7 +27,7 @@ namespace GatewayService
             await base.OnDisconnectedAsync(ex);
         }
 
-        public async Task SendRequest()
+        public async Task MenuRequest()
         {
             var obj = new GetMenuServicePayload().FillUp(Context);
 

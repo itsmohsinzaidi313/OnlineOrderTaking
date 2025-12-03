@@ -4,6 +4,7 @@ using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
+using System.Text.Json;
 
 namespace GatewayService
 {
@@ -28,6 +29,7 @@ namespace GatewayService
                 { RabbitMqQueues.OrderResponseQueue, OrderResponseHandler }
             };
         }
+
         public async Task ExecuteHandler(string queueName, ServicePayload svcpayload)
         {
 
@@ -51,11 +53,28 @@ namespace GatewayService
                 var items = await db.ListRangeAsync(pendingKey);
 
                 // deliver
-                foreach (var item in items.Select(x => x.HasValue ? System.Text.Json.JsonSerializer.Deserialize<PendingPayload>(x) : null))
+                for (int i = 0; i < pendingCount; i++)
                 {
-                    if (item != null)
+                    var item = await db.ListLeftPopAsync(pendingKey);
+                    var pendingPayload = JsonSerializer.Deserialize<PendingPayload<ServicePayload>>(item);
+                    if (pendingPayload != null)
                     {
-                        await Hub.Clients.Client(connectionId).SendAsync(item.SignalRMethodName, item.Payload);
+                        var method = pendingPayload.SignalRMethodName;
+                        if (method == "MenuResponse")
+                        {
+                            var payload = JsonSerializer.Deserialize<PendingPayload<GetMenuServicePayload>>(item);
+                            await Hub.Clients.Client(connectionId).SendAsync(method, payload.Payload);
+                        }
+                        else if (method == "LoginResponse")
+                        {
+                            var payload = JsonSerializer.Deserialize<PendingPayload<LoginServicePayload>>(item);
+                            await Hub.Clients.Client(connectionId).SendAsync(method, payload.Payload);
+                        }
+                        else if (method == "OrderResponse")
+                        {
+                            var payload = JsonSerializer.Deserialize<PendingPayload<CreateOrderServicePayload>>(item);
+                            await Hub.Clients.Client(connectionId).SendAsync(method, payload.Payload);
+                        }
                     }
                 }
 
@@ -95,7 +114,7 @@ namespace GatewayService
             return connectionId != null;
         }
 
-        private async Task SendToUser(string method, ServicePayload payload)
+        private async Task SendToUser<T>(string method, T payload) where T : ServicePayload
         {
             Logger.LogInformation($"Gateway: Received {method} message");
             var userId = payload.UserId;
@@ -112,16 +131,16 @@ namespace GatewayService
             }
         }
 
-        private async Task PublishToPending(string method, ServicePayload payload)
+        private async Task PublishToPending<T>(string method, T payload) where T : ServicePayload
         {
             var db = Redis.GetDatabase();
-            var pendingPayload = new PendingPayload
+            var pendingPayload = new PendingPayload<T>
             {
                 SignalRMethodName = method,
                 Payload = payload
             };
             var userId = payload.UserId;
-            await db.ListRightPushAsync($"{PendingKeyPrefix}{userId}", System.Text.Json.JsonSerializer.Serialize(pendingPayload));
+            await db.ListRightPushAsync($"{PendingKeyPrefix}{userId}", JsonSerializer.Serialize(pendingPayload));
         }
 
         internal async Task SetUserOnlineAsync(string userId, string connectionId)

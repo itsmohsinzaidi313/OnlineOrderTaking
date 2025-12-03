@@ -1,6 +1,6 @@
 ﻿namespace PointofSaleModels.ServicePayloads
 {
-    public abstract class ServicePayload
+    public class ServicePayload
     {
         public ServicePayload() { }
         public ServicePayload(ServicePayload payload)

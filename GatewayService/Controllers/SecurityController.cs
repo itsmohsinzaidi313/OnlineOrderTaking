@@ -16,13 +16,13 @@ namespace GatewayService.Controllers
         private readonly JwtSettings _jwt = jwtOptions.Value;
 
         [HttpPost("generate-token")]
-        public IActionResult GenerateToken()
+        public IActionResult GenerateToken([FromBody] LoginRequest request)
         {
             var bad = ValidateJwtOrBad();
             if (bad != null) return bad;
-
+            var userId = request.userId;
             // Generate a random user id in the format 4chars-4chars
-            var userId = CreateRandomUserId();
+            //var userId = CreateRandomUserId();
             var token = CreateTokenForUser(userId, "1165", "0");
             return Ok(new { token, userId });
         }
@@ -132,5 +132,6 @@ namespace GatewayService.Controllers
         }
 
         public record TokenRequest(string? Token);
+        public record LoginRequest(string username, string password, string userId);
     }
 }

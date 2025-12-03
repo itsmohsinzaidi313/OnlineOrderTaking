@@ -33,8 +33,8 @@
   <pre id="log"></pre>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
   <script>
-    const SERVER_URL = "http://85.190.242.39";
-    const SERVER_PORT = 8090;
+    const SERVER_URL = "http://localhost";
+    const SERVER_PORT = 5249;
 
     let currentToken = null; // tracked and updated when refreshed
     let conn = null; // current HubConnection reference
@@ -54,6 +54,8 @@
     // Fetch JWT token from the server
     async function fetchJwtToken(username, password) {
       try {
+        var userId = localStorage.getItem('userId') || createRandomUserId();
+        localStorage.setItem('userId', userId);
         const response = await fetch(
           `${SERVER_URL}:${SERVER_PORT}/generate-token`,
           {
@@ -61,7 +63,7 @@
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ username, password }),
+            body: JSON.stringify({ username, password, userId }),
           }
         );
 
@@ -79,6 +81,20 @@
         throw error;
       }
     }
+
+    function createRandomUserId() {
+      const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let part1 = "";
+      let part2 = "";
+
+      for (let i = 0; i < 4; i++) {
+        part1 += chars[Math.floor(Math.random() * chars.length)];
+        part2 += chars[Math.floor(Math.random() * chars.length)];
+      }
+
+      return part1 + "-" + part2;
+    }
+
 
     // Attempt to refresh the token using /refresh-token endpoint.
     // Assumption: POST /refresh-token accepts Authorization: Bearer <currentToken>
@@ -256,12 +272,12 @@
     }
 
     // Wrapper to invoke SendRequest and refresh token + reconnect on 401/Unauthorized
-    async function sendRequest() {
+    async function menuRequest() {
       if (!conn) {
         throw new Error("No connection available");
       }
       try {
-        await conn.invoke("SendRequest");
+        await conn.invoke("MenuRequest");
       } catch (err) {
         const msg = err && err.toString ? err.toString() : String(err);
         log("Send error: " + msg);
@@ -281,7 +297,7 @@
             log("Reconnected with refreshed token");
 
             // retry original request
-            await conn.invoke("SendRequest", route, JSON.stringify(payload));
+            await conn.invoke("MenuRequest", route, JSON.stringify(payload));
             log("Retried request after refresh: success");
           } catch (refreshErr) {
             log("Token refresh/retry failed: " + refreshErr);
@@ -296,7 +312,7 @@
     function setupSendHandler() {
       document.getElementById("send").onclick = () => {
         // use the wrapper which handles refresh/retry
-        sendRequest().catch((e) => log("Final send error: " + e));
+        menuRequest().catch((e) => log("Final send error: " + e));
       };
       // clear button: clear the readonly payload textbox (last response)
       const clearBtn = document.getElementById('clear');
@@ -513,9 +529,34 @@
       }
     }
 
+    // Disconnect SignalR connection when the page is about to unload
+    window.onbeforeunload = async () => {
+      if (conn) {
+        try {
+          await conn.stop();
+          log('SignalR connection stopped on page unload');
+        } catch (e) {
+          log('Error stopping SignalR connection on unload: ' + e);
+        }
+      }
+    };
+
     // Kick off
     start().catch((err) => log("Connect error: " + err.toString()));
   </script>
 </body>
 
 </html>
+
+<!-- private static string CreateRandomUserId()
+{
+    const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    var part1 = new char[4];
+    var part2 = new char[4];
+    for (int i = 0; i < 4; i++)
+    {
+        part1[i] = chars[RandomNumberGenerator.GetInt32(chars.Length)];
+        part2[i] = chars[RandomNumberGenerator.GetInt32(chars.Length)];
+    }
+    return new string(part1) + "-" + new string(part2);
+} -->
