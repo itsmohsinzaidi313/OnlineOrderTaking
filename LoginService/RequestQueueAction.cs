@@ -21,6 +21,7 @@ namespace LoginService
             if (customerPhone is null) return;
 
             var customer = await context.Customers.FirstOrDefaultAsync(c => c.PhoneId == customerPhone.PhoneId);
+            if (customer is null) return;
             var customerAddresses = await context.CustomerAddressDetails
                 .Where(ca => ca.PhoneId == customerPhone.PhoneId)
                 .ToListAsync();
