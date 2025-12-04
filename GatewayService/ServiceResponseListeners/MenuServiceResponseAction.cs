@@ -7,10 +7,9 @@ namespace GatewayService.ServiceResponseListeners
     public class MenuServiceResponseAction(Implementation implementation) : IQueueAction
     {
         public string QueueName() => RabbitMqQueues.MenuResponseQueue;
-        public async Task OnMessage(string transport)
+        public async Task OnMessage(string svcPayload)
         {
-            var payload = System.Text.Json.JsonSerializer.Deserialize<GetMenuServicePayload>(transport);
-            await implementation.ExecuteHandler(QueueName(), payload);
+            await implementation.ExecuteHandler(QueueName(), svcPayload);
         }
     }
 }

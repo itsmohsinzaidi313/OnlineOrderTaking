@@ -6,7 +6,7 @@ namespace GatewayService
 {
     public static class ServicePayloadExtensions
     {
-        public static T FillUp<T>(this T payload, HubCallerContext context) where T : ServicePayload    
+        public static T FillContext<T>(this T payload, HubCallerContext context) where T : ServicePayload    
         {
             payload.CorrelationId = Guid.NewGuid().ToString();
             payload.ConnectionId = context.ConnectionId;

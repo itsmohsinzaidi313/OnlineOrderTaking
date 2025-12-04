@@ -14,9 +14,8 @@ namespace GatewayService
         public override async Task OnConnectedAsync()
         {
             string userId = ExtractUserIdFromClaims();
-            string connectionId = Context.ConnectionId;
-            await implementation.SetUserOnlineAsync(userId, connectionId);
-            _ = implementation.SendPendingPayload(userId, connectionId);
+            await implementation.SetUserOnlineAsync(userId, Context.ConnectionId);
+            await implementation.SendPendingPayload(userId);
             await base.OnConnectedAsync();
         }
 
@@ -29,7 +28,7 @@ namespace GatewayService
 
         public async Task MenuRequest()
         {
-            var obj = new GetMenuServicePayload().FillUp(Context);
+            var obj = new GetMenuServicePayload().FillContext(Context);
 
             await QueuePayload(RabbitMqQueues.MenuRequestQueue, obj);
         }
@@ -42,7 +41,7 @@ namespace GatewayService
                 {
                     Contact = phoneNumber
                 }
-            }.FillUp(Context);
+            }.FillContext(Context);
 
             await QueuePayload(RabbitMqQueues.LoginRequestQueue, obj);
         }
@@ -52,7 +51,7 @@ namespace GatewayService
             var obj = new CreateOrderServicePayload
             {
                 Order = order
-            }.FillUp(Context);
+            }.FillContext(Context);
             await QueuePayload(RabbitMqQueues.OrderRequestQueue, obj);
         }
 
