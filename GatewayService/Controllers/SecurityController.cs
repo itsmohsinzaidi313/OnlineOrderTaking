@@ -20,9 +20,7 @@ namespace GatewayService.Controllers
         {
             var bad = ValidateJwtOrBad();
             if (bad != null) return bad;
-            var userId = request.userId;
-            // Generate a random user id in the format 4chars-4chars
-            //var userId = CreateRandomUserId();
+            var userId = request.UserId;
             var token = CreateTokenForUser(userId, "1165", "0");
             return Ok(new { token, userId });
         }
@@ -109,19 +107,6 @@ namespace GatewayService.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        private static string CreateRandomUserId()
-        {
-            const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            var part1 = new char[4];
-            var part2 = new char[4];
-            for (int i = 0; i < 4; i++)
-            {
-                part1[i] = chars[RandomNumberGenerator.GetInt32(chars.Length)];
-                part2[i] = chars[RandomNumberGenerator.GetInt32(chars.Length)];
-            }
-            return new string(part1) + "-" + new string(part2);
-        }
-
         private BadRequestObjectResult? ValidateJwtOrBad()
         {
             if (string.IsNullOrWhiteSpace(_jwt.Key) || string.IsNullOrWhiteSpace(_jwt.Issuer) || string.IsNullOrWhiteSpace(_jwt.Audience) || _jwt.ExpireMinutes <= 0)
@@ -132,6 +117,6 @@ namespace GatewayService.Controllers
         }
 
         public record TokenRequest(string? Token);
-        public record LoginRequest(string username, string password, string userId);
+        public record LoginRequest(string Username, string Password, string UserId);
     }
 }
