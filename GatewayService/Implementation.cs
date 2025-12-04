@@ -45,12 +45,6 @@ namespace GatewayService
             }
         }
 
-        private void UserConnectedLog(string userId) =>
-            logger.LogInformation("Gateway: User {UserId} is connected. Sending response.", userId);
-
-        private void UserDisconnectedLog(string userId) =>
-            logger.LogInformation("Gateway: User {UserId} is not connected. Storing response in pending queue.", userId);
-
         private bool UserOnline(string userId)
         {
             var db = redis.GetDatabase();
@@ -67,7 +61,6 @@ namespace GatewayService
 
             if (!UserOnline(userId))
             {
-                UserDisconnectedLog(userId);
                 var pendingPayload = new PendingPayload<T>
                 {
                     SignalRMethodName = method,
@@ -78,7 +71,6 @@ namespace GatewayService
             }
             else
             {
-                UserConnectedLog(userId);
                 var payload = JsonSerializer.Deserialize<T>(svcPayload)!;
                 await hub.Clients.User(userId).SendAsync(method, payload);
                 return;
@@ -94,8 +86,6 @@ namespace GatewayService
         internal async Task SetUserOnlineAsync(string userId, string connectionId)
         {
             var db = redis.GetDatabase();
-
-            // mark online (overwrite previous any)
             await db.StringSetAsync($"user:{userId}:connection", connectionId);
         }
 
