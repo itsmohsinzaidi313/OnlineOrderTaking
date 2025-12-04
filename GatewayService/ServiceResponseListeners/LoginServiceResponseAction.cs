@@ -9,7 +9,7 @@ namespace GatewayService.ServiceResponseListeners
         public string QueueName() => RabbitMqQueues.LoginResponseQueue;
         public async Task OnMessage(string svcPayload)
         {
-            await implementation.ExecuteHandler(QueueName(), svcPayload);
+            await implementation.SendToUser<LoginServicePayload>("LoginResponse", svcPayload);
         }
     }
 }
