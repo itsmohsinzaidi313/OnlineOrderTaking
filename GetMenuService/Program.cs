@@ -1,4 +1,4 @@
-﻿using GetMenuService;
+﻿using DataService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

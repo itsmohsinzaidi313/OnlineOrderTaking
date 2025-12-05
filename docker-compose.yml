@@ -142,11 +142,11 @@ services:
       timeout: 5s
       retries: 3
 
-  getmenuservice:
+  dataservice:
     build:
       context: .
-      dockerfile: ./GetMenuService/Dockerfile
-    container_name: getmenuservice
+      dockerfile: ./DataService/Dockerfile
+    container_name: dataservice
     environment:
       - ConnectionStrings__Postgres=${ROSQLCONNECTION}
       - ConnectionStrings__Redis=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false

@@ -30,9 +30,9 @@ builder.Services.AddCors(c => c.AddDefaultPolicy(p => p.AllowAnyHeader().AllowAn
 builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
-    .AddSingleton<MenuServiceResponseAction>()
-    .AddSingleton<IQueueAction>(context => context.GetRequiredService<MenuServiceResponseAction>())
-    .AddHostedService<MenuServiceResponseListener>()
+    .AddSingleton<DataServiceResponseAction>()
+    .AddSingleton<IQueueAction>(context => context.GetRequiredService<DataServiceResponseAction>())
+    .AddHostedService<DataServiceResponseListener>()
     .AddSingleton<IConnectionMultiplexer>(context =>
     {
         var configuration = ConfigurationOptions.Parse(redisSettings.ConnectionString, true);

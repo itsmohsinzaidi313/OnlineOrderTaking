@@ -19,8 +19,8 @@ namespace GatewayService
             var deserializers = new Dictionary<string, Func<string, ServicePayload?>>()
             {
                 { "LoginResponse", json => JsonSerializer.Deserialize<LoginServicePayload>(json) },
-                { "MenuResponse", json => JsonSerializer.Deserialize<GetMenuServicePayload>(json) },
-                { "OrderResponse", json => JsonSerializer.Deserialize<CreateOrderServicePayload>(json) }
+                { "DataResponse", json => JsonSerializer.Deserialize<DataServicePayload>(json) },
+                { "OrderResponse", json => JsonSerializer.Deserialize<OrderServicePayload>(json) }
             };
             while (true)
             {

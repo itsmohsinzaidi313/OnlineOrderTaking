@@ -4,15 +4,15 @@ using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 
-namespace GetMenuService
+namespace DataService
 {
     internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, IRabbitMqPublisher publisher) : IQueueAction
     {
-        public string QueueName() => RabbitMqQueues.MenuRequestQueue;
+        public string QueueName() => RabbitMqQueues.DataRequestQueue;
 
         public async Task OnMessage(string transport)
         {
-            var requestPayload = System.Text.Json.JsonSerializer.Deserialize<GetMenuServicePayload>(transport);
+            var requestPayload = System.Text.Json.JsonSerializer.Deserialize<DataServicePayload>(transport);
             object payload;
             try
             {
@@ -34,11 +34,11 @@ namespace GetMenuService
                     details = ex.ToString()
                 };
             }
-            var response = new GetMenuServicePayload(requestPayload)
+            var response = new DataServicePayload(requestPayload)
             {
-                Menu = payload
+                DataPayload = payload
             };
-            await publisher.PublishToQueueAsync(RabbitMqQueues.MenuResponseQueue, response);
+            await publisher.PublishToQueueAsync(RabbitMqQueues.DataResponseQueue, response);
         }
 
         private async IAsyncEnumerable<Category> GetMenuItemsAsync(int companyId)

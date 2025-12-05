@@ -26,11 +26,14 @@ namespace GatewayService
             await base.OnDisconnectedAsync(ex);
         }
 
-        public async Task MenuRequest()
+        public async Task DataRequest(string requestType)
         {
-            var obj = new GetMenuServicePayload().FillContext(Context);
+            var obj = new DataServicePayload
+            {
+                DataRequestType = requestType
+            }.FillContext(Context);
 
-            await QueuePayload(RabbitMqQueues.MenuRequestQueue, obj);
+            await QueuePayload(RabbitMqQueues.DataRequestQueue, obj);
         }
 
         public async Task Login(string phoneNumber)
@@ -48,7 +51,7 @@ namespace GatewayService
 
         public async Task PlaceOrder(CustomerOrder order)
         {
-            var obj = new CreateOrderServicePayload
+            var obj = new OrderServicePayload
             {
                 Order = order
             }.FillContext(Context);

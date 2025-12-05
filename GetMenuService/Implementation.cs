@@ -2,7 +2,7 @@ using Db = PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.Application;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace GetMenuService;
+namespace DataService;
 
 internal class Implementation(IServiceProvider service, Db.PgDbContext dbContext)
 {
