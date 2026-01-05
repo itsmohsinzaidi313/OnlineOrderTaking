@@ -47,7 +47,7 @@ services:
       PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME: "${PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME}"
       PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD: "${PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD}"
     volumes:
-      - patroni1_data:/var/lib/postgresql/data
+      - /home/userone/patroni_storage/patroni1:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     networks:
       - patroni-net
@@ -79,7 +79,7 @@ services:
       PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME: "${PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME}"
       PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD: "${PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD}"
     volumes:
-      - patroni2_data:/var/lib/postgresql/data
+      - /home/userone/patroni_storage/patroni2:/var/lib/postgresql/data
     networks:
       - patroni-net
     depends_on:
@@ -111,7 +111,7 @@ services:
       PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME: "${PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME}"
       PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD: "${PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD}"
     volumes:
-      - patroni3_data:/var/lib/postgresql/data
+      - /home/userone/patroni_storage/patroni3:/var/lib/postgresql/data
     networks:
       - patroni-net
     depends_on:

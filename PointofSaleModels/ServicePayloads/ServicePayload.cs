@@ -5,9 +5,9 @@
         public ServicePayload() { }
         public ServicePayload(ServicePayload payload)
         {
+            CorrelationId = payload.CorrelationId;
             ConnectionId = payload.ConnectionId;
             UserId = payload.UserId;
-            ConnectionId = payload.ConnectionId;
             RestaurantId = payload.RestaurantId;
             BranchId = payload.BranchId;
         }
