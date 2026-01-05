@@ -1,12 +1,83 @@
-using Db = PointofSaleModels.PGDatabaseModels;
-using PointofSaleModels.Application;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using PointofSaleModels.Application;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
+using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace DataService;
 
-internal class Implementation(IServiceProvider service, Db.PgDbContext dbContext)
+internal class Implementation()
 {
-    internal async IAsyncEnumerable<Category> GetMenuAsync(int companyId, int branchId = 0)
+    internal async IAsyncEnumerable<object> GetBranchesAsync(string connectionString)
+    {
+        var dbContext = getDbContext(connectionString);
+        var branches = from a in dbContext.BranchMasters
+                       join b in dbContext.BranchDetails on a.BranchId equals b.BranchId
+                       join c in dbContext.Areas on b.AreaId equals c.AreaId
+                       group c by new
+                       {
+                           a.BranchId,
+                           a.BranchName,
+                           a.BranchAddress,
+                           a.BusinessDayStartTime,
+                           a.BusinessDayEndTime,
+                           a.BranchPhoneNumber
+                       } into g
+                       select new
+                       {
+                           Id = g.Key.BranchId,
+                           Name = g.Key.BranchName ?? "N/A",
+                           Address = g.Key.BranchAddress ?? "N/A",
+                           StartTime = g.Key.BusinessDayStartTime,
+                           EndTime = g.Key.BusinessDayEndTime,
+                           Contact = g.Key.BranchPhoneNumber ?? "N/A"
+                       };
+        foreach (var branch in branches)
+        {
+            yield return branch;
+        }
+    }
+
+    internal async IAsyncEnumerable<object> GetAreasAsync(string connectionString)
+    {
+        var dbContext = getDbContext(connectionString);
+        var areas = from a in dbContext.Areas
+                    join b in dbContext.BranchDetails on a.AreaId equals b.AreaId
+                    join c in dbContext.BranchMasters on b.BranchId equals c.BranchId
+                    group c by new
+                    {
+                        a.AreaId,
+                        a.AreaName
+                    } into g
+                    select new
+                    {
+                        Id = g.Key.AreaId,
+                        Name = g.Key.AreaName ?? "N/A",
+                        Branches = g.Select(x => new
+                        {
+                            Id = x.BranchId,
+                            Name = x.BranchName ?? "N/A",
+                            Address = x.BranchAddress ?? "N/A",
+                            StartTime = x.BusinessDayStartTime,
+                            EndTime = x.BusinessDayEndTime,
+                            Contact = x.BranchPhoneNumber ?? "N/A"
+                        })
+                    };
+        foreach (var area in areas)
+        {
+            yield return area;
+        }
+    }
+
+    Db.PgDbContext getDbContext(string connectionString)
+    {
+        var options = new DbContextOptionsBuilder<Db.PgDbContext>()
+            .UseNpgsql(connectionString)
+            .Options;
+        return new Db.PgDbContext(options);
+    }
+    internal async IAsyncEnumerable<Category> GetMenuAsync(string connectionString, int branchId = 0)
     {
         var dbSizes = new List<Db.ProductSize>();
         var dbFlavours = new List<Db.Flavour>();
@@ -16,62 +87,52 @@ internal class Implementation(IServiceProvider service, Db.PgDbContext dbContext
         var dbDealDescription = new List<Db.DealDescription>();
         var dbDealDescriptionProducts = new List<Db.Product>();
         var dbDepartments = new Dictionary<int, string>();
-        var dbDiscounts = new List<Db.Discount>();
+        var dbItemDiscounts = new List<Db.Discount>();
+        var dbBranchDiscounts = new List<Db.Discount>();
 
         var tasks = new List<Task>
     {
         Task.Run(() =>
         {
-            using var scope = service.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
+            using var dbContext = getDbContext(connectionString);
             dbSizes.AddRange(from a in dbContext.ProductSizes
-                             where a.CompanyId == companyId
                              select a);
         }),
         Task.Run(() =>
         {
-            using var scope = service.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
+            using var dbContext = getDbContext(connectionString);
             dbFlavours.AddRange(from a in dbContext.Flavours
-                                where a.CompanyId == companyId
                                 select a);
         }),
         Task.Run(() =>
         {
-            using var scope = service.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
+            using var dbContext = getDbContext(connectionString);
             dbProducts.AddRange(from a in dbContext.Products
                                 join b in dbContext.ProductCategories on a.ProductCategoryId equals b.CategoryId
-                                where b.CompanyId == companyId
                                 select a);
         }),
         Task.Run(() =>
         {
-            using var scope = service.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
+            using var dbContext = getDbContext(connectionString);
             dbDealItemDetails.AddRange(from a in dbContext.DealItemDetails
                                        join c in dbContext.ProductDetails on a.ProductDetailId equals c.ProductDetailId
                                        join d in dbContext.Products on c.ProductId equals d.ProductId
                                        join e in dbContext.ProductCategories on d.ProductCategoryId equals e.CategoryId
-                                       where e.CompanyId == companyId
                                        select a);
         }),
         Task.Run(() =>
         {
-            using var scope = service.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
+            using var dbContext = getDbContext(connectionString);
             dbDealDescription.AddRange(from a in dbContext.DealDescriptions
                                        join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
                                        join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
                                        join d in dbContext.Products on c.ProductId equals d.ProductId
                                        join e in dbContext.ProductCategories on d.ProductCategoryId equals e.CategoryId
-                                       where e.CompanyId == companyId
                                        select a);
         }),
         Task.Run(() =>
         {
-            using var scope = service.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
+            using var dbContext = getDbContext(connectionString);
             dbDealDescriptionProducts.AddRange(from a in dbContext.DealDescriptions
                                                join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
                                                join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
@@ -79,13 +140,11 @@ internal class Implementation(IServiceProvider service, Db.PgDbContext dbContext
                                                join e in dbContext.ProductCategories on d.ProductCategoryId equals e.CategoryId
                                                join f in dbContext.ProductDetails on a.ProductDetailId equals f.ProductDetailId
                                                join g in dbContext.Products on f.ProductId equals g.ProductId
-                                               where e.CompanyId == companyId
                                                select g);
         }),
         Task.Run(() =>
         {
-            using var scope = service.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
+            using var dbContext = getDbContext(connectionString);
             dbDepartments = (from a in dbContext.ProductCategories
                             select new { a.CategoryId, a.DepartmentId }).ToDictionary(x => x.CategoryId, x => x.DepartmentId.ToString() ?? "N/A");
         }),
@@ -95,8 +154,7 @@ internal class Implementation(IServiceProvider service, Db.PgDbContext dbContext
             tasks.Add(
                 Task.Run(() =>
                 {
-                    using var scope = service.CreateScope();
-                    var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
+                    using var dbContext = getDbContext(connectionString);
                     dbProductDetails.AddRange(from a in dbContext.ProductDetails
                                               join b in dbContext.Products on a.ProductId equals b.ProductId
                                               join c in dbContext.ProductCategories on b.ProductCategoryId equals c.CategoryId
@@ -105,18 +163,26 @@ internal class Implementation(IServiceProvider service, Db.PgDbContext dbContext
                                               select a);
 
                 }));
+
+            tasks.Add(
+                Task.Run(() =>
+                {
+                    using var dbContext = getDbContext(connectionString);
+                    dbItemDiscounts.AddRange(from a in dbContext.Discounts
+                                             join b in dbContext.DiscountProductDetailMappings on a.DiscountId equals b.DiscountId
+                                             join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
+                                             select a);
+                }));
         }
         else
         {
             tasks.Add(
                 Task.Run(() =>
                 {
-                    using var scope = service.CreateScope();
-                    var dbContext = scope.ServiceProvider.GetRequiredService<Db.PgDbContext>();
+                    using var dbContext = getDbContext(connectionString);
                     dbProductDetails.AddRange(from a in dbContext.ProductDetails
                                               join b in dbContext.Products on a.ProductId equals b.ProductId
                                               join c in dbContext.ProductCategories on b.ProductCategoryId equals c.CategoryId
-                                              where c.CompanyId == companyId
                                               select a);
 
                 }));
@@ -124,16 +190,99 @@ internal class Implementation(IServiceProvider service, Db.PgDbContext dbContext
 
         await Task.WhenAll(tasks);
 
-        foreach (var item in GetCategories(companyId, dbSizes, dbFlavours, dbProducts, dbProductDetails, dbDepartments, dbDealItemDetails, dbDealDescription))
+        foreach (var item in GetCategories(connectionString, dbSizes, dbFlavours, dbProducts, dbProductDetails, dbDepartments, dbDealItemDetails, dbDealDescription))
         {
             yield return item;
         }
     }
 
-    private IEnumerable<Category> GetCategories(int companyId, List<Db.ProductSize> dbSizes, List<Db.Flavour> dbFlavours, List<Db.Product> dbProducts, List<Db.ProductDetail> dbProductDetails, Dictionary<int, string> dbDepartments, List<Db.DealItemDetail> dbDealItemDetails, List<Db.DealDescription> dbDealDescription)
+    //internal async IAsyncEnumerable<Discount> GetBranchDiscountsAsync(int branchId = 0)
+    //{
+    //    var dbDiscounts = new List<Db.Discount>();
+    //    dbDiscounts.AddRange(from a in dbContext.Discounts
+    //                         join b in dbContext.DiscountBranchMappings on a.DiscountId equals b.DiscountId
+    //                         group a by new
+    //                         {
+    //                             b.BranchId,
+    //                             a.DiscountId,
+    //                             a.DiscountName,
+    //                         } into g
+    //                         where g.Key.BranchId == branchId
+    //                         select g);
+
+    //    foreach (var dbDiscount in dbDiscounts)
+    //    {
+    //        var discount = new Discount
+    //        {
+    //            Id = dbDiscount.DiscountId,
+    //            Name = dbDiscount.DiscountName ?? "N/A",
+
+    //        };
+    //        yield return discount;
+    //    }
+    //}
+
+    internal JsonObject GetDataOne(string connectionString)
     {
+        using var dbContext = getDbContext(connectionString);
+        var orderModes = new JsonObject();
+        var delivery = new JsonObject();
+        var pickup = new JsonObject();
+        var cities = dbContext.Cities.ToList();
+        var areas = dbContext.Areas.ToList();
+        var branches = dbContext.BranchMasters.ToList();
+        foreach (var item in cities)
+        {
+            var areasJsonArray = new JsonArray();
+            foreach (var item1 in areas
+                .Where(x => x.CityId == item.CityId)
+                .Select(x => new JsonObject()
+                {
+                    ["AreaId"] = x.AreaId,
+                    ["AreaName"] = x.AreaName
+                }))
+            {
+                areasJsonArray.Add(item1);
+            }
+            var cityObj = new JsonObject
+            {
+                ["CityName"] = item.CityName,
+                ["Areas"] = areasJsonArray
+            };
+            delivery[item.CityId.ToString()] = cityObj;
+
+            var branchesJsonArray = new JsonArray();
+            foreach (var item2 in branches
+                .Where(x => x.CityId == item.CityId)
+                .Select(x => new JsonObject()
+                {
+                    ["BranchId"] = x.BranchId,
+                    ["BranchName"] = x.BranchName,
+                    ["BranchAddress"] = x.BranchAddress,
+                    ["BranchPhoneNumber"] = x.BranchPhoneNumber,
+                    ["BusinessStartTime"] = x.BusinessDayStartTime.ToString(),
+                    ["BusinessEndTime"] = x.BusinessDayEndTime.ToString()
+                }))
+            {
+                branchesJsonArray.Add(item2);
+            }
+
+            var cityObj2 = new JsonObject
+            {
+                ["CityName"] = item.CityName,
+                ["Branches"] = branchesJsonArray
+            };
+            pickup[item.CityId.ToString()] = cityObj2;
+        }
+        orderModes["Delivery"] = delivery;
+        orderModes["Pickup"] = pickup;
+        return orderModes;
+    }
+
+    private IEnumerable<Category> GetCategories(string connectionString, List<Db.ProductSize> dbSizes, List<Db.Flavour> dbFlavours, List<Db.Product> dbProducts, List<Db.ProductDetail> dbProductDetails, Dictionary<int, string> dbDepartments, List<Db.DealItemDetail> dbDealItemDetails, List<Db.DealDescription> dbDealDescription)
+    {
+        using var dbContext = getDbContext(connectionString);
         foreach (var dbCategory in (from x in dbContext.ProductCategories
-                                    where x.CompanyId == companyId
                                     select x).ToList())
         {
             var category = new Category
@@ -141,6 +290,7 @@ internal class Implementation(IServiceProvider service, Db.PgDbContext dbContext
                 Id = dbCategory.CategoryId.ToString(),
                 Name = dbCategory.CategoryName ?? "N/A",
                 Image = dbCategory.CategoryImage ?? "N/A",
+                Icon = dbCategory.CategoryIcon ?? "N/A",
                 Items = [],
             };
             foreach (var dbProduct in dbProducts.Where(x => x.ProductCategoryId == dbCategory.CategoryId))
@@ -152,6 +302,7 @@ internal class Implementation(IServiceProvider service, Db.PgDbContext dbContext
                     Name = dbProduct.ProductName ?? "N/A",
                     Image = dbProduct.ProductImage ?? "N/A",
                     DepartmentName = dbDepartments[dbProduct.ProductCategoryId ?? 0] ?? "N/A",
+                    Description = dbProduct.ProductDescription ?? "N/A",
                 };
                 foreach (var dbProductDetail in dbProductDetails.Where(x => x.ProductId == dbProduct.ProductId))
                 {

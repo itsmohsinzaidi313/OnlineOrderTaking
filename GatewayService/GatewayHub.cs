@@ -59,7 +59,7 @@ namespace GatewayService
             await QueuePayload(RabbitMqQueues.OrderRequestQueue, obj);
         }
 
-        private async Task QueuePayload(string queues, ServicePayload payload)
+        private async Task QueuePayload<T>(string queues, T payload)
         {
             await implementation.QueueRequestPayload(queues, payload);
             await Clients.Caller.SendAsync("Ack", new { status = "queued" });

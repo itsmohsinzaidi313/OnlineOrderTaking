@@ -95,7 +95,7 @@ namespace GatewayService
             await db.KeyDeleteAsync($"user:{userId}:connection");
         }
 
-        internal async Task QueueRequestPayload(string queues, ServicePayload payload)
+        internal async Task QueueRequestPayload<T>(string queues, T payload)
         {
             await publisher.PublishToQueueAsync(queues, payload);
         }

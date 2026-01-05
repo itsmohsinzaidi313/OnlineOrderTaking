@@ -8,7 +8,11 @@
         public const string DATA_REQUEST_TYPE_AREAS = "AREAS";
 
         public DataServicePayload() : base() { }
-        public DataServicePayload(ServicePayload payload) : base(payload) { }
+        public DataServicePayload(DataServicePayload payload) : base(payload)
+        {
+            DomainName = payload.DomainName;
+            DataRequestType = payload.DataRequestType;
+        }
         public string DomainName { get; set; }
         public string DataRequestType { get; set; } = string.Empty;
         public object? DataPayload { get; set; }

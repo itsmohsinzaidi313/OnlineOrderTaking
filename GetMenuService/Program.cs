@@ -23,7 +23,7 @@ var host = Host.CreateDefaultBuilder(args)
         ?? throw new InvalidOperationException("Redis connection string is not configured.");
 
         services
-        .AddDbContext<PgDbContext>(
+        .AddDbContext<RestaurantsContext>(
             options => options.UseNpgsql(
                 dbConnectionString,
                     npgsqlOptions =>

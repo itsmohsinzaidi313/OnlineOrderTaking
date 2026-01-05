@@ -1,27 +1,40 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using PointofSaleModels.Application;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
+using System.Text.Json.Nodes;
+using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace DataService
 {
-    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, IRabbitMqPublisher publisher) : IQueueAction
+    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, IRabbitMqPublisher publisher, Db.RestaurantsContext context) : IQueueAction
     {
         public string QueueName() => RabbitMqQueues.DataRequestQueue;
 
         public async Task OnMessage(string transport)
         {
             var requestPayload = System.Text.Json.JsonSerializer.Deserialize<DataServicePayload>(transport);
-            object payload;
+            object payload = null;
             try
             {
-                var menuItems = new List<Category>();
-                await foreach (var item in GetMenuItemsAsync(requestPayload.RestaurantId))
+                var connectionString = await GetConnectionString(requestPayload.DomainName);
+                if (requestPayload.DataRequestType == "DeliveryAndPickup")
                 {
-                    menuItems.Add(item);
+                    payload = GetDeliveryAndPickupItemsAsync(connectionString);
                 }
-                payload = menuItems;
+                else if (requestPayload.DataRequestType == "Menu")
+                {
+                    var menuItems = new List<Category>();
+                    await foreach (var item in GetMenuItemsAsync(connectionString))
+                    {
+                        menuItems.Add(item);
+                    }
+                    payload = menuItems;
+                }
             }
             catch (Exception ex)
             {
@@ -41,14 +54,31 @@ namespace DataService
             await publisher.PublishToQueueAsync(RabbitMqQueues.DataResponseQueue, response);
         }
 
-        private async IAsyncEnumerable<Category> GetMenuItemsAsync(int companyId)
+        private async Task<string> GetConnectionString(string domainName)
+        {
+            var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
+            return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
+        }
+
+        private JsonObject GetDeliveryAndPickupItemsAsync(string connectionString)
+        {
+            logger.LogInformation("🚚 Fetching delivery and pickup items from database...");
+            return impl.GetDataOne(connectionString: connectionString);
+        }
+
+        private async IAsyncEnumerable<Category> GetMenuItemsAsync(string connectionString)
         {
             logger.LogInformation("📂 Fetching menu items from database...");
 
-            await foreach (var element in impl.GetMenuAsync(companyId: companyId))
+            await foreach (var element in impl.GetMenuAsync(connectionString: connectionString))
             {
                 yield return element;
             }
         }
+    }
+
+    enum RequestType
+    {
+        Menu, DeliveryAndPickup
     }
 }
