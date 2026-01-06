@@ -10,10 +10,12 @@
             UserId = payload.UserId;
             RestaurantId = payload.RestaurantId;
             BranchId = payload.BranchId;
+            ResponseKey = payload.ResponseKey;
         }
         public string CorrelationId { get; set; } = string.Empty;
         public string ConnectionId { get; set; } = string.Empty;
         public string UserId { get; set; } = string.Empty;
+        public string ResponseKey { get; set; }
         public int RestaurantId { get; set; }
         public int BranchId { get; set; }
 

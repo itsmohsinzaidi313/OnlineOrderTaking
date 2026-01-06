@@ -9,7 +9,7 @@ namespace GatewayService.ServiceResponseListeners
         public string QueueName() => RabbitMqQueues.DataResponseQueue;
         public async Task OnMessage(string svcPayload)
         {
-            await implementation.SendToUser<DataServicePayload>("DataResponse", svcPayload);
+            await implementation.SendToUser<DataServicePayload>(svcPayload);
         }
     }
 }

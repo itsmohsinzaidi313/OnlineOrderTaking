@@ -26,12 +26,13 @@ namespace GatewayService
             await base.OnDisconnectedAsync(ex);
         }
 
-        public async Task DataRequest(string domainName, string requestType)
+        public async Task DataRequest(string domainName, string requestType, string responseKey)
         {
             var obj = new DataServicePayload
             {
                 DomainName = domainName,
-                DataRequestType = requestType
+                DataRequestType = requestType,
+                ResponseKey = responseKey
             }.FillContext(Context);
 
             await QueuePayload(RabbitMqQueues.DataRequestQueue, obj);

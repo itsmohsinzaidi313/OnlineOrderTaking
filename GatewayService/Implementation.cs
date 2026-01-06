@@ -52,18 +52,20 @@ namespace GatewayService
             return connectionId != null;
         }
 
-        public async Task SendToUser<T>(string method, string svcPayload) where T : ServicePayload
+        public async Task SendToUser<T>(string svcPayload) where T : ServicePayload
         {
-            logger.LogInformation("Gateway: Received {method} message", method);
             using var doc = JsonDocument.Parse(svcPayload);
             var root = doc.RootElement;
             var userId = root.GetProperty("UserId").GetString() ?? throw new Exception("UserId not found");
+            var responseKey = root.GetProperty("ResponseKey").GetString() ?? throw new Exception("ResponseKey not found");
+
+            logger.LogInformation("Gateway: Received {method} message", responseKey);
 
             if (!UserOnline(userId))
             {
                 var pendingPayload = new PendingPayload<T>
                 {
-                    SignalRMethodName = method,
+                    SignalRMethodName = responseKey,
                     Payload = JsonSerializer.Deserialize<T>(svcPayload)!
                 };
                 var pendingPayloadJson = JsonSerializer.Serialize(pendingPayload);
@@ -72,7 +74,7 @@ namespace GatewayService
             else
             {
                 var payload = JsonSerializer.Deserialize<T>(svcPayload)!;
-                await hub.Clients.User(userId).SendAsync(method, payload);
+                await hub.Clients.User(userId).SendAsync(responseKey, payload);
                 return;
             }
         }
