@@ -26,12 +26,13 @@ namespace GatewayService
             await base.OnDisconnectedAsync(ex);
         }
 
-        public async Task DataRequest(string domainName, string requestType, string responseKey)
+        public async Task DataRequest(string domainName, string requestType, int branchId, string responseKey)
         {
             var obj = new DataServicePayload
             {
                 DomainName = domainName,
                 DataRequestType = requestType,
+                BranchId = branchId,
                 ResponseKey = responseKey
             }.FillContext(Context);
 

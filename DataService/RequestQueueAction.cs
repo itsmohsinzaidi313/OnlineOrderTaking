@@ -29,7 +29,7 @@ namespace DataService
                 else if (requestPayload.DataRequestType == "Menu")
                 {
                     var menuItems = new List<Category>();
-                    await foreach (var item in GetMenuItemsAsync(connectionString))
+                    await foreach (var item in GetMenuItemsAsync(connectionString, requestPayload.BranchId))
                     {
                         menuItems.Add(item);
                     }
@@ -66,11 +66,11 @@ namespace DataService
             return impl.GetDataOne(connectionString: connectionString);
         }
 
-        private async IAsyncEnumerable<Category> GetMenuItemsAsync(string connectionString)
+        private async IAsyncEnumerable<Category> GetMenuItemsAsync(string connectionString, int branchId)
         {
             logger.LogInformation("📂 Fetching menu items from database...");
 
-            await foreach (var element in impl.GetMenuAsync(connectionString: connectionString))
+            await foreach (var element in impl.GetMenuAsync(connectionString: connectionString, branchId: branchId))
             {
                 yield return element;
             }

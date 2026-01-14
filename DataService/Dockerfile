@@ -17,7 +17,7 @@ COPY DataService/ DataService/
 COPY PointofSaleModels/ PointofSaleModels/
 
 # Publish the service
-RUN dotnet publish DataService/DataService.csproj -c Release -o /app/out
+RUN dotnet publish DataService/DataService.csproj -c Release -o /app/out -v minimal
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
