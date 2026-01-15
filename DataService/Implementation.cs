@@ -88,7 +88,7 @@ internal class Implementation()
         var dbDealDescriptionProducts = new List<Db.Product>();
         var dbDepartments = new Dictionary<int, string>();
         var dbItemDiscounts = new List<Db.Discount>();
-        var dbBranchDiscounts = new List<Db.Discount>();
+        var dbItemDiscountsMapping = new List<Db.DiscountProductDetailMapping>();
 
         var tasks = new List<Task>
         {
@@ -181,17 +181,17 @@ internal class Implementation()
             Task.Run(() =>
             {
                 using var dbContext = getDbContext(connectionString);
-                dbBranchDiscounts.AddRange(from a in dbContext.BranchMasters
-                                           join b in dbContext.DiscountBranchMappings on a.BranchId equals b.BranchId
-                                           join c in dbContext.Discounts on b.DiscountId equals c.DiscountId
-                                           where a.BranchId == branchId
-                                           select c);
+                dbItemDiscountsMapping.AddRange(from a in dbContext.DiscountProductDetailMappings
+                                                join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
+                                                join c in dbContext.ProductDetailBranchMappings on b.ProductDetailId equals c.ProductDetailId
+                                                where c.BranchId == branchId
+                                                select a);
             })
         };
 
         await Task.WhenAll(tasks);
 
-        foreach (var item in GetCategories(connectionString, dbSizes, dbFlavours, dbProducts, dbProductDetails, dbDepartments, dbDealItemDetails, dbDealDescription))
+        foreach (var item in GetCategories(connectionString, dbSizes, dbFlavours, dbProducts, dbProductDetails, dbDepartments, dbDealItemDetails, dbDealDescription, dbItemDiscounts, dbItemDiscountsMapping))
         {
             yield return item;
         }
@@ -271,7 +271,7 @@ internal class Implementation()
         return orderModes;
     }
 
-    private IEnumerable<Category> GetCategories(string connectionString, List<Db.ProductSize> dbSizes, List<Db.Flavour> dbFlavours, List<Db.Product> dbProducts, List<Db.ProductDetail> dbProductDetails, Dictionary<int, string> dbDepartments, List<Db.DealItemDetail> dbDealItemDetails, List<Db.DealDescription> dbDealDescription)
+    private IEnumerable<Category> GetCategories(string connectionString, List<Db.ProductSize> dbSizes, List<Db.Flavour> dbFlavours, List<Db.Product> dbProducts, List<Db.ProductDetail> dbProductDetails, Dictionary<int, string> dbDepartments, List<Db.DealItemDetail> dbDealItemDetails, List<Db.DealDescription> dbDealDescription, List<Db.Discount> itemDiscounts, List<Db.DiscountProductDetailMapping> discountMappings)
     {
         using var dbContext = getDbContext(connectionString);
         foreach (var dbCategory in (from x in dbContext.ProductCategories
@@ -298,6 +298,28 @@ internal class Implementation()
                 };
                 foreach (var dbProductDetail in dbProductDetails.Where(x => x.ProductId == dbProduct.ProductId))
                 {
+                    var itemDiscount = itemDiscounts.Join(
+                                        discountMappings,
+                                        a => a.DiscountId,
+                                        b => b.DiscountId,
+                                        (a, b) => new { Discount = a, DiscountMapping = b })
+                                    .Where(x => x.DiscountMapping.ProductDetailId == dbProductDetail.ProductDetailId)
+                                    .Select(x => x.Discount)
+                                    .FirstOrDefault();
+
+                    if (itemDiscount != null)
+                    {
+                        item.Discount = new Discount
+                        {
+                            Id = itemDiscount.DiscountId,
+                            Name = itemDiscount.DiscountName ?? string.Empty,
+                            MaxCap = decimal.ToDouble(itemDiscount.DiscountCapEnd),
+                            MinCap = decimal.ToDouble(itemDiscount.DiscountCapStart),
+                            Type = itemDiscount.IsPercentage ? PointofSaleModels.Application.ValueType.Percentage : PointofSaleModels.Application.ValueType.Amount,
+                            Value = itemDiscount.DiscountPercent
+                        };
+                    }
+
                     var variation = new ItemVariation
                     {
                         Id = dbProductDetail.ProductDetailId,
