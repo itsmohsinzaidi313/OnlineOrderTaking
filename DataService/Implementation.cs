@@ -113,52 +113,52 @@ internal class Implementation()
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbSizes.AddRange(from a in dbContext.ProductSizes
-                                 select a);
+                dbSizes.AddRange([.. from a in dbContext.ProductSizes
+                                 select a]);
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbFlavours.AddRange(from a in dbContext.Flavours
-                                    select a);
+                dbFlavours.AddRange([.. from a in dbContext.Flavours
+                                    select a]);
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbProducts.AddRange(from a in dbContext.Products
+                dbProducts.AddRange([.. from a in dbContext.Products
                                     join b in dbContext.ProductCategories on a.ProductCategoryId equals b.CategoryId
                                     join c in dbContext.ProductDetails on a.ProductId equals c.ProductId
                                     join d in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals d.ProductDetailId
                                     where d.BranchId == bid
-                                    select a);
+                                    select a]);
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbDealItemDetails.AddRange(from a in dbContext.DealItemDetails
+                dbDealItemDetails.AddRange([.. from a in dbContext.DealItemDetails
                                            join c in dbContext.ProductDetails on a.ProductDetailId equals c.ProductDetailId
                                            join d in dbContext.Products on c.ProductId equals d.ProductId
                                            join e in dbContext.ProductCategories on d.ProductCategoryId equals e.CategoryId
                                            join f in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals f.ProductDetailId
                                            where f.BranchId == bid
-                                           select a);
+                                           select a]);
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbDealDescription.AddRange(from a in dbContext.DealDescriptions
+                dbDealDescription.AddRange([.. from a in dbContext.DealDescriptions
                                            join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
                                            join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
                                            join d in dbContext.Products on c.ProductId equals d.ProductId
                                            join e in dbContext.ProductCategories on d.ProductCategoryId equals e.CategoryId
                                            join f in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals f.ProductDetailId
                                            where f.BranchId == bid
-                                           select a);
+                                           select a]);
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbDealDescriptionProducts.AddRange(from a in dbContext.DealDescriptions
+                dbDealDescriptionProducts.AddRange([.. from a in dbContext.DealDescriptions
                                                    join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
                                                    join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
                                                    join d in dbContext.Products on c.ProductId equals d.ProductId
@@ -167,7 +167,7 @@ internal class Implementation()
                                                    join g in dbContext.Products on f.ProductId equals g.ProductId
                                                    join h in dbContext.ProductDetailBranchMappings on b.ProductDetailId equals h.ProductDetailId
                                                    where h.BranchId == bid
-                                                   select g);
+                                                   select g]);
             }),
             Task.Run(() =>
             {
@@ -178,32 +178,32 @@ internal class Implementation()
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbProductDetails.AddRange(from a in dbContext.ProductDetails
+                dbProductDetails.AddRange([.. from a in dbContext.ProductDetails
                                             join b in dbContext.Products on a.ProductId equals b.ProductId
                                             join c in dbContext.ProductCategories on b.ProductCategoryId equals c.CategoryId
                                             join d in dbContext.ProductDetailBranchMappings on a.ProductDetailId equals d.ProductDetailId
                                             where d.BranchId == bid
-                                            select a);
+                                            select a]);
 
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbItemDiscounts.AddRange(from a in dbContext.Discounts
+                dbItemDiscounts.AddRange([.. from a in dbContext.Discounts
                                             join b in dbContext.DiscountProductDetailMappings on a.DiscountId equals b.DiscountId
                                             join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
                                             join d in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals d.ProductDetailId
                                             where d.BranchId == bid
-                                            select a);
+                                            select a]);
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbItemDiscountsMapping.AddRange(from a in dbContext.DiscountProductDetailMappings
+                dbItemDiscountsMapping.AddRange([.. from a in dbContext.DiscountProductDetailMappings
                                                 join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
                                                 join c in dbContext.ProductDetailBranchMappings on b.ProductDetailId equals c.ProductDetailId
                                                 where c.BranchId == bid
-                                                select a);
+                                                select a]);
             })
         };
 
