@@ -62,7 +62,10 @@ internal class Implementation()
                     ["BranchAddress"] = x.BranchAddress,
                     ["BranchPhoneNumber"] = x.BranchPhoneNumber,
                     ["BusinessStartTime"] = x.BusinessDayStartTime.ToString(),
-                    ["BusinessEndTime"] = x.BusinessDayEndTime.ToString()
+                    ["BusinessEndTime"] = x.BusinessDayEndTime.ToString(),
+                    ["IsBranchOpen"] = x.BusinessDayStartTime.HasValue && x.BusinessDayEndTime.HasValue
+    ? DateTime.UtcNow.TimeOfDay >= x.BusinessDayStartTime.Value.ToTimeSpan() && DateTime.UtcNow.TimeOfDay <= x.BusinessDayEndTime.Value.ToTimeSpan()
+    : false
                 }))
             {
                 var branchId = item2["BranchId"]?.GetValue<int>();
