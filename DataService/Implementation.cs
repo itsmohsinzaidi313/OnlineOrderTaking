@@ -21,8 +21,8 @@ internal class Implementation()
         var orderModes = new JsonObject();
         var delivery = new JsonObject();
         var pickup = new JsonObject();
-        var cities = dbContext.Cities.Join(dbContext.Areas, a => a.CityId, b => b.CityId, (a, b) => a).ToList();
-        var areas = dbContext.Areas.Join(dbContext.BranchDetails, a => a.AreaId, b => b.AreaId, (a, b) => a).ToList();
+        var cities = (from x in dbContext.Cities join y in dbContext.Areas on x.CityId equals y.CityId select x).DistinctBy(x => x.CityName).ToList();
+        var areas = (from x in dbContext.Areas join y in dbContext.BranchDetails on x.AreaId equals y.AreaId select x).ToList();
         var branches = dbContext.BranchMasters.ToList();
         var branchDetails = dbContext.BranchDetails.ToList();
         foreach (var item in cities)
@@ -92,7 +92,7 @@ internal class Implementation()
     internal async IAsyncEnumerable<Category> GetMenuAsync(string connectionString, int bid)
     {
         var branchId = 0;
-        if(bid == 0)
+        if (bid == 0)
         {
             using var dbContext = GetDbContext(connectionString);
             branchId = dbContext.BranchMasters.First(x => x.IsActive ?? false).BranchId;
