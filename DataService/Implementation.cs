@@ -1,205 +1,23 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using PointofSaleModels.Application;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace DataService;
 
 internal class Implementation()
 {
-    internal async IAsyncEnumerable<object> GetBranchesAsync(string connectionString)
-    {
-        var dbContext = getDbContext(connectionString);
-        var branches = from a in dbContext.BranchMasters
-                       join b in dbContext.BranchDetails on a.BranchId equals b.BranchId
-                       join c in dbContext.Areas on b.AreaId equals c.AreaId
-                       group c by new
-                       {
-                           a.BranchId,
-                           a.BranchName,
-                           a.BranchAddress,
-                           a.BusinessDayStartTime,
-                           a.BusinessDayEndTime,
-                           a.BranchPhoneNumber
-                       } into g
-                       select new
-                       {
-                           Id = g.Key.BranchId,
-                           Name = g.Key.BranchName ?? "N/A",
-                           Address = g.Key.BranchAddress ?? "N/A",
-                           StartTime = g.Key.BusinessDayStartTime,
-                           EndTime = g.Key.BusinessDayEndTime,
-                           Contact = g.Key.BranchPhoneNumber ?? "N/A"
-                       };
-        foreach (var branch in branches)
-        {
-            yield return branch;
-        }
-    }
-
-    internal async IAsyncEnumerable<object> GetAreasAsync(string connectionString)
-    {
-        var dbContext = getDbContext(connectionString);
-        var areas = from a in dbContext.Areas
-                    join b in dbContext.BranchDetails on a.AreaId equals b.AreaId
-                    join c in dbContext.BranchMasters on b.BranchId equals c.BranchId
-                    group c by new
-                    {
-                        a.AreaId,
-                        a.AreaName
-                    } into g
-                    select new
-                    {
-                        Id = g.Key.AreaId,
-                        Name = g.Key.AreaName ?? "N/A",
-                        Branches = g.Select(x => new
-                        {
-                            Id = x.BranchId,
-                            Name = x.BranchName ?? "N/A",
-                            Address = x.BranchAddress ?? "N/A",
-                            StartTime = x.BusinessDayStartTime,
-                            EndTime = x.BusinessDayEndTime,
-                            Contact = x.BranchPhoneNumber ?? "N/A"
-                        })
-                    };
-        foreach (var area in areas)
-        {
-            yield return area;
-        }
-    }
-
-    Db.PgDbContext getDbContext(string connectionString)
+    private static Db.PgDbContext GetDbContext(string connectionString)
     {
         var options = new DbContextOptionsBuilder<Db.PgDbContext>()
             .UseNpgsql(connectionString)
             .Options;
         return new Db.PgDbContext(options);
     }
-    internal async IAsyncEnumerable<Category> GetMenuAsync(string connectionString, int branchId)
-    {
-        var dbSizes = new List<Db.ProductSize>();
-        var dbFlavours = new List<Db.Flavour>();
-        var dbProducts = new List<Db.Product>();
-        var dbProductDetails = new List<Db.ProductDetail>();
-        var dbDealItemDetails = new List<Db.DealItemDetail>();
-        var dbDealDescription = new List<Db.DealDescription>();
-        var dbDealDescriptionProducts = new List<Db.Product>();
-        var dbDepartments = new Dictionary<int, string>();
-        var dbItemDiscounts = new List<Db.Discount>();
-        var dbItemDiscountsMapping = new List<Db.DiscountProductDetailMapping>();
-
-        var tasks = new List<Task>
-        {
-            Task.Run(() =>
-            {
-                using var dbContext = getDbContext(connectionString);
-                dbSizes.AddRange(from a in dbContext.ProductSizes
-                                 select a);
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = getDbContext(connectionString);
-                dbFlavours.AddRange(from a in dbContext.Flavours
-                                    select a);
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = getDbContext(connectionString);
-                dbProducts.AddRange(from a in dbContext.Products
-                                    join b in dbContext.ProductCategories on a.ProductCategoryId equals b.CategoryId
-                                    join c in dbContext.ProductDetails on a.ProductId equals c.ProductId
-                                    join d in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals d.ProductDetailId
-                                    where d.BranchId == branchId
-                                    select a);
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = getDbContext(connectionString);
-                dbDealItemDetails.AddRange(from a in dbContext.DealItemDetails
-                                           join c in dbContext.ProductDetails on a.ProductDetailId equals c.ProductDetailId
-                                           join d in dbContext.Products on c.ProductId equals d.ProductId
-                                           join e in dbContext.ProductCategories on d.ProductCategoryId equals e.CategoryId
-                                           join f in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals f.ProductDetailId
-                                           where f.BranchId == branchId
-                                           select a);
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = getDbContext(connectionString);
-                dbDealDescription.AddRange(from a in dbContext.DealDescriptions
-                                           join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
-                                           join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
-                                           join d in dbContext.Products on c.ProductId equals d.ProductId
-                                           join e in dbContext.ProductCategories on d.ProductCategoryId equals e.CategoryId
-                                           join f in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals f.ProductDetailId
-                                           where f.BranchId == branchId
-                                           select a);
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = getDbContext(connectionString);
-                dbDealDescriptionProducts.AddRange(from a in dbContext.DealDescriptions
-                                                   join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
-                                                   join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
-                                                   join d in dbContext.Products on c.ProductId equals d.ProductId
-                                                   join e in dbContext.ProductCategories on d.ProductCategoryId equals e.CategoryId
-                                                   join f in dbContext.ProductDetails on a.ProductDetailId equals f.ProductDetailId
-                                                   join g in dbContext.Products on f.ProductId equals g.ProductId
-                                                   join h in dbContext.ProductDetailBranchMappings on b.ProductDetailId equals h.ProductDetailId
-                                                   where h.BranchId == branchId
-                                                   select g);
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = getDbContext(connectionString);
-                dbDepartments = (from a in dbContext.ProductCategories
-                                select new { a.CategoryId, a.DepartmentId }).ToDictionary(x => x.CategoryId, x => x.DepartmentId.ToString() ?? "N/A");
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = getDbContext(connectionString);
-                dbProductDetails.AddRange(from a in dbContext.ProductDetails
-                                            join b in dbContext.Products on a.ProductId equals b.ProductId
-                                            join c in dbContext.ProductCategories on b.ProductCategoryId equals c.CategoryId
-                                            join d in dbContext.ProductDetailBranchMappings on a.ProductDetailId equals d.ProductDetailId
-                                            where d.BranchId == branchId
-                                            select a);
-
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = getDbContext(connectionString);
-                dbItemDiscounts.AddRange(from a in dbContext.Discounts
-                                            join b in dbContext.DiscountProductDetailMappings on a.DiscountId equals b.DiscountId
-                                            join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
-                                            join d in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals d.ProductDetailId
-                                            where d.BranchId == branchId
-                                            select a);
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = getDbContext(connectionString);
-                dbItemDiscountsMapping.AddRange(from a in dbContext.DiscountProductDetailMappings
-                                                join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
-                                                join c in dbContext.ProductDetailBranchMappings on b.ProductDetailId equals c.ProductDetailId
-                                                where c.BranchId == branchId
-                                                select a);
-            })
-        };
-
-        await Task.WhenAll(tasks);
-
-        foreach (var item in GetCategories(connectionString, dbSizes, dbFlavours, dbProducts, dbProductDetails, dbDepartments, dbDealItemDetails, dbDealDescription, dbItemDiscounts, dbItemDiscountsMapping))
-        {
-            yield return item;
-        }
-    }
 
     internal JsonObject GetDataOne(string connectionString)
     {
-        using var dbContext = getDbContext(connectionString);
+        using var dbContext = GetDbContext(connectionString);
         var orderModes = new JsonObject();
         var delivery = new JsonObject();
         var pickup = new JsonObject();
@@ -271,9 +89,129 @@ internal class Implementation()
         return orderModes;
     }
 
-    private IEnumerable<Category> GetCategories(string connectionString, List<Db.ProductSize> dbSizes, List<Db.Flavour> dbFlavours, List<Db.Product> dbProducts, List<Db.ProductDetail> dbProductDetails, Dictionary<int, string> dbDepartments, List<Db.DealItemDetail> dbDealItemDetails, List<Db.DealDescription> dbDealDescription, List<Db.Discount> itemDiscounts, List<Db.DiscountProductDetailMapping> discountMappings)
+    internal async IAsyncEnumerable<Category> GetMenuAsync(string connectionString, int branchId)
     {
-        using var dbContext = getDbContext(connectionString);
+        var dbSizes = new List<Db.ProductSize>();
+        var dbFlavours = new List<Db.Flavour>();
+        var dbProducts = new List<Db.Product>();
+        var dbProductDetails = new List<Db.ProductDetail>();
+        var dbDealItemDetails = new List<Db.DealItemDetail>();
+        var dbDealDescription = new List<Db.DealDescription>();
+        var dbDealDescriptionProducts = new List<Db.Product>();
+        var dbDepartments = new Dictionary<int, string>();
+        var dbItemDiscounts = new List<Db.Discount>();
+        var dbItemDiscountsMapping = new List<Db.DiscountProductDetailMapping>();
+
+        var tasks = new List<Task>
+        {
+            Task.Run(() =>
+            {
+                using var dbContext = GetDbContext(connectionString);
+                dbSizes.AddRange(from a in dbContext.ProductSizes
+                                 select a);
+            }),
+            Task.Run(() =>
+            {
+                using var dbContext = GetDbContext(connectionString);
+                dbFlavours.AddRange(from a in dbContext.Flavours
+                                    select a);
+            }),
+            Task.Run(() =>
+            {
+                using var dbContext = GetDbContext(connectionString);
+                dbProducts.AddRange(from a in dbContext.Products
+                                    join b in dbContext.ProductCategories on a.ProductCategoryId equals b.CategoryId
+                                    join c in dbContext.ProductDetails on a.ProductId equals c.ProductId
+                                    join d in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals d.ProductDetailId
+                                    where d.BranchId == branchId
+                                    select a);
+            }),
+            Task.Run(() =>
+            {
+                using var dbContext = GetDbContext(connectionString);
+                dbDealItemDetails.AddRange(from a in dbContext.DealItemDetails
+                                           join c in dbContext.ProductDetails on a.ProductDetailId equals c.ProductDetailId
+                                           join d in dbContext.Products on c.ProductId equals d.ProductId
+                                           join e in dbContext.ProductCategories on d.ProductCategoryId equals e.CategoryId
+                                           join f in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals f.ProductDetailId
+                                           where f.BranchId == branchId
+                                           select a);
+            }),
+            Task.Run(() =>
+            {
+                using var dbContext = GetDbContext(connectionString);
+                dbDealDescription.AddRange(from a in dbContext.DealDescriptions
+                                           join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
+                                           join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
+                                           join d in dbContext.Products on c.ProductId equals d.ProductId
+                                           join e in dbContext.ProductCategories on d.ProductCategoryId equals e.CategoryId
+                                           join f in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals f.ProductDetailId
+                                           where f.BranchId == branchId
+                                           select a);
+            }),
+            Task.Run(() =>
+            {
+                using var dbContext = GetDbContext(connectionString);
+                dbDealDescriptionProducts.AddRange(from a in dbContext.DealDescriptions
+                                                   join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
+                                                   join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
+                                                   join d in dbContext.Products on c.ProductId equals d.ProductId
+                                                   join e in dbContext.ProductCategories on d.ProductCategoryId equals e.CategoryId
+                                                   join f in dbContext.ProductDetails on a.ProductDetailId equals f.ProductDetailId
+                                                   join g in dbContext.Products on f.ProductId equals g.ProductId
+                                                   join h in dbContext.ProductDetailBranchMappings on b.ProductDetailId equals h.ProductDetailId
+                                                   where h.BranchId == branchId
+                                                   select g);
+            }),
+            Task.Run(() =>
+            {
+                using var dbContext = GetDbContext(connectionString);
+                dbDepartments = (from a in dbContext.ProductCategories
+                                select new { a.CategoryId, a.DepartmentId }).ToDictionary(x => x.CategoryId, x => x.DepartmentId.ToString() ?? "N/A");
+            }),
+            Task.Run(() =>
+            {
+                using var dbContext = GetDbContext(connectionString);
+                dbProductDetails.AddRange(from a in dbContext.ProductDetails
+                                            join b in dbContext.Products on a.ProductId equals b.ProductId
+                                            join c in dbContext.ProductCategories on b.ProductCategoryId equals c.CategoryId
+                                            join d in dbContext.ProductDetailBranchMappings on a.ProductDetailId equals d.ProductDetailId
+                                            where d.BranchId == branchId
+                                            select a);
+
+            }),
+            Task.Run(() =>
+            {
+                using var dbContext = GetDbContext(connectionString);
+                dbItemDiscounts.AddRange(from a in dbContext.Discounts
+                                            join b in dbContext.DiscountProductDetailMappings on a.DiscountId equals b.DiscountId
+                                            join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
+                                            join d in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals d.ProductDetailId
+                                            where d.BranchId == branchId
+                                            select a);
+            }),
+            Task.Run(() =>
+            {
+                using var dbContext = GetDbContext(connectionString);
+                dbItemDiscountsMapping.AddRange(from a in dbContext.DiscountProductDetailMappings
+                                                join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
+                                                join c in dbContext.ProductDetailBranchMappings on b.ProductDetailId equals c.ProductDetailId
+                                                where c.BranchId == branchId
+                                                select a);
+            })
+        };
+
+        await Task.WhenAll(tasks);
+        var package = new DbMenuData(dbSizes, dbFlavours, dbProducts, dbProductDetails, dbDepartments, dbDealItemDetails, dbDealDescription, dbItemDiscounts, dbItemDiscountsMapping);
+        foreach (var item in GetCategories(connectionString, package))
+        {
+            yield return item;
+        }
+    }
+
+    private static IEnumerable<Category> GetCategories(string connectionString, DbMenuData dbMenuData)
+    {
+        using var dbContext = GetDbContext(connectionString);
         foreach (var dbCategory in (from x in dbContext.ProductCategories
                                     select x).ToList())
         {
@@ -285,7 +223,7 @@ internal class Implementation()
                 Icon = dbCategory.CategoryIcon ?? "N/A",
                 Items = [],
             };
-            foreach (var dbProduct in dbProducts.Where(x => x.ProductCategoryId == dbCategory.CategoryId))
+            foreach (var dbProduct in dbMenuData.Products.Where(x => x.ProductCategoryId == dbCategory.CategoryId))
             {
                 var item = new MenuItem
                 {
@@ -293,13 +231,13 @@ internal class Implementation()
                     CategoryId = dbProduct.ProductCategoryId.ToString() ?? "0",
                     Name = dbProduct.ProductName ?? "N/A",
                     Image = dbProduct.ProductImage ?? "N/A",
-                    DepartmentName = dbDepartments[dbProduct.ProductCategoryId ?? 0] ?? "N/A",
+                    DepartmentName = dbMenuData.Departments[dbProduct.ProductCategoryId ?? 0] ?? "N/A",
                     Description = dbProduct.ProductDescription ?? "N/A",
                 };
-                foreach (var dbProductDetail in dbProductDetails.Where(x => x.ProductId == dbProduct.ProductId))
+                foreach (var dbProductDetail in dbMenuData.ProductDetails.Where(x => x.ProductId == dbProduct.ProductId))
                 {
-                    var itemDiscount = itemDiscounts.Join(
-                                        discountMappings,
+                    var itemDiscount = dbMenuData.ItemDiscounts.Join(
+                                        dbMenuData.DiscountMappings,
                                         a => a.DiscountId,
                                         b => b.DiscountId,
                                         (a, b) => new { Discount = a, DiscountMapping = b })
@@ -323,14 +261,14 @@ internal class Implementation()
                     var variation = new ItemVariation
                     {
                         Id = dbProductDetail.ProductDetailId,
-                        Size = (from x in dbSizes
+                        Size = (from x in dbMenuData.ProductSizes
                                 where x.SizeId == dbProductDetail.SizeId
                                 select new ItemSize
                                 {
                                     Id = x.SizeId,
                                     Name = x.SizeName ?? "N/A",
                                 }).First(),
-                        Flavour = (from x in dbFlavours
+                        Flavour = (from x in dbMenuData.Flavours
                                    where x.FlavourId == dbProductDetail.FlavourId
                                    select new ItemFlavour
                                    {
@@ -339,7 +277,7 @@ internal class Implementation()
                                    }).First(),
                         Price = dbProductDetail.Price,
                     };
-                    foreach (var dbDealItem in dbDealItemDetails.Where(x => x.ProductDetailId == dbProductDetail.ProductDetailId))
+                    foreach (var dbDealItem in dbMenuData.DealItemDetails.Where(x => x.ProductDetailId == dbProductDetail.ProductDetailId))
                     {
                         var itemChoice = new ItemChoice
                         {
@@ -348,10 +286,10 @@ internal class Implementation()
                             Quantity = dbDealItem.Quantity ?? 0,
                             MaxChoice = dbDealItem.MaxQuantity ?? 0,
                         };
-                        foreach (var dbDescription in dbDealDescription.Where(x => x.DealItemId == dbDealItem.DealItemId))
+                        foreach (var dbDescription in dbMenuData.DealDescriptions.Where(x => x.DealItemId == dbDealItem.DealItemId))
                         {
-                            var list = (from x in dbProductDetails
-                                        join y in dbProducts on x.ProductId equals y.ProductId
+                            var list = (from x in dbMenuData.ProductDetails
+                                        join y in dbMenuData.Products on x.ProductId equals y.ProductId
                                         where x.ProductDetailId == dbDescription.ProductDetailId
                                         select y).ToList();
                             var itemOption = new ItemOption
@@ -375,4 +313,6 @@ internal class Implementation()
             yield return category;
         }
     }
+
+    private record DbMenuData(List<Db.ProductSize> ProductSizes, List<Db.Flavour> Flavours, List<Db.Product> Products, List<Db.ProductDetail> ProductDetails, Dictionary<int, string> Departments, List<Db.DealItemDetail> DealItemDetails, List<Db.DealDescription> DealDescriptions, List<Db.Discount> ItemDiscounts, List<Db.DiscountProductDetailMapping> DiscountMappings);
 }
