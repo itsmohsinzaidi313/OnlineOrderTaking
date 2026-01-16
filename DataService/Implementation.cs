@@ -10,7 +10,13 @@ internal class Implementation()
     private static Db.PgDbContext GetDbContext(string connectionString)
     {
         var options = new DbContextOptionsBuilder<Db.PgDbContext>()
-            .UseNpgsql(connectionString)
+            .UseNpgsql(connectionString, options =>
+            {
+                options.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(5),
+                    errorCodesToAdd: null);
+            })
             .Options;
         return new Db.PgDbContext(options);
     }
