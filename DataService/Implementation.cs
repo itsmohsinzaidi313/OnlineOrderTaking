@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Application;
 using System.Text.Json.Nodes;
+using System.Linq;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace DataService;
 
-internal class Implementation()
+internal class Implementation
 {
     private static Db.PgDbContext GetDbContext(string connectionString)
     {
@@ -21,8 +24,14 @@ internal class Implementation()
         var orderModes = new JsonObject();
         var delivery = new JsonObject();
         var pickup = new JsonObject();
-        var cities = (from x in dbContext.Cities join y in dbContext.Areas on x.CityId equals y.CityId select x).ToList().DistinctBy(x => x.CityName);
-        var areas = (from x in dbContext.Areas join y in dbContext.BranchDetails on x.AreaId equals y.AreaId select x).ToList();
+        var cities = dbContext.Cities
+            .Join(dbContext.Areas, c => c.CityId, a => a.CityId, (c, a) => c)
+            .AsEnumerable()
+            .DistinctBy(x => x.CityName)
+            .ToList();
+        var areas = dbContext.Areas
+            .Join(dbContext.BranchDetails, a => a.AreaId, bd => bd.AreaId, (a, bd) => a)
+            .ToList();
         var branches = dbContext.BranchMasters.ToList();
         var branchDetails = dbContext.BranchDetails.ToList();
         foreach (var item in cities)
@@ -64,8 +73,8 @@ internal class Implementation()
                     ["BusinessStartTime"] = x.BusinessDayStartTime.ToString(),
                     ["BusinessEndTime"] = x.BusinessDayEndTime.ToString(),
                     ["IsBranchOpen"] = x.BusinessDayStartTime.HasValue && x.BusinessDayEndTime.HasValue
-    ? DateTime.UtcNow.TimeOfDay >= x.BusinessDayStartTime.Value.ToTimeSpan() && DateTime.UtcNow.TimeOfDay <= x.BusinessDayEndTime.Value.ToTimeSpan()
-    : false
+                        ? DateTime.UtcNow.TimeOfDay >= x.BusinessDayStartTime.Value.ToTimeSpan() && DateTime.UtcNow.TimeOfDay <= x.BusinessDayEndTime.Value.ToTimeSpan()
+                        : false
                 }))
             {
                 var branchId = item2["BranchId"]?.GetValue<int>();
@@ -95,112 +104,65 @@ internal class Implementation()
     internal async IAsyncEnumerable<Category> GetMenuAsync(string connectionString, int branchId)
     {
         var bid = branchId;
+        using var dbContext = GetDbContext(connectionString);
         if (bid == 0)
         {
-            using var dbContext = GetDbContext(connectionString);
             bid = dbContext.BranchMasters.First(x => x.IsActive ?? false).BranchId;
         }
-        var dbSizes = new List<Db.ProductSize>();
-        var dbFlavours = new List<Db.Flavour>();
-        var dbProducts = new List<Db.Product>();
-        var dbProductDetails = new List<Db.ProductDetail>();
-        var dbDealItemDetails = new List<Db.DealItemDetail>();
-        var dbDealDescription = new List<Db.DealDescription>();
-        var dbDealDescriptionProducts = new List<Db.Product>();
-        var dbDepartments = new Dictionary<int, string>();
-        var dbItemDiscounts = new List<Db.Discount>();
-        var dbItemDiscountsMapping = new List<Db.DiscountProductDetailMapping>();
-        var dbProductDetailBranchMapping = new List<int>();
-        {
-            var dbContext = GetDbContext(connectionString);
-            dbProductDetailBranchMapping.AddRange(dbContext.ProductDetailBranchMappings.Where(x => x.BranchId == branchId).Select(x => x.ProductDetailId ?? 0).ToList());
-        }
 
-        var tasks = new List<Task>
-        {
-            Task.Run(() =>
-            {
-                using var dbContext = GetDbContext(connectionString);
-                dbSizes.AddRange([.. from a in dbContext.ProductSizes
-                                 select a]);
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = GetDbContext(connectionString);
-                dbFlavours.AddRange([.. from a in dbContext.Flavours
-                                    select a]);
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = GetDbContext(connectionString);
-                dbProducts.AddRange([.. from a in dbContext.Products
-                                    join b in dbContext.ProductDetails on a.ProductId equals b.ProductId
-                                    where dbProductDetailBranchMapping.Contains(b.ProductDetailId)
-                                    select a]);
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = GetDbContext(connectionString);
-                dbDealItemDetails.AddRange([.. from a in dbContext.DealItemDetails
-                                           join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
-                                           join c in dbContext.Products on b.ProductId equals c.ProductId
-                                           select a]);
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = GetDbContext(connectionString);
-                dbDealDescription.AddRange([.. from a in dbContext.DealDescriptions
-                                           join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
-                                           join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
-                                           join d in dbContext.Products on c.ProductId equals d.ProductId
-                                           select a]);
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = GetDbContext(connectionString);
-                dbDealDescriptionProducts.AddRange([.. from a in dbContext.DealDescriptions
-                                                   join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
-                                                   join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
-                                                   join d in dbContext.Products on c.ProductId equals d.ProductId
-                                                   join e in dbContext.ProductDetails on a.ProductDetailId equals e.ProductDetailId
-                                                   join f in dbContext.Products on e.ProductId equals f.ProductId
-                                                   select f]);
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = GetDbContext(connectionString);
-                dbDepartments = (from a in dbContext.ProductCategories
-                                select new { a.CategoryId, a.DepartmentId }).ToDictionary(x => x.CategoryId, x => x.DepartmentId.ToString() ?? "N/A");
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = GetDbContext(connectionString);
-                dbProductDetails.AddRange([.. from a in dbContext.ProductDetails
-                                            join b in dbContext.Products on a.ProductId equals b.ProductId
-                                            where dbProductDetailBranchMapping.Contains(a.ProductDetailId)
-                                            select a]);
+        var dbProductDetailBranchMapping = await dbContext.ProductDetailBranchMappings
+            .Where(x => x.BranchId == bid)
+            .Select(x => x.ProductDetailId ?? 0)
+            .ToListAsync();
 
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = GetDbContext(connectionString);
-                dbItemDiscounts.AddRange([.. from a in dbContext.Discounts
-                                            join b in dbContext.DiscountProductDetailMappings on a.DiscountId equals b.DiscountId
-                                            join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
-                                            where dbProductDetailBranchMapping.Contains(c.ProductDetailId)
-                                            select a]);
-            }),
-            Task.Run(() =>
-            {
-                using var dbContext = GetDbContext(connectionString);
-                dbItemDiscountsMapping.AddRange([.. from a in dbContext.DiscountProductDetailMappings
-                                                join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
-                                                where dbProductDetailBranchMapping.Contains(b.ProductDetailId)
-                                                select a]);
-            })
-        };
+        // Run queries sequentially to avoid concurrent DbConnection usage which can cause Npgsql EndOfStream errors
+        var dbSizes = await dbContext.ProductSizes.ToListAsync();
+        var dbFlavours = await dbContext.Flavours.ToListAsync();
 
-        await Task.WhenAll(tasks);
+        var dbProducts = await (from a in dbContext.Products
+                                join b in dbContext.ProductDetails on a.ProductId equals b.ProductId
+                                where dbProductDetailBranchMapping.Contains(b.ProductDetailId)
+                                select a).Distinct().ToListAsync();
+
+        var dbDealItemDetails = await (from a in dbContext.DealItemDetails
+                                       join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
+                                       join c in dbContext.Products on b.ProductId equals c.ProductId
+                                       select a).ToListAsync();
+
+        var dbDealDescription = await (from a in dbContext.DealDescriptions
+                                       join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
+                                       join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
+                                       join d in dbContext.Products on c.ProductId equals d.ProductId
+                                       select a).ToListAsync();
+
+        var dbDealDescriptionProducts = await (from a in dbContext.DealDescriptions
+                                               join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
+                                               join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
+                                               join d in dbContext.Products on c.ProductId equals d.ProductId
+                                               join e in dbContext.ProductDetails on a.ProductDetailId equals e.ProductDetailId
+                                               join f in dbContext.Products on e.ProductId equals f.ProductId
+                                               select f).Distinct().ToListAsync();
+
+        var dbDepartments = await dbContext.ProductCategories
+            .Select(a => new { a.CategoryId, a.DepartmentId })
+            .ToDictionaryAsync(x => x.CategoryId, x => x.DepartmentId.ToString() ?? "N/A");
+
+        var dbProductDetails = await (from a in dbContext.ProductDetails
+                                       join b in dbContext.Products on a.ProductId equals b.ProductId
+                                       where dbProductDetailBranchMapping.Contains(a.ProductDetailId)
+                                       select a).ToListAsync();
+
+        var dbItemDiscounts = await (from a in dbContext.Discounts
+                                     join b in dbContext.DiscountProductDetailMappings on a.DiscountId equals b.DiscountId
+                                     join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
+                                     where dbProductDetailBranchMapping.Contains(c.ProductDetailId)
+                                     select a).ToListAsync();
+
+        var dbItemDiscountsMapping = await (from a in dbContext.DiscountProductDetailMappings
+                                            join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
+                                            where dbProductDetailBranchMapping.Contains(b.ProductDetailId)
+                                            select a).ToListAsync();
+
         var package = new DbMenuData(dbSizes, dbFlavours, dbProducts, dbProductDetails, dbDepartments, dbDealItemDetails, dbDealDescription, dbItemDiscounts, dbItemDiscountsMapping);
         foreach (var item in GetCategories(connectionString, package))
         {
@@ -220,7 +182,7 @@ internal class Implementation()
                 Name = dbCategory.CategoryName ?? "N/A",
                 Image = dbCategory.CategoryImage ?? "N/A",
                 Icon = dbCategory.CategoryIcon ?? "N/A",
-                Items = [],
+                Items = new List<MenuItem>(),
             };
             foreach (var dbProduct in dbMenuData.Products.Where(x => x.ProductCategoryId == dbCategory.CategoryId))
             {
