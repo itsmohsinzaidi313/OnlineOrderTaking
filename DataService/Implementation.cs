@@ -89,13 +89,13 @@ internal class Implementation()
         return orderModes;
     }
 
-    internal async IAsyncEnumerable<Category> GetMenuAsync(string connectionString, int bid)
+    internal async IAsyncEnumerable<Category> GetMenuAsync(string connectionString, int branchId)
     {
-        var branchId = 0;
-        if (bid == 0)
+        var bid = 0;
+        if (branchId == 0)
         {
             using var dbContext = GetDbContext(connectionString);
-            branchId = dbContext.BranchMasters.First(x => x.IsActive ?? false).BranchId;
+            bid = dbContext.BranchMasters.First(x => x.IsActive ?? false).BranchId;
         }
         var dbSizes = new List<Db.ProductSize>();
         var dbFlavours = new List<Db.Flavour>();
@@ -129,7 +129,7 @@ internal class Implementation()
                                     join b in dbContext.ProductCategories on a.ProductCategoryId equals b.CategoryId
                                     join c in dbContext.ProductDetails on a.ProductId equals c.ProductId
                                     join d in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals d.ProductDetailId
-                                    where d.BranchId == branchId
+                                    where d.BranchId == bid
                                     select a);
             }),
             Task.Run(() =>
@@ -140,7 +140,7 @@ internal class Implementation()
                                            join d in dbContext.Products on c.ProductId equals d.ProductId
                                            join e in dbContext.ProductCategories on d.ProductCategoryId equals e.CategoryId
                                            join f in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals f.ProductDetailId
-                                           where f.BranchId == branchId
+                                           where f.BranchId == bid
                                            select a);
             }),
             Task.Run(() =>
@@ -152,7 +152,7 @@ internal class Implementation()
                                            join d in dbContext.Products on c.ProductId equals d.ProductId
                                            join e in dbContext.ProductCategories on d.ProductCategoryId equals e.CategoryId
                                            join f in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals f.ProductDetailId
-                                           where f.BranchId == branchId
+                                           where f.BranchId == bid
                                            select a);
             }),
             Task.Run(() =>
@@ -166,7 +166,7 @@ internal class Implementation()
                                                    join f in dbContext.ProductDetails on a.ProductDetailId equals f.ProductDetailId
                                                    join g in dbContext.Products on f.ProductId equals g.ProductId
                                                    join h in dbContext.ProductDetailBranchMappings on b.ProductDetailId equals h.ProductDetailId
-                                                   where h.BranchId == branchId
+                                                   where h.BranchId == bid
                                                    select g);
             }),
             Task.Run(() =>
@@ -182,7 +182,7 @@ internal class Implementation()
                                             join b in dbContext.Products on a.ProductId equals b.ProductId
                                             join c in dbContext.ProductCategories on b.ProductCategoryId equals c.CategoryId
                                             join d in dbContext.ProductDetailBranchMappings on a.ProductDetailId equals d.ProductDetailId
-                                            where d.BranchId == branchId
+                                            where d.BranchId == bid
                                             select a);
 
             }),
@@ -193,7 +193,7 @@ internal class Implementation()
                                             join b in dbContext.DiscountProductDetailMappings on a.DiscountId equals b.DiscountId
                                             join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
                                             join d in dbContext.ProductDetailBranchMappings on c.ProductDetailId equals d.ProductDetailId
-                                            where d.BranchId == branchId
+                                            where d.BranchId == bid
                                             select a);
             }),
             Task.Run(() =>
@@ -202,7 +202,7 @@ internal class Implementation()
                 dbItemDiscountsMapping.AddRange(from a in dbContext.DiscountProductDetailMappings
                                                 join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
                                                 join c in dbContext.ProductDetailBranchMappings on b.ProductDetailId equals c.ProductDetailId
-                                                where c.BranchId == branchId
+                                                where c.BranchId == bid
                                                 select a);
             })
         };
