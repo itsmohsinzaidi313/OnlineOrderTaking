@@ -143,6 +143,7 @@ internal class Implementation()
                 dbProducts.AddRange([.. from a in dbContext.Products
                                     join b in dbContext.ProductDetails on a.ProductId equals b.ProductId
                                     where dbProductDetailBranchMapping.Contains(b.ProductDetailId)
+                                    && a.IsActive == true
                                     select a]);
             }),
             Task.Run(() =>
@@ -151,6 +152,7 @@ internal class Implementation()
                 dbDealItemDetails.AddRange([.. from a in dbContext.DealItemDetails
                                            join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
                                            join c in dbContext.Products on b.ProductId equals c.ProductId
+                                           where a.IsActive == true
                                            select a]);
             }),
             Task.Run(() =>
@@ -160,6 +162,7 @@ internal class Implementation()
                                            join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
                                            join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
                                            join d in dbContext.Products on c.ProductId equals d.ProductId
+                                           where a.IsActive == true
                                            select a]);
             }),
             Task.Run(() =>
@@ -171,12 +174,14 @@ internal class Implementation()
                                                    join d in dbContext.Products on c.ProductId equals d.ProductId
                                                    join e in dbContext.ProductDetails on a.ProductDetailId equals e.ProductDetailId
                                                    join f in dbContext.Products on e.ProductId equals f.ProductId
+                                                    where a.IsActive == true
                                                    select f]);
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
                 dbDepartments = (from a in dbContext.ProductCategories
+                                 where a.IsActive == true
                                 select new { a.CategoryId, a.DepartmentId }).ToDictionary(x => x.CategoryId, x => x.DepartmentId.ToString() ?? "N/A");
             }),
             Task.Run(() =>
@@ -185,6 +190,7 @@ internal class Implementation()
                 dbProductDetails.AddRange([.. from a in dbContext.ProductDetails
                                             join b in dbContext.Products on a.ProductId equals b.ProductId
                                             where dbProductDetailBranchMapping.Contains(a.ProductDetailId)
+                                            && b.IsActive == true
                                             select a]);
 
             }),
@@ -195,6 +201,7 @@ internal class Implementation()
                                             join b in dbContext.DiscountProductDetailMappings on a.DiscountId equals b.DiscountId
                                             join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
                                             where dbProductDetailBranchMapping.Contains(c.ProductDetailId)
+                                            && a.IsActive == true
                                             select a]);
             }),
             Task.Run(() =>
