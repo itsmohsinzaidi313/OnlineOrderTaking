@@ -24,7 +24,7 @@ namespace DataService
                 var connectionString = await GetConnectionString(requestPayload.DomainName);
                 if (requestPayload.DataRequestType == "DeliveryAndPickup")
                 {
-                    payload = GetDeliveryAndPickupItemsAsync(connectionString);
+                    payload = await GetDeliveryAndPickupItemsAsync(connectionString);
                 }
                 else if (requestPayload.DataRequestType == "Menu")
                 {
@@ -60,10 +60,10 @@ namespace DataService
             return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
         }
 
-        private JsonObject GetDeliveryAndPickupItemsAsync(string connectionString)
+        private async Task<JsonObject> GetDeliveryAndPickupItemsAsync(string connectionString)
         {
             logger.LogInformation("🚚 Fetching delivery and pickup items from database...");
-            return impl.GetDataOne(connectionString: connectionString);
+            return await impl.GetDataOneAsync(connectionString: connectionString);
         }
 
         private async IAsyncEnumerable<Category> GetMenuItemsAsync(string connectionString, int branchId)

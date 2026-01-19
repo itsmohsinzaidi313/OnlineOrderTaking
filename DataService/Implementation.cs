@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Application;
 using System.Text.Json.Nodes;
+using System.Threading.Tasks;
 using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace DataService;
@@ -21,16 +22,16 @@ internal class Implementation()
         return new Db.PgDbContext(options);
     }
 
-    internal JsonObject GetDataOne(string connectionString)
+    internal async Task<JsonObject> GetDataOneAsync(string connectionString)
     {
         using var dbContext = GetDbContext(connectionString);
         var orderModes = new JsonObject();
         var delivery = new JsonObject();
         var pickup = new JsonObject();
-        var cities = (from x in dbContext.Cities join y in dbContext.Areas on x.CityId equals y.CityId select x).ToList().DistinctBy(x => x.CityName);
-        var areas = (from x in dbContext.Areas join y in dbContext.BranchDetails on x.AreaId equals y.AreaId select x).ToList();
-        var branches = dbContext.BranchMasters.ToList();
-        var branchDetails = dbContext.BranchDetails.ToList();
+        var cities = (await (from x in dbContext.Cities join y in dbContext.Areas on x.CityId equals y.CityId select x).ToListAsync()).DistinctBy(x => x.CityName);
+        var areas = await (from x in dbContext.Areas join y in dbContext.BranchDetails on x.AreaId equals y.AreaId select x).ToListAsync();
+        var branches = await dbContext.BranchMasters.ToListAsync();
+        var branchDetails = await dbContext.BranchDetails.ToListAsync();
         foreach (var item in cities)
         {
             var areasJsonArray = new JsonArray();
@@ -119,7 +120,7 @@ internal class Implementation()
         var dbProductDetailBranchMapping = new List<int>();
         {
             var dbContext = GetDbContext(connectionString);
-            dbProductDetailBranchMapping.AddRange(dbContext.ProductDetailBranchMappings.Where(x => x.BranchId == branchId).Select(x => x.ProductDetailId ?? 0).ToList());
+            dbProductDetailBranchMapping.AddRange([.. dbContext.ProductDetailBranchMappings.Where(x => x.BranchId == bid).Select(x => x.ProductDetailId ?? 0)]);
         }
 
         var tasks = new List<Task>
