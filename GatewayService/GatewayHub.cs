@@ -26,6 +26,14 @@ namespace GatewayService
             await base.OnDisconnectedAsync(ex);
         }
 
+        public async Task ImportRequest(int restaurantId)
+        {
+            await QueuePayload(RabbitMqQueues.ImportRequestQueue, new ImportServicePayload
+            {
+                RestaurantId = restaurantId
+            }.FillContext(Context));
+        }
+
         public async Task DataRequest(string domainName, string requestType, int branchId, string responseKey)
         {
             var http = Context.GetHttpContext();
