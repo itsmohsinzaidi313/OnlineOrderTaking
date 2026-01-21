@@ -1,4 +1,7 @@
-﻿namespace PointofSaleModels.PGDatabaseModels;
+﻿using System;
+using System.Collections.Generic;
+
+namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class BranchDetail
 {
@@ -24,7 +27,9 @@ public partial class BranchDetail
 
     public double? DeliveryChargesWaiveOffLimit { get; set; }
 
-    public bool? IsActive { get; set; }
+    public bool IsActive { get; set; }
+
+    public virtual Area Area { get; set; } = null!;
 
     public virtual BranchMaster Branch { get; set; } = null!;
 }

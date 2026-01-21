@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Application;
+using System.Linq;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Db = PointofSaleModels.PGDatabaseModels;
@@ -96,7 +97,109 @@ internal class Implementation()
         }
         orderModes["Delivery"] = delivery;
         orderModes["Pickup"] = pickup;
+        var themeData = new JsonObject
+        {
+            ["Colors"] = await GetThemeDataAsync(connectionString),
+            ["Settings"] = await GetSettingsDataAsync(connectionString)
+        };
+        orderModes["Theme"] = themeData;
         return orderModes;
+    }
+
+    private static async Task<JsonObject> GetThemeDataAsync(string connectionString)
+    {
+        using var dbContext = GetDbContext(connectionString);
+        var keys = new[]
+        {
+            "TOP_BAR_BG_COLOR",
+            "TOP_BAR_FORE_COLOR",
+            "CATEGORY_BAR_BG_COLOR",
+            "CATEGORY_BAR_FORE_COLOR",
+            "CATEGORY_HOVER_COLOR",
+            "CATEGORY_ACTIVE_COLOR",
+            "PRODUCT_BG_COLOR",
+            "PRODUCT_NAME_FORE_COLOR",
+            "PRODUCT_DESC_FORE_COLOR",
+            "PRODUCT_HOVER_COLOR",
+            "PRODUCT_PRICE_BG_COLOR",
+            "PRODUCT_PRICE_FORE_COLOR",
+            "PRODUCT_ADD_BTN_BG_COLOR",
+            "FOOTER_BG_COLOR",
+            "FOOTER_FORE_COLOR",
+            "VIEW_CART_BG_COLOR",
+            "VIEW_CART_FORE_COLOR",
+            "PRODUCT_POPUP_BG_COLOR",
+            "PRODUCT_POPUP_HEADER_BG_COLOR",
+            "PRODUCT_POPUP_HEADER_FORE_COLOR",
+            "PRODUCT_POPUP_DESC_FORE_COLOR",
+            "PRODUCT_POPUP_PRICE_FORE_COLOR",
+            "PRODUCT_POPUP_ADD_TO_CART_FORE_COLOR",
+            "PRODUCT_POPUP_ADD_TO_CART_BG_COLOR",
+            "PRODUCT_POPUP_PLUS_MINUS_BG_COLOR",
+            "PRODUCT_POPUP_QTY_FORE_COLOR",
+            "DEAL_POPUP_OPTION_NAME_FORE_COLOR",
+            "DEAL_POPUP_PRODUCT_NAME_FORE_COLOR",
+            "PRIMARY_COLOR",
+            "SECONDARY_COLOR",
+            "WEB_BG_COLOR"
+        };
+        var settings = await dbContext.SetupMasterDetails
+            .Where(x => keys.Contains(x.Flex1))
+            .ToDictionaryAsync(x => x.Flex1!, x => x.SetupDetailId);
+
+        var setupDetailIds = settings.Values.ToList();
+
+        var settingsDetail = await dbContext.SetupCompanySettings
+            .Where(x => setupDetailIds.Contains(x.SetupDetailId ?? 0))
+            .ToDictionaryAsync(x => x.SetupDetailId ?? 0, x => x.SettingValue ?? string.Empty);
+
+        var colorData = new JsonObject();
+
+
+        foreach (var key in keys)
+        {
+            string resolved = string.Empty;
+            if (settings.TryGetValue(key, out var detailId) && settingsDetail.TryGetValue(detailId, out var value))
+            {
+                resolved = value ?? string.Empty;
+            }
+
+            colorData[key] = JsonValue.Create(resolved);
+        }
+
+        return colorData;
+    }
+
+    private static async Task<JsonObject> GetSettingsDataAsync(string connectionString)
+    {
+        var settingsData = new JsonObject();
+        using var dbContext = GetDbContext(connectionString);
+        var keys = new[]
+        {
+            "UPLOAD_LOGO",
+            "UPLOAD_SPLASH_BANNER",
+            "UPLOAD_BACKGROUND",
+        };
+
+        var settings = await dbContext.SetupMasterDetails
+            .Where(x => keys.Contains(x.Flex1))
+            .ToDictionaryAsync(x => x.Flex1, x => x.SetupDetailId);
+        var setupDetailIds = settings.Values.ToList();
+        var settingsDetail = await dbContext.SetupCompanySettings.Where(x => setupDetailIds.Contains(x.SetupDetailId ?? 0)).ToDictionaryAsync(x => x.SettingId, x => x.SettingValue);
+
+        settingsData["RESTAURANT_LOGO"] = settings["UPLOAD_LOGO"];
+        settingsData["SPLASH_BANNER"] = settings["UPLOAD_SPLASH_BANNER"];
+        settingsData["WEBSITE_BACKGROUND_IMAGE"] = settings["UPLOAD_BACKGROUND"];
+
+        var s = await dbContext.SetupMasterDetails.Where(x => x.Flex1 == "UPLOAD_BANNER").Select(x => x.SetupDetailId).FirstOrDefaultAsync();
+        var s2 = await dbContext.SetupCompanySettings.Where(x => x.SetupDetailId == s).ToListAsync();
+        var array = new JsonArray();
+        foreach (var item in s2)
+        {
+            array.Add(item.SettingValue);
+        }
+        settingsData["BANNER_IMAGES"] = array;
+        return settingsData;
     }
 
     internal async IAsyncEnumerable<Category> GetMenuAsync(string connectionString, int branchId)
@@ -105,7 +208,7 @@ internal class Implementation()
         if (bid == 0)
         {
             using var dbContext = GetDbContext(connectionString);
-            bid = dbContext.BranchMasters.First(x => x.IsActive ?? false).BranchId;
+            bid = dbContext.BranchMasters.First(x => x.IsActive).BranchId;
         }
         var dbSizes = new List<Db.ProductSize>();
         var dbFlavours = new List<Db.Flavour>();

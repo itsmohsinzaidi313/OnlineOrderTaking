@@ -1,4 +1,7 @@
-﻿namespace PointofSaleModels.PGDatabaseModels;
+﻿using System;
+using System.Collections.Generic;
+
+namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class Discount
 {
@@ -6,9 +9,9 @@ public partial class Discount
 
     public double DiscountPercent { get; set; }
 
-    public TimeOnly? DiscountTimeStart { get; set; }
+    public TimeOnly DiscountTimeStart { get; set; }
 
-    public TimeOnly? DiscountTimeEnd { get; set; }
+    public TimeOnly DiscountTimeEnd { get; set; }
 
     public bool IsActive { get; set; }
 
@@ -18,9 +21,9 @@ public partial class Discount
 
     public bool? IsActiveInWeb { get; set; }
 
-    public TimeOnly StartDate { get; set; }
+    public DateTime StartDate { get; set; }
 
-    public TimeOnly? EndDate { get; set; }
+    public DateTime? EndDate { get; set; }
 
     public bool IsAreaWise { get; set; }
 
@@ -73,6 +76,4 @@ public partial class Discount
     public virtual ICollection<DiscountOrderTypeMapping> DiscountOrderTypeMappings { get; set; } = new List<DiscountOrderTypeMapping>();
 
     public virtual ICollection<DiscountProductDetailMapping> DiscountProductDetailMappings { get; set; } = new List<DiscountProductDetailMapping>();
-
-    public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
 }

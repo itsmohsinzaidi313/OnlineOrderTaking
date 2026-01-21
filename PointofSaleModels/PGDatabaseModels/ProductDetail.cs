@@ -1,4 +1,7 @@
-﻿namespace PointofSaleModels.PGDatabaseModels;
+﻿using System;
+using System.Collections.Generic;
+
+namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class ProductDetail
 {
@@ -46,19 +49,17 @@ public partial class ProductDetail
 
     public double? PriceBeforeDiscount { get; set; }
 
-    public virtual ICollection<DealItemDetail> DealItemDetails { get; set; } = new List<DealItemDetail>();
+    public virtual ICollection<DealDescription> DealDescriptions { get; set; } = new List<DealDescription>();
 
     public virtual ICollection<DiscountProductDetailMapping> DiscountProductDetailMappings { get; set; } = new List<DiscountProductDetailMapping>();
 
-    public virtual ICollection<ProductDetail> InverseParentProductDetail { get; set; } = new List<ProductDetail>();
-
-    public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
-
-    public virtual ProductDetail? ParentProductDetail { get; set; }
+    public virtual Flavour? Flavour { get; set; }
 
     public virtual Product Product { get; set; } = null!;
 
     public virtual ICollection<ProductDetailBranchMapping> ProductDetailBranchMappings { get; set; } = new List<ProductDetailBranchMapping>();
 
     public virtual ICollection<ProductDetailOrderSourcePriceMapping> ProductDetailOrderSourcePriceMappings { get; set; } = new List<ProductDetailOrderSourcePriceMapping>();
+
+    public virtual ProductSize Size { get; set; } = null!;
 }
