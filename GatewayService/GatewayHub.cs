@@ -28,6 +28,9 @@ namespace GatewayService
 
         public async Task DataRequest(string domainName, string requestType, int branchId, string responseKey)
         {
+            var httpContext =  Context.GetHttpContext();
+            var host = httpContext?.Request.Host.Value ?? "unknown";
+            Console.WriteLine($"DataRequest from host: {host}");
             var obj = new DataServicePayload
             {
                 DomainName = domainName,
