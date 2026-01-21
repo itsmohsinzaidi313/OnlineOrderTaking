@@ -1,4 +1,4 @@
-﻿namespace DataMigration.Domain.Entities
+﻿namespace ImportService.Entities
 {
     public class SetupMaster
     {

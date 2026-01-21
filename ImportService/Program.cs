@@ -1,7 +1,7 @@
-﻿using DataMigration.Application.Interfaces;
-using DataMigration.Application.Services;
-using DataMigration.Infrastructure.Data;
-using ImportService;
+﻿using ImportService;
+using ImportService.Data;
+using ImportService.Interfaces;
+using ImportService.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

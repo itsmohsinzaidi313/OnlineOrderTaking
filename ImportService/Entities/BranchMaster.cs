@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace DataMigration.Domain.Entities
+namespace ImportService.Entities
 {
     [Table("branch_master")]
     public class BranchMaster

@@ -1,12 +1,11 @@
-﻿using DataMigration.Domain.Entities;
+﻿using ImportService.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace DataMigration.Infrastructure.Data
+namespace ImportService.Data
 {
     public class SqlServerDbContext : DbContext
     {
         public SqlServerDbContext(DbContextOptions<SqlServerDbContext> options) : base(options) { }
-
         public DbSet<SetupCompany> SetupCompanies => Set<SetupCompany>();
         public DbSet<BranchMaster> BranchMasters => Set<BranchMaster>();
         public DbSet<City> Cities => Set<City>();
@@ -15,7 +14,6 @@ namespace DataMigration.Infrastructure.Data
         public DbSet<BranchDayMapping> BranchDayMappings => Set<BranchDayMapping>();
         public DbSet<SetupMaster> SetupMasters => Set<SetupMaster>();
         public DbSet<SetupMasterDetail> SetupMasterDetails => Set<SetupMasterDetail>();
-
         public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
         public DbSet<Product> Products => Set<Product>();
         public DbSet<ProductDetail> ProductDetails => Set<ProductDetail>();
@@ -188,7 +186,6 @@ namespace DataMigration.Infrastructure.Data
         public DbSet<BranchDayMapping> BranchDayMappings => Set<BranchDayMapping>();
         public DbSet<SetupMaster> SetupMasters => Set<SetupMaster>();
         public DbSet<SetupMasterDetail> SetupMasterDetails => Set<SetupMasterDetail>();
-
         public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
         public DbSet<Product> Products => Set<Product>();
         public DbSet<ProductDetail> ProductDetails => Set<ProductDetail>();
@@ -210,6 +207,8 @@ namespace DataMigration.Infrastructure.Data
         public DbSet<DiscountOrderTypeMapping> DiscountOrderTypeMappings => Set<DiscountOrderTypeMapping>();
         public DbSet<DiscountOrderModeMapping> DiscountOrderModeMappings => Set<DiscountOrderModeMapping>();
         public DbSet<SetupCompanySetting> SetupCompanySettings => Set<SetupCompanySetting>();
+        public DbSet<OrderMaster> OrderMasters => Set<OrderMaster>();
+        public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -344,6 +343,14 @@ namespace DataMigration.Infrastructure.Data
             modelBuilder.Entity<SetupCompanySetting>()
                 .ToTable("setup_company_setting")
                 .HasKey(x => x.SettingId);
+
+            modelBuilder.Entity<OrderMaster>()
+                .ToTable("order_master")
+                .HasKey(x => x.OrderMasterId);
+
+            modelBuilder.Entity<OrderDetail>()
+                .ToTable("order_detail")
+                .HasKey(x => x.OrderDetailId);
         }
     }
 }

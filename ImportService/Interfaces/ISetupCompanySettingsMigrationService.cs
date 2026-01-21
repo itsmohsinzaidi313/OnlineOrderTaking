@@ -1,4 +1,4 @@
-﻿namespace DataMigration.Application.Interfaces
+﻿namespace ImportService.Interfaces
 {
     public interface ISetupCompanySettingsMigrationService
     {

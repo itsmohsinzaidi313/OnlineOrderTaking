@@ -1,4 +1,4 @@
-﻿namespace DataMigration.Application.Common.Exceptions
+﻿namespace ImportService.Exceptions
 {
     public class DomainException : Exception
     {

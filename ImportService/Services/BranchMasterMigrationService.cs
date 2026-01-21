@@ -1,8 +1,8 @@
-﻿using DataMigration.Application.Interfaces;
-using DataMigration.Infrastructure.Data;
+﻿using ImportService.Data;
+using ImportService.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace DataMigration.Application.Services
+namespace ImportService.Services
 {
     public class BranchMasterMigrationService(SqlServerDbContext SqlDb, PostgresDbContext PgDb, ILogger<BranchMasterMigrationService> logger) : IBranchMasterMigrationService
     {

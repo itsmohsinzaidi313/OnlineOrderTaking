@@ -1,6 +1,6 @@
 ﻿using Azure;
-using DataMigration.Application.Interfaces;
-using DataMigration.Infrastructure.Data;
+using ImportService.Data;
+using ImportService.Interfaces;
 using Microsoft.Extensions.Logging;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
@@ -38,7 +38,10 @@ namespace ImportService
             {
                 var servicePayload = System.Text.Json.JsonSerializer.Deserialize<ImportServicePayload>(transport);
                 var companyId = servicePayload!.RestaurantId;
-                await postgresDbContext.Database.EnsureCreatedAsync();
+                var dbCreated = await postgresDbContext.Database.EnsureCreatedAsync();
+                if (!dbCreated)
+                {
+                }
 
                 await service_setupCompany.MigrateSetupCompanyAsync(companyId);
 

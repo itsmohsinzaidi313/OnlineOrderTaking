@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace DataMigration.Domain.Entities
+namespace ImportService.Entities
 {
     [Table("product_detail_branch_mapping")] // PostgreSQL table name convention
     public class ProductDetailBranchMapping

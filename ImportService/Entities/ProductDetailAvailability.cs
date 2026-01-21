@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace DataMigration.Domain.Entities
+namespace ImportService.Entities
 {
     [Table("product_detail_availability")] // Table name in lowercase with underscores for PostgreSQL
     public class ProductDetailAvailability

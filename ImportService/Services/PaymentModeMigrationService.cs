@@ -1,8 +1,8 @@
-using DataMigration.Application.Interfaces;
-using DataMigration.Infrastructure.Data;
+using ImportService.Data;
+using ImportService.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace DataMigration.Application.Services
+namespace ImportService.Services
 {
     public class PaymentModeMigrationService(SqlServerDbContext sqlDb, PostgresDbContext pgDb, ILogger<PaymentModeMigrationService> logger) : IPaymentModeMigrationService
     {
