@@ -187,9 +187,17 @@ internal class Implementation()
         var setupDetailIds = settings.Values.ToList();
         var settingsDetail = await dbContext.SetupCompanySettings.Where(x => setupDetailIds.Contains(x.SetupDetailId ?? 0)).ToDictionaryAsync(x => x.SettingId, x => x.SettingValue);
 
-        settingsData["RESTAURANT_LOGO"] = settings["UPLOAD_LOGO"];
-        settingsData["SPLASH_BANNER"] = settings["UPLOAD_SPLASH_BANNER"];
-        settingsData["WEBSITE_BACKGROUND_IMAGE"] = settings["UPLOAD_BACKGROUND"];
+        var uploadLogoId = settings.GetValueOrDefault("UPLOAD_LOGO", 0);
+        var uploadSplashBannerId = settings.GetValueOrDefault("UPLOAD_SPLASH_BANNER", 0);
+        var uploadBackgroundId = settings.GetValueOrDefault("UPLOAD_BACKGROUND", 0);
+
+        var restaurantLogo = settingsDetail.GetValueOrDefault(uploadLogoId, string.Empty);
+        var splashBanner = settingsDetail.GetValueOrDefault(uploadSplashBannerId, string.Empty);
+        var websiteBackgroundImage = settingsDetail.GetValueOrDefault(uploadBackgroundId, string.Empty);
+
+        settingsData["RESTAURANT_LOGO"] = restaurantLogo;
+        settingsData["SPLASH_BANNER"] = splashBanner;
+        settingsData["WEBSITE_BACKGROUND_IMAGE"] = websiteBackgroundImage;
 
         var s = await dbContext.SetupMasterDetails.Where(x => x.Flex1 == "UPLOAD_BANNER").Select(x => x.SetupDetailId).FirstOrDefaultAsync();
         var s2 = await dbContext.SetupCompanySettings.Where(x => x.SetupDetailId == s).ToListAsync();
@@ -199,6 +207,17 @@ internal class Implementation()
             array.Add(item.SettingValue);
         }
         settingsData["BANNER_IMAGES"] = array;
+
+        settingsData["HEADER_LAYOUT_STYLE"] = "default";
+        settingsData["FOOTER_LAYOUT_STYLE"] = "default";
+        settingsData["CATEGORY_BAR_LAYOUT_STYLE"] = "default";
+        settingsData["PRODUCT_CARD_LAYOUT_STYLE"] = "default";
+        settingsData["SUBMIT_COMPLAINT_BUTTON"] = false;
+        settingsData["MULTI_LANGUAGE"] = false;
+        settingsData["USER_LOGIN_ICON"] = false;
+        settingsData["HAMBURGER_MENU"] = false;
+        settingsData["ABOUT_US"] = false;
+
         return settingsData;
     }
 
