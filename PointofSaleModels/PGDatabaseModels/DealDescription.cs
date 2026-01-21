@@ -1,4 +1,7 @@
-﻿namespace PointofSaleModels.PGDatabaseModels;
+﻿using System;
+using System.Collections.Generic;
+
+namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class DealDescription
 {
@@ -8,9 +11,13 @@ public partial class DealDescription
 
     public int? ProductDetailId { get; set; }
 
+    public bool? IsActive { get; set; }
+
     public int? SortOrder { get; set; }
 
     public double? Price { get; set; }
 
-    public bool? IsActive { get; set; }
+    public virtual DealItemDetail? DealItem { get; set; }
+
+    public virtual ProductDetail? ProductDetail { get; set; }
 }

@@ -4,12 +4,12 @@ using PointofSaleModels.Settings;
 
 namespace GatewayService.ServiceResponseListeners
 {
-    public class LoginServiceResponseAction(Implementation implementation) : IQueueAction
+    public class DataServiceResponseAction(Implementation implementation) : IQueueAction
     {
-        public string QueueName() => RabbitMqQueues.LoginResponseQueue;
+        public string QueueName() => RabbitMqQueues.DataResponseQueue;
         public async Task OnMessage(string svcPayload)
         {
-            await implementation.SendToUser<LoginServicePayload>(svcPayload);
+            await implementation.SendToUser<DataServicePayload>(svcPayload);
         }
     }
 }

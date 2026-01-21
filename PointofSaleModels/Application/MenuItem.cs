@@ -2,7 +2,7 @@
 {
     public class MenuItem
     {
-        public const long KOpenFoodCode = 151605140604;
+        public const long OPEN_FOOD_CODE = 151605140604;
         public int Id { get; set; }
         public string CategoryId { get; set; } = "0";
         public string Code { get; set; } = string.Empty;
@@ -14,7 +14,9 @@
         public string Image { get; set; } = string.Empty;
         public string Comment { get; set; } = string.Empty;
         public bool IsKot { get; set; } = false;
-        public bool ItemFOC { get; set; }
+        public bool ItemFOC { get; set; } = false;
+        public string Description { get; set; } = string.Empty;
         public List<ItemVariation> Variations { get; set; } = [];
+        public Discount? Discount { get; set; } = null;
     }
 }

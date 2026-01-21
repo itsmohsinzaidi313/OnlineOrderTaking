@@ -1,4 +1,4 @@
-﻿using GetMenuService;
+﻿using DataService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,7 +23,7 @@ var host = Host.CreateDefaultBuilder(args)
         ?? throw new InvalidOperationException("Redis connection string is not configured.");
 
         services
-        .AddDbContext<PgDbContext>(
+        .AddDbContextFactory<RestaurantsContext>(
             options => options.UseNpgsql(
                 dbConnectionString,
                     npgsqlOptions =>

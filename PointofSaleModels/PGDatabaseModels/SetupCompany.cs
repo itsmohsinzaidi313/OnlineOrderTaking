@@ -1,4 +1,7 @@
-﻿namespace PointofSaleModels.PGDatabaseModels;
+﻿using System;
+using System.Collections.Generic;
+
+namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class SetupCompany
 {
@@ -22,17 +25,7 @@ public partial class SetupCompany
 
     public bool? IsEnable { get; set; }
 
-    public virtual ICollection<BranchMaster> BranchMasters { get; set; } = new List<BranchMaster>();
-
-    public virtual ICollection<CustomerAddressDetail> CustomerAddressDetails { get; set; } = new List<CustomerAddressDetail>();
-
-    public virtual ICollection<CustomerPhone> CustomerPhones { get; set; } = new List<CustomerPhone>();
-
-    public virtual ICollection<Customer> Customers { get; set; } = new List<Customer>();
-
     public virtual ICollection<Gst> Gsts { get; set; } = new List<Gst>();
-
-    public virtual ICollection<OrderMaster> OrderMasters { get; set; } = new List<OrderMaster>();
 
     public virtual ICollection<OrderModeCompanyMapping> OrderModeCompanyMappings { get; set; } = new List<OrderModeCompanyMapping>();
 

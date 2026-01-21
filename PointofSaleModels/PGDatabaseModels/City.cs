@@ -1,4 +1,7 @@
-﻿namespace PointofSaleModels.PGDatabaseModels;
+﻿using System;
+using System.Collections.Generic;
+
+namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class City
 {
@@ -9,8 +12,6 @@ public partial class City
     public int? CountryId { get; set; }
 
     public int? ProvinceId { get; set; }
-
-    public virtual ICollection<CustomerAddressDetail> CustomerAddressDetails { get; set; } = new List<CustomerAddressDetail>();
 
     public virtual ICollection<Gst> Gsts { get; set; } = new List<Gst>();
 }

@@ -4,7 +4,7 @@ namespace PointofSaleModels.Settings
     {
         public const string Services = "services";
         public const string JwtService = "jwt";
-        public const string MenuService = "menu";
+        public const string DataService = "data";
         public const string OrderService = "order";
         public const string GatewayService = "gateway";
         public const string LoginService = "login";
@@ -13,8 +13,8 @@ namespace PointofSaleModels.Settings
 
         public const string JwtRequestQueue = $"{Services}.{JwtService}.{Request}";
         public const string JwtResponseQueue = $"{Services}.{JwtService}.{Response}";
-        public const string MenuRequestQueue = $"{Services}.{MenuService}.{Request}";
-        public const string MenuResponseQueue = $"{Services}.{MenuService}.{Response}";
+        public const string DataRequestQueue = $"{Services}.{DataService}.{Request}";
+        public const string DataResponseQueue = $"{Services}.{DataService}.{Response}";
         public const string OrderRequestQueue = $"{Services}.{OrderService}.{Request}";
         public const string OrderResponseQueue = $"{Services}.{OrderService}.{Response}";
         public const string LoginRequestQueue = $"{Services}.{LoginService}.{Request}";

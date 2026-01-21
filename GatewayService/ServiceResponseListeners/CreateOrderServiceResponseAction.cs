@@ -9,7 +9,7 @@ namespace GatewayService.ServiceResponseListeners
         public string QueueName() => RabbitMqQueues.OrderResponseQueue;
         public async Task OnMessage(string svcPayload)
         {
-            await implementation.SendToUser<CreateOrderServicePayload>("OrderResponse", svcPayload);
+            await implementation.SendToUser<OrderServicePayload>(svcPayload);
         }
     }
 }

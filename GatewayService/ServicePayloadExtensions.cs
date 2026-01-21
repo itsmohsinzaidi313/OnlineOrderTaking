@@ -12,7 +12,7 @@ namespace GatewayService
             payload.ConnectionId = context.ConnectionId;
             payload.UserId = ExtractUserClaims(context);
             payload.RestaurantId = int.Parse(ExtractRestaurantIdClaims(context));
-            payload.BranchId = int.Parse(ExtractBranchIdClaims(context));
+            //payload.BranchId = int.Parse(ExtractBranchIdClaims(context));
 
             return payload;
         }

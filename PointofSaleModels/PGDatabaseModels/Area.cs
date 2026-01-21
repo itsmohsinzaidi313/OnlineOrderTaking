@@ -1,4 +1,7 @@
-﻿namespace PointofSaleModels.PGDatabaseModels;
+﻿using System;
+using System.Collections.Generic;
+
+namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class Area
 {
@@ -16,9 +19,7 @@ public partial class Area
 
     public bool? IsEnable { get; set; }
 
-    public bool? IsActive { get; set; }
+    public bool IsActive { get; set; }
 
-    public virtual ICollection<CustomerAddressDetail> CustomerAddressDetails { get; set; } = new List<CustomerAddressDetail>();
-
-    public virtual ICollection<OrderMaster> OrderMasters { get; set; } = new List<OrderMaster>();
+    public virtual ICollection<BranchDetail> BranchDetails { get; set; } = new List<BranchDetail>();
 }

@@ -1,4 +1,7 @@
-﻿namespace PointofSaleModels.PGDatabaseModels;
+﻿using System;
+using System.Collections.Generic;
+
+namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class BranchMaster
 {
@@ -14,25 +17,25 @@ public partial class BranchMaster
 
     public bool? IsEnable { get; set; }
 
+    public string? Ntnname { get; set; }
+
     public string? Ntnnumber { get; set; }
 
     public TimeOnly? BusinessDayStartTime { get; set; }
 
     public TimeOnly? BusinessDayEndTime { get; set; }
 
-    public bool? IsCallCenter { get; set; }
+    public bool IsCallCenter { get; set; }
 
     public string? BranchAddress { get; set; }
 
     public string? BranchPhoneNumber { get; set; }
 
-    public bool? IsActive { get; set; }
+    public bool IsActive { get; set; }
 
     public virtual ICollection<BranchDetail> BranchDetails { get; set; } = new List<BranchDetail>();
 
-    public virtual SetupCompany Company { get; set; } = null!;
-
-    public virtual ICollection<OrderMaster> OrderMasters { get; set; } = new List<OrderMaster>();
+    public virtual ICollection<DiscountBranchMapping> DiscountBranchMappings { get; set; } = new List<DiscountBranchMapping>();
 
     public virtual ICollection<ProductDetailBranchMapping> ProductDetailBranchMappings { get; set; } = new List<ProductDetailBranchMapping>();
 

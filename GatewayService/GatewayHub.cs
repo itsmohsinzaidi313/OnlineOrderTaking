@@ -26,11 +26,21 @@ namespace GatewayService
             await base.OnDisconnectedAsync(ex);
         }
 
-        public async Task MenuRequest()
+        public async Task DataRequest(string domainName, string requestType, int branchId, string responseKey)
         {
-            var obj = new GetMenuServicePayload().FillContext(Context);
+            var http = Context.GetHttpContext();
+            var headers = http?.Request?.Headers;
+            Console.WriteLine("SignalR headers: {Headers}",
+                headers == null ? "null" : string.Join(", ", headers.Select(h => $"{h.Key}={h.Value}")));
+            var obj = new DataServicePayload
+            {
+                DomainName = domainName,
+                DataRequestType = requestType,
+                BranchId = branchId,
+                ResponseKey = responseKey
+            }.FillContext(Context);
 
-            await QueuePayload(RabbitMqQueues.MenuRequestQueue, obj);
+            await QueuePayload(RabbitMqQueues.DataRequestQueue, obj);
         }
 
         public async Task Login(string phoneNumber)
@@ -48,14 +58,14 @@ namespace GatewayService
 
         public async Task PlaceOrder(CustomerOrder order)
         {
-            var obj = new CreateOrderServicePayload
+            var obj = new OrderServicePayload
             {
                 Order = order
             }.FillContext(Context);
             await QueuePayload(RabbitMqQueues.OrderRequestQueue, obj);
         }
 
-        private async Task QueuePayload(string queues, ServicePayload payload)
+        private async Task QueuePayload<T>(string queues, T payload)
         {
             await implementation.QueueRequestPayload(queues, payload);
             await Clients.Caller.SendAsync("Ack", new { status = "queued" });

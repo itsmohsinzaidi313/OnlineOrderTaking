@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using PointofSaleModels.Services;
 
-namespace GetMenuService
+namespace DataService
 {
     internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, IQueueAction listener) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection, listener)
     {
