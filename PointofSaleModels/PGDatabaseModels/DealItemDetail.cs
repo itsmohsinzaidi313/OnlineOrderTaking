@@ -24,6 +24,4 @@ public partial class DealItemDetail
     public int? TempDealItemId { get; set; }
 
     public int? MaxQuantity { get; set; }
-
-    public virtual ICollection<DealDescription> DealDescriptions { get; set; } = new List<DealDescription>();
 }

@@ -40,8 +40,4 @@ public partial class Product
     public int? ProductTagId { get; set; }
 
     public bool IsDealPackage { get; set; }
-
-    public virtual ProductCategory? ProductCategory { get; set; }
-
-    public virtual ICollection<ProductDetail> ProductDetails { get; set; } = new List<ProductDetail>();
 }

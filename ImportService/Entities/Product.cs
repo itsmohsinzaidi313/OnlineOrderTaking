@@ -6,14 +6,10 @@ namespace ImportService.Entities
     [Table("product")]
     public class Product
     {
-        [Key]
-        [Column(TypeName = "INTEGER")]
         public int ProductId { get; set; }
 
-        [Column(TypeName = "varchar(200)")]
         public string? ProductName { get; set; }
 
-        [Column(TypeName = "INTEGER")]
         public int? ProductCategoryId { get; set; }
 
         
@@ -37,32 +33,44 @@ namespace ImportService.Entities
         
         public bool IsDeal { get; set; }
 
-        [Column(TypeName = "varchar(250)")]
         public string? ProductImage { get; set; }
 
-        
         public bool IsExpiryMandatory { get; set; }
 
-        [Column(TypeName = "DOUBLE PRECISION")]
         public double CommisionValue { get; set; }
 
-        [Column(TypeName = "INTEGER")]
         public int? CommisionTypeId { get; set; }
 
-        [Column(TypeName = "text")]
         public string? ProductDescription { get; set; }
 
-        [Column(TypeName = "INTEGER")]
         public int SortOrder { get; set; }
 
-        [Column(TypeName = "INTEGER")]
         public int? ProductTagId { get; set; }
 
-        
         public bool IsDealPackage { get; set; }
-
-        // ?? Navigation
-        [ForeignKey(nameof(ProductCategoryId))]
-        public virtual ProductCategory? ProductCategory { get; set; }
+        public Product CopyWith(Product instance)
+        {
+            return new Product
+            {
+                ProductId = instance.ProductId,
+                ProductName = instance.ProductName,
+                ProductCategoryId = instance.ProductCategoryId,
+                IsActive = instance.IsActive,
+                IsEnable = instance.IsEnable,
+                DisplayInPos = instance.DisplayInPos,
+                DisplayInWeb = instance.DisplayInWeb,
+                DisplayInOdms = instance.DisplayInOdms,
+                DisplayInMobile = instance.DisplayInMobile,
+                IsDeal = instance.IsDeal,
+                ProductImage = instance.ProductImage,
+                IsExpiryMandatory = instance.IsExpiryMandatory,
+                CommisionValue = instance.CommisionValue,
+                CommisionTypeId = instance.CommisionTypeId,
+                ProductDescription = instance.ProductDescription,
+                SortOrder = instance.SortOrder,
+                ProductTagId = instance.ProductTagId,
+                IsDealPackage = instance.IsDealPackage
+            };
+        }
     }
 }

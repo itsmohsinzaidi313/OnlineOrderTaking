@@ -28,8 +28,4 @@ public partial class PaymentMode
     public bool IsPartyAccount { get; set; }
 
     public string? Description { get; set; }
-
-    public virtual SetupCompany? Company { get; set; }
-
-    public virtual ICollection<Gst> Gsts { get; set; } = new List<Gst>();
 }

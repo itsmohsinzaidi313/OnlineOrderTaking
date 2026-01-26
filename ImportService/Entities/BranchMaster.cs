@@ -3,49 +3,54 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ImportService.Entities
 {
-    [Table("branch_master")]
     public class BranchMaster
     {
-        [Key]
-        [Column(TypeName = "INTEGER")]
         public int BranchId { get; set; }
 
-        [Column(TypeName = "varchar(200)")]
         public string BranchName { get; set; }
 
-        [Column(TypeName = "INTEGER")]
         public int CompanyId { get; set; }
 
-        [Column(TypeName = "INTEGER")]
         public int? CityId { get; set; }
 
-        [Column(TypeName = "varchar(150)")]
         public string? CityName { get; set; }
-
 
         public bool? IsEnable { get; set; }
 
-        [Column(TypeName = "varchar(150)")]
         public string? NTNName { get; set; }
-
-        [Column(TypeName = "varchar(100)")]
+        
         public string? NTNNumber { get; set; }
 
-        [Column(TypeName = "TIME")]
         public TimeSpan? BusinessDayStartTime { get; set; }
 
-        [Column(TypeName = "TIME")]
         public TimeSpan? BusinessDayEndTime { get; set; }
-
 
         public bool IsCallCenter { get; set; } = false;
 
-        [Column(TypeName = "varchar(300)")]
         public string? BranchAddress { get; set; }
 
-        [Column(TypeName = "varchar(100)")]
         public string? BranchPhoneNumber { get; set; }
 
         public bool IsActive { get; set; } = true;
+        public BranchMaster CopyWith(BranchMaster instance)
+        {
+            return new BranchMaster
+            {
+                BranchId = instance.BranchId,
+                BranchName = instance.BranchName,
+                CompanyId = instance.CompanyId,
+                CityId = instance.CityId,
+                CityName = instance.CityName,
+                IsEnable = instance.IsEnable,
+                NTNName = instance.NTNName,
+                NTNNumber = instance.NTNNumber,
+                BusinessDayStartTime = instance.BusinessDayStartTime,
+                BusinessDayEndTime = instance.BusinessDayEndTime,
+                IsCallCenter = instance.IsCallCenter,
+                BranchAddress = instance.BranchAddress,
+                BranchPhoneNumber = instance.BranchPhoneNumber,
+                IsActive = instance.IsActive
+            };
+        }
     }
 }

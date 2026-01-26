@@ -27,6 +27,7 @@ namespace ImportService
         IAreaMigrationService service_area,
         ISetupCompanySettingsMigrationService service_setupCompanySettings)
     {
+        private const string PostgresHost = "85.190.242.39";
         public async Task<IResult?> Import(int companyId, CancellationToken cancellationToken = default)
         {
             try
@@ -45,7 +46,7 @@ namespace ImportService
                 var domain = url.Replace("http://", "").Replace("https://", "").Replace("www.", "").Split('/')[0];
                 var dbName = domain.Split('.')[0];
                 var isNewRestaurant = await RestaurantCreated(domain, cancellationToken);
-                var postgresDbContext = GetPgDbContext($"Host=haproxy;Port=5434;Database={dbName};Username=postgres;Password=postgrespass");
+                var postgresDbContext = GetPgDbContext($"Host={PostgresHost};Port=5433;Database={dbName};Username=postgres;Password=postgrespass");
 
                 var dbCreated = await postgresDbContext.Database.EnsureCreatedAsync(cancellationToken);
                 if (!dbCreated)
@@ -88,7 +89,7 @@ namespace ImportService
 
         private static async Task<bool> RestaurantCreated(string domain, CancellationToken cancellationToken)
         {
-            var pgDb = GetRestaurantsDbContext("Host=haproxy;Port=5434;Database=restaurants;Username=postgres;Password=postgrespass");
+            var pgDb = GetRestaurantsDbContext($"Host={PostgresHost};Port=5433;Database=restaurants;Username=postgres;Password=postgrespass");
             var restaurant = await pgDb.Restaurants.FirstOrDefaultAsync(x => x.DomainName == domain, cancellationToken);
             if (restaurant == null)
             {

@@ -1,4 +1,7 @@
-﻿namespace PointofSaleModels.PGDatabaseModels;
+﻿using System;
+using System.Collections.Generic;
+
+namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class OrderDetail
 {
@@ -47,14 +50,4 @@ public partial class OrderDetail
     public bool? IsPercentage { get; set; }
 
     public int? DiscountId { get; set; }
-
-    public virtual DealItemDetail? DealItem { get; set; }
-
-    public virtual Discount? Discount { get; set; }
-
-    public virtual Gst? Gst { get; set; }
-
-    public virtual OrderMaster OrderMaster { get; set; } = null!;
-
-    public virtual ProductDetail ProductDetail { get; set; } = null!;
 }

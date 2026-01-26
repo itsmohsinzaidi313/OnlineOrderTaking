@@ -12,6 +12,4 @@ public partial class ProductSize
     public int? CompanyId { get; set; }
 
     public bool IsActive { get; set; }
-
-    public virtual ICollection<ProductDetail> ProductDetails { get; set; } = new List<ProductDetail>();
 }

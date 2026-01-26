@@ -11,15 +11,13 @@ public partial class Area
 
     public int? CityId { get; set; }
 
-    public TimeOnly? StartTime { get; set; }
+    public TimeSpan? StartTime { get; set; }
 
-    public TimeOnly? EndTime { get; set; }
+    public TimeSpan? EndTime { get; set; }
 
     public int CompanyId { get; set; }
 
     public bool? IsEnable { get; set; }
 
     public bool IsActive { get; set; }
-
-    public virtual ICollection<BranchDetail> BranchDetails { get; set; } = new List<BranchDetail>();
 }

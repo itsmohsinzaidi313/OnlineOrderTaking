@@ -13,9 +13,9 @@ public partial class BranchDetail
 
     public string? AreaName { get; set; }
 
-    public TimeOnly? AreaStartTime { get; set; }
+    public TimeSpan? AreaStartTime { get; set; }
 
-    public TimeOnly? AreaEndTime { get; set; }
+    public TimeSpan? AreaEndTime { get; set; }
 
     public int? DeliveryTime { get; set; }
 
@@ -28,8 +28,4 @@ public partial class BranchDetail
     public double? DeliveryChargesWaiveOffLimit { get; set; }
 
     public bool IsActive { get; set; }
-
-    public virtual Area Area { get; set; } = null!;
-
-    public virtual BranchMaster Branch { get; set; } = null!;
 }

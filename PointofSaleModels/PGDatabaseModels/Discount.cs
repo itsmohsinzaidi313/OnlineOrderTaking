@@ -66,14 +66,4 @@ public partial class Discount
     public string? VocherCodeStart { get; set; }
 
     public string? VocherCodeEnd { get; set; }
-
-    public virtual ICollection<DiscountBranchMapping> DiscountBranchMappings { get; set; } = new List<DiscountBranchMapping>();
-
-    public virtual ICollection<DiscountDayMapping> DiscountDayMappings { get; set; } = new List<DiscountDayMapping>();
-
-    public virtual ICollection<DiscountOrderModeMapping> DiscountOrderModeMappings { get; set; } = new List<DiscountOrderModeMapping>();
-
-    public virtual ICollection<DiscountOrderTypeMapping> DiscountOrderTypeMappings { get; set; } = new List<DiscountOrderTypeMapping>();
-
-    public virtual ICollection<DiscountProductDetailMapping> DiscountProductDetailMappings { get; set; } = new List<DiscountProductDetailMapping>();
 }

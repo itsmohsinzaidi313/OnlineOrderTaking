@@ -21,9 +21,9 @@ public partial class BranchMaster
 
     public string? Ntnnumber { get; set; }
 
-    public TimeOnly? BusinessDayStartTime { get; set; }
+    public TimeSpan? BusinessDayStartTime { get; set; }
 
-    public TimeOnly? BusinessDayEndTime { get; set; }
+    public TimeSpan? BusinessDayEndTime { get; set; }
 
     public bool IsCallCenter { get; set; }
 
@@ -32,12 +32,4 @@ public partial class BranchMaster
     public string? BranchPhoneNumber { get; set; }
 
     public bool IsActive { get; set; }
-
-    public virtual ICollection<BranchDetail> BranchDetails { get; set; } = new List<BranchDetail>();
-
-    public virtual ICollection<DiscountBranchMapping> DiscountBranchMappings { get; set; } = new List<DiscountBranchMapping>();
-
-    public virtual ICollection<ProductDetailBranchMapping> ProductDetailBranchMappings { get; set; } = new List<ProductDetailBranchMapping>();
-
-    public virtual ICollection<ProductDetailOrderSourcePriceMapping> ProductDetailOrderSourcePriceMappings { get; set; } = new List<ProductDetailOrderSourcePriceMapping>();
 }

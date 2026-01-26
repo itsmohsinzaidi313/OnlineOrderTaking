@@ -16,8 +16,4 @@ public partial class DealDescription
     public int? SortOrder { get; set; }
 
     public double? Price { get; set; }
-
-    public virtual DealItemDetail? DealItem { get; set; }
-
-    public virtual ProductDetail? ProductDetail { get; set; }
 }

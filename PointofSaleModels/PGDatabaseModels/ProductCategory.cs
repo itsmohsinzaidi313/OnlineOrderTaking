@@ -30,10 +30,4 @@ public partial class ProductCategory
     public string? ProductCardStyle { get; set; }
 
     public string? CategoryIcon { get; set; }
-
-    public virtual ICollection<CategoryAvailability> CategoryAvailabilities { get; set; } = new List<CategoryAvailability>();
-
-    public virtual SetupCompany? Company { get; set; }
-
-    public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 }

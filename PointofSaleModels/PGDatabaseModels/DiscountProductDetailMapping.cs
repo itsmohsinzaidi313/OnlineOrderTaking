@@ -12,8 +12,4 @@ public partial class DiscountProductDetailMapping
     public int ProductDetailId { get; set; }
 
     public bool IsActive { get; set; }
-
-    public virtual Discount Discount { get; set; } = null!;
-
-    public virtual ProductDetail ProductDetail { get; set; } = null!;
 }

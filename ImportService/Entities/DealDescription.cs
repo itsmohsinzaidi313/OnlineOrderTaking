@@ -3,10 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ImportService.Entities
 {
-    [Table("deal_description")]
     public class DealDescription
     {
-        [Key]
         public int DealDescId { get; set; }
 
         public int? DealItemId { get; set; }
@@ -18,12 +16,17 @@ namespace ImportService.Entities
         public int? SortOrder { get; set; }
 
         public double? Price { get; set; }
-
-        // ?? Navigation properties
-        [ForeignKey(nameof(DealItemId))]
-        public virtual DealItemDetail? DealItemDetail { get; set; }
-
-        [ForeignKey(nameof(ProductDetailId))]
-        public virtual ProductDetail? ProductDetail { get; set; }
+        public DealDescription CopyWith(DealDescription instance)
+        {
+            return new DealDescription
+            {
+                DealDescId = instance.DealDescId,
+                DealItemId = instance.DealItemId,
+                ProductDetailId = instance.ProductDetailId,
+                IsActive = instance.IsActive,
+                SortOrder = instance.SortOrder,
+                Price = instance.Price
+            };
+        }
     }
 }

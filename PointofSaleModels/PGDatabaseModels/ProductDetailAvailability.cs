@@ -16,8 +16,4 @@ public partial class ProductDetailAvailability
     public TimeSpan? EndTime { get; set; }
 
     public bool? IsActive { get; set; }
-
-    public virtual SetupMasterDetail? Day { get; set; }
-
-    public virtual ProductDetailBranchMapping? ProductBranch { get; set; }
 }

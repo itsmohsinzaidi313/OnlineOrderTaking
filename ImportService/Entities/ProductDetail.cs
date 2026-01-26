@@ -5,10 +5,8 @@ namespace ImportService.Entities
 {
     public class ProductDetail
     {
-        [Key]
         public int ProductDetailId { get; set; }
 
-        [Required]
         public int ProductId { get; set; }
 
         [Required]
@@ -16,9 +14,7 @@ namespace ImportService.Entities
 
         public string? SizeName { get; set; }
 
-
         public double Price { get; set; }
-
 
         public double TaxPercent { get; set; }
 
@@ -38,9 +34,7 @@ namespace ImportService.Entities
 
         public int? ParentProductDetailId { get; set; }
 
-
         public double? FuturePrice { get; set; }
-
 
         public double? PreviousPrice { get; set; }
 
@@ -54,17 +48,34 @@ namespace ImportService.Entities
 
         public bool IsBestSeller { get; set; }
 
-
         public double? PriceBeforeDiscount { get; set; }
-
-        // ?? Navigation Properties
-        [ForeignKey(nameof(SizeId))]
-        public virtual ProductSize? ProductSize { get; set; }
-
-        [ForeignKey(nameof(ProductId))]
-        public virtual Product? Product { get; set; }
-
-        [ForeignKey(nameof(FlavourId))]
-        public virtual Flavour? Flavour { get; set; }
+        public ProductDetail CopyWith(ProductDetail instance)
+        {
+            return new ProductDetail
+            {
+                ProductDetailId = instance.ProductDetailId,
+                ProductId = instance.ProductId,
+                SizeId = instance.SizeId,
+                SizeName = instance.SizeName,
+                Price = instance.Price,
+                TaxPercent = instance.TaxPercent,
+                IsActive = instance.IsActive,
+                OnlyForDeal = instance.OnlyForDeal,
+                IsEnable = instance.IsEnable,
+                FlavourId = instance.FlavourId,
+                FlavourName = instance.FlavourName,
+                IsTopping = instance.IsTopping,
+                IsSaleable = instance.IsSaleable,
+                ParentProductDetailId = instance.ParentProductDetailId,
+                FuturePrice = instance.FuturePrice,
+                PreviousPrice = instance.PreviousPrice,
+                IsDealDirectPunch = instance.IsDealDirectPunch,
+                IsOpen = instance.IsOpen,
+                IsPromotion = instance.IsPromotion,
+                RemoteId = instance.RemoteId,
+                IsBestSeller = instance.IsBestSeller,
+                PriceBeforeDiscount = instance.PriceBeforeDiscount
+            };
+        }
     }
 }

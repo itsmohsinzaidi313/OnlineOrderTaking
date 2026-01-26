@@ -3,37 +3,33 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ImportService.Entities
 {
-    [Table("product_detail_branch_mapping")] // PostgreSQL table name convention
     public class ProductDetailBranchMapping
     {
-        [Key]
-        [Column("ProductDetailBranchMappingId", TypeName = "integer")]
         public int ProductDetailBranchMappingId { get; set; }
 
-        [Column("ProductDetailId", TypeName = "integer")]
         public int? ProductDetailId { get; set; }
 
-        [Column("BranchId", TypeName = "integer")]
         public int? BranchId { get; set; }
 
-        [Column("IsActive", TypeName = "boolean")]
         public bool? IsActive { get; set; }
 
-        [Column("IsDayWise", TypeName = "boolean")]
         public bool IsDayWise { get; set; }
 
-        [Column("IsEnable", TypeName = "boolean")]
         public bool IsEnable { get; set; }
 
-        [Column("RemoteId", TypeName = "varchar(100)")]
-        [MaxLength(100)]
         public string? RemoteId { get; set; }
-
-        // ?? Navigation properties
-        [ForeignKey(nameof(ProductDetailId))]
-        public virtual ProductDetail? ProductDetail { get; set; }
-
-        [ForeignKey(nameof(BranchId))]
-        public virtual BranchMaster? Branch { get; set; }
+        public ProductDetailBranchMapping CopyWith(ProductDetailBranchMapping instance)
+        {
+            return new ProductDetailBranchMapping
+            {
+                ProductDetailBranchMappingId = instance.ProductDetailBranchMappingId,
+                ProductDetailId = instance.ProductDetailId,
+                BranchId = instance.BranchId,
+                IsActive = instance.IsActive,
+                IsDayWise = instance.IsDayWise,
+                IsEnable = instance.IsEnable,
+                RemoteId = instance.RemoteId
+            };
+        }
     }
 }

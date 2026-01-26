@@ -18,10 +18,4 @@ public partial class ProductDetailBranchMapping
     public bool IsEnable { get; set; }
 
     public string? RemoteId { get; set; }
-
-    public virtual BranchMaster? Branch { get; set; }
-
-    public virtual ProductDetail? ProductDetail { get; set; }
-
-    public virtual ICollection<ProductDetailAvailability> ProductDetailAvailabilities { get; set; } = new List<ProductDetailAvailability>();
 }

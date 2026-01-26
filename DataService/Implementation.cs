@@ -72,7 +72,7 @@ internal class Implementation()
                     ["BusinessStartTime"] = x.BusinessDayStartTime.ToString(),
                     ["BusinessEndTime"] = x.BusinessDayEndTime.ToString(),
                     ["IsBranchOpen"] = x.BusinessDayStartTime.HasValue && x.BusinessDayEndTime.HasValue
-    ? DateTime.UtcNow.TimeOfDay >= x.BusinessDayStartTime.Value.ToTimeSpan() && DateTime.UtcNow.TimeOfDay <= x.BusinessDayEndTime.Value.ToTimeSpan()
+    ? DateTime.UtcNow.TimeOfDay >= x.BusinessDayStartTime.Value && DateTime.UtcNow.TimeOfDay <= x.BusinessDayEndTime.Value
     : false
                 }))
             {
@@ -227,7 +227,11 @@ internal class Implementation()
         if (bid == 0)
         {
             using var dbContext = GetDbContext(connectionString);
-            bid = dbContext.BranchMasters.First(x => x.IsActive).BranchId;
+            var activeBranch = dbContext.BranchMasters.FirstOrDefault(x => x.IsActive);
+            if (activeBranch != null)
+                bid = activeBranch.BranchId;
+            else
+                bid = 0;
         }
         var dbSizes = new List<Db.ProductSize>();
         var dbFlavours = new List<Db.Flavour>();
@@ -393,23 +397,27 @@ internal class Implementation()
                         };
                     }
 
+                    var sizeItem = (from x in dbMenuData.ProductSizes
+                                    where x.SizeId == dbProductDetail.SizeId
+                                    select new ItemSize
+                                    {
+                                        Id = x.SizeId,
+                                        Name = x.SizeName ?? "N/A",
+                                    }).FirstOrDefault() ?? new ItemSize { Id = dbProductDetail.SizeId, Name = "N/A" };
+
+                    var flavourItem = (from x in dbMenuData.Flavours
+                                       where x.FlavourId == dbProductDetail.FlavourId
+                                       select new ItemFlavour
+                                       {
+                                           Id = x.FlavourId,
+                                           Name = x.FlavourName ?? "N/A",
+                                       }).FirstOrDefault() ?? new ItemFlavour { Id = dbProductDetail.FlavourId ?? 0, Name = "N/A" };
+
                     var variation = new ItemVariation
                     {
                         Id = dbProductDetail.ProductDetailId,
-                        Size = (from x in dbMenuData.ProductSizes
-                                where x.SizeId == dbProductDetail.SizeId
-                                select new ItemSize
-                                {
-                                    Id = x.SizeId,
-                                    Name = x.SizeName ?? "N/A",
-                                }).First(),
-                        Flavour = (from x in dbMenuData.Flavours
-                                   where x.FlavourId == dbProductDetail.FlavourId
-                                   select new ItemFlavour
-                                   {
-                                       Id = x.FlavourId,
-                                       Name = x.FlavourName ?? "N/A",
-                                   }).First(),
+                        Size = sizeItem,
+                        Flavour = flavourItem,
                         Price = dbProductDetail.Price,
                     };
                     foreach (var dbDealItem in dbMenuData.DealItemDetails.Where(x => x.ProductDetailId == dbProductDetail.ProductDetailId))
@@ -431,7 +439,7 @@ internal class Implementation()
                             {
                                 Id = dbDescription.ProductDetailId ?? 0,
                                 Price = dbDescription.Price ?? 0.0,
-                                Name = list.First().ProductName ?? string.Empty,
+                                Name = list.FirstOrDefault()?.ProductName ?? string.Empty,
                             };
                             itemChoice.ItemOptions.Add(itemOption);
                         }

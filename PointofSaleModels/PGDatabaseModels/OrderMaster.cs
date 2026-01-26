@@ -1,4 +1,7 @@
-﻿namespace PointofSaleModels.PGDatabaseModels;
+﻿using System;
+using System.Collections.Generic;
+
+namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class OrderMaster
 {
@@ -125,18 +128,4 @@ public partial class OrderMaster
     public int? PartyPhoneId { get; set; }
 
     public int? PartyCustomerId { get; set; }
-
-    public virtual Area? Area { get; set; }
-
-    public virtual BranchMaster Branch { get; set; } = null!;
-
-    public virtual SetupCompany Company { get; set; } = null!;
-
-    public virtual Gst? Gst { get; set; }
-
-    public virtual ICollection<OrderMaster> InversePreviousOrderMaster { get; set; } = new List<OrderMaster>();
-
-    public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
-
-    public virtual OrderMaster? PreviousOrderMaster { get; set; }
 }

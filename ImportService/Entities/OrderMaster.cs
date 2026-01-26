@@ -131,17 +131,73 @@ namespace ImportService.Entities
         public int? PartyPhoneId { get; set; }
 
         public int? PartyCustomerId { get; set; }
-
-        public virtual Area? Area { get; set; }
-
-        public virtual BranchMaster Branch { get; set; } = null!;
-
-        public virtual GST? Gst { get; set; }
-
-        public virtual ICollection<OrderMaster> InversePreviousOrderMaster { get; set; } = new List<OrderMaster>();
-
-        public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
-
-        public virtual OrderMaster? PreviousOrderMaster { get; set; }
+        public OrderMaster CopyWith(OrderMaster instance)
+        {
+            return new OrderMaster
+            {
+                OrderMasterId = instance.OrderMasterId,
+                CompanyId = instance.CompanyId,
+                OrderNumber = instance.OrderNumber,
+                BranchId = instance.BranchId,
+                AreaId = instance.AreaId,
+                CustomerId = instance.CustomerId,
+                PhoneId = instance.PhoneId,
+                CustomerAddressId = instance.CustomerAddressId,
+                RiderId = instance.RiderId,
+                OrderStatusId = instance.OrderStatusId,
+                IsAdvanceOrder = instance.IsAdvanceOrder,
+                SpecialInstruction = instance.SpecialInstruction,
+                OrderDate = instance.OrderDate,
+                OrderTime = instance.OrderTime,
+                TotalAmountWithoutGst = instance.TotalAmountWithoutGst,
+                Gstid = instance.Gstid,
+                TotalAmountWithGst = instance.TotalAmountWithGst,
+                IsActive = instance.IsActive,
+                AlternateNumber = instance.AlternateNumber,
+                AdvanceOrderDate = instance.AdvanceOrderDate,
+                DeliveryTime = instance.DeliveryTime,
+                Clinumber = instance.Clinumber,
+                OrderSourceId = instance.OrderSourceId,
+                OrderSourceValue = instance.OrderSourceValue,
+                DiscountId = instance.DiscountId,
+                DeliveryCharges = instance.DeliveryCharges,
+                OrderCancelReasonId = instance.OrderCancelReasonId,
+                WaiterId = instance.WaiterId,
+                ShiftDetailId = instance.ShiftDetailId,
+                TerminalDetailId = instance.TerminalDetailId,
+                OrderModeId = instance.OrderModeId,
+                Cover = instance.Cover,
+                PaymentTypeId = instance.PaymentTypeId,
+                DiscountAmount = instance.DiscountAmount,
+                Gstamount = instance.Gstamount,
+                CareOfId = instance.CareOfId,
+                BillPrintCount = instance.BillPrintCount,
+                PreviousOrderMasterId = instance.PreviousOrderMasterId,
+                Remarks = instance.Remarks,
+                DiscountPercent = instance.DiscountPercent,
+                Gstpercent = instance.Gstpercent,
+                FinishWasteRemarks = instance.FinishWasteRemarks,
+                FinishWasteReasonId = instance.FinishWasteReasonId,
+                TableId = instance.TableId,
+                EmailAddress = instance.EmailAddress,
+                OrderJson = instance.OrderJson,
+                SrbInvoiceId = instance.SrbInvoiceId,
+                FbrInvoiceId = instance.FbrInvoiceId,
+                ReservationId = instance.ReservationId,
+                TotalAdvance = instance.TotalAdvance,
+                IsSyncToPos = instance.IsSyncToPos,
+                Tip = instance.Tip,
+                ReceivedAmount = instance.ReceivedAmount,
+                ChangeAmount = instance.ChangeAmount,
+                VoucherCode = instance.VoucherCode,
+                VoucherId = instance.VoucherId,
+                VoucherAmount = instance.VoucherAmount,
+                CareOfName = instance.CareOfName,
+                BankName = instance.BankName,
+                CardNumber = instance.CardNumber,
+                PartyPhoneId = instance.PartyPhoneId,
+                PartyCustomerId = instance.PartyCustomerId
+            };
+        }
     }
 }

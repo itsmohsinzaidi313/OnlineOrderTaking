@@ -39,35 +39,35 @@ namespace ImportService.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<SetupCompany>()
-                .ToTable("SetupCompany", "dbo") // matches your SQL Server schema
+                .ToTable("SetupCompany")
                 .HasKey(x => x.CompanyId);
 
             modelBuilder.Entity<BranchMaster>()
                 .Ignore(b => b.CityName)
-                .ToTable("BranchMaster", "dbo") // matches your SQL Server schema
+                .ToTable("BranchMaster", "dbo")
                 .HasKey(x => x.BranchId);
 
             modelBuilder.Entity<City>()
-                .ToTable("City", "dbo") // matches your SQL Server schema
+                .ToTable("City", "dbo")
                 .HasKey(x => x.CityId);
 
             modelBuilder.Entity<Area>()
-                .ToTable("Area", "dbo") // matches your SQL Server schema
+                .ToTable("Area", "dbo")
                 .HasKey(x => x.AreaId);
 
             modelBuilder.Entity<BranchDetail>()
                 .Ignore(b => b.AreaName)
                 .Ignore(b => b.AreaStartTime)
                 .Ignore(b => b.AreaEndTime)
-                .ToTable("BranchDetail", "dbo") // matches your SQL Server schema
+                .ToTable("BranchDetail", "dbo")
                 .HasKey(x => x.BranchDetailId);
 
             modelBuilder.Entity<SetupMaster>()
-                .ToTable("Setup_Master", "dbo") // matches your SQL Server schema
+                .ToTable("Setup_Master", "dbo")
                 .HasKey(x => x.SetupMasterId);
 
             modelBuilder.Entity<SetupMasterDetail>()
-                .ToTable("Setup_MasterDetail", "dbo") // matches your SQL Server schema
+                .ToTable("Setup_MasterDetail", "dbo")
                 .HasKey(x => x.SetupDetailId);
 
             modelBuilder.Entity<ProductCategory>()
@@ -107,6 +107,10 @@ namespace ImportService.Data
             modelBuilder.Entity<PaymentMode>()
                 .ToTable("PaymentMode", "dbo")
                 .HasKey(x => x.PaymentModeId);
+
+            modelBuilder.Entity<PaymentMode>()
+                .Property(x => x.PaymentModeName)
+                .HasColumnName("PaymentMode");
 
             modelBuilder.Entity<GST>()
                 .ToTable("GST", "dbo")
@@ -213,35 +217,35 @@ namespace ImportService.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<SetupCompany>()
-                .ToTable("setup_company") // lowercase for Postgres
+                .ToTable("setup_company")
                 .HasKey(x => x.CompanyId);
 
             modelBuilder.Entity<BranchMaster>()
-                .ToTable("branch_master") // lowercase for Postgres
+                .ToTable("branch_master")
                 .HasKey(x => x.BranchId);
 
             modelBuilder.Entity<City>()
-                .ToTable("city") // lowercase for Postgres
+                .ToTable("city")
                 .HasKey(x => x.CityId);
 
             modelBuilder.Entity<Area>()
-                .ToTable("area") // lowercase for Postgres
+                .ToTable("area")
                 .HasKey(x => x.AreaId);
 
             modelBuilder.Entity<BranchDetail>()
-                .ToTable("branch_detail") // matches your SQL Server schema
+                .ToTable("branch_detail")
                 .HasKey(x => x.BranchDetailId);
 
             modelBuilder.Entity<BranchDayMapping>()
-                .ToTable("branch_day_mapping") // matches your SQL Server schema
+                .ToTable("branch_day_mapping")
                 .HasKey(x => x.BranchDayMappingId);
 
             modelBuilder.Entity<SetupMaster>()
-                .ToTable("setup_master") // lowercase for Postgres
+                .ToTable("setup_master")
                 .HasKey(x => x.SetupMasterId);
 
             modelBuilder.Entity<SetupMasterDetail>()
-                .ToTable("setup_master_detail") // lowercase for Postgres
+                .ToTable("setup_master_detail")
                 .HasKey(x => x.SetupDetailId);
 
             modelBuilder.Entity<ProductCategory>()
@@ -279,6 +283,10 @@ namespace ImportService.Data
             modelBuilder.Entity<PaymentMode>()
                 .ToTable("payment_mode")
                 .HasKey(x => x.PaymentModeId);
+
+            modelBuilder.Entity<PaymentMode>()
+                .Property(x => x.PaymentModeName)
+                .HasColumnName("PaymentMode");
 
             modelBuilder.Entity<GST>()
                 .ToTable("gst")

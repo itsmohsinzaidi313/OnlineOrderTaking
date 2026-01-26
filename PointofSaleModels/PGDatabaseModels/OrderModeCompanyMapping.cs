@@ -12,6 +12,4 @@ public partial class OrderModeCompanyMapping
     public int? CompanyId { get; set; }
 
     public bool IsActive { get; set; }
-
-    public virtual SetupCompany? Company { get; set; }
 }

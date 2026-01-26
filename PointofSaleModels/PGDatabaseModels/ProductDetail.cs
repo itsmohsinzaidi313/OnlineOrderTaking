@@ -48,18 +48,4 @@ public partial class ProductDetail
     public bool IsBestSeller { get; set; }
 
     public double? PriceBeforeDiscount { get; set; }
-
-    public virtual ICollection<DealDescription> DealDescriptions { get; set; } = new List<DealDescription>();
-
-    public virtual ICollection<DiscountProductDetailMapping> DiscountProductDetailMappings { get; set; } = new List<DiscountProductDetailMapping>();
-
-    public virtual Flavour? Flavour { get; set; }
-
-    public virtual Product Product { get; set; } = null!;
-
-    public virtual ICollection<ProductDetailBranchMapping> ProductDetailBranchMappings { get; set; } = new List<ProductDetailBranchMapping>();
-
-    public virtual ICollection<ProductDetailOrderSourcePriceMapping> ProductDetailOrderSourcePriceMappings { get; set; } = new List<ProductDetailOrderSourcePriceMapping>();
-
-    public virtual ProductSize Size { get; set; } = null!;
 }

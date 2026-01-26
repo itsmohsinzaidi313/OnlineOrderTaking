@@ -11,13 +11,9 @@ public partial class CategoryAvailability
 
     public int? DayId { get; set; }
 
-    public TimeOnly? StartTime { get; set; }
+    public TimeSpan? StartTime { get; set; }
 
-    public TimeOnly? EndTime { get; set; }
+    public TimeSpan? EndTime { get; set; }
 
     public bool? IsActive { get; set; }
-
-    public virtual ProductCategory? Category { get; set; }
-
-    public virtual SetupMasterDetail? Day { get; set; }
 }

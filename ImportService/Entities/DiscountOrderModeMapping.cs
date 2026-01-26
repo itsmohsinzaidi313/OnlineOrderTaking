@@ -3,23 +3,24 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ImportService.Entities
 {
-    [Table("DiscountOrderModeMapping")]
     public class DiscountOrderModeMapping
     {
-        [Key]
-        [Column("DiscountOrderModeMappingId")]
         public int DiscountOrderModeMappingId { get; set; }
 
-        [Required]
-        [Column("DiscountId")]
         public int DiscountId { get; set; }
 
-        [Required]
-        [Column("OrderModeId")]
         public int OrderModeId { get; set; }
 
-        [Required]
-        [Column("IsActive")]
         public bool IsActive { get; set; }
+        public DiscountOrderModeMapping CopyWith(DiscountOrderModeMapping instance)
+        {
+            return new DiscountOrderModeMapping
+            {
+                DiscountOrderModeMappingId = instance.DiscountOrderModeMappingId,
+                DiscountId = instance.DiscountId,
+                OrderModeId = instance.OrderModeId,
+                IsActive = instance.IsActive
+            };
+        }
     }
 }

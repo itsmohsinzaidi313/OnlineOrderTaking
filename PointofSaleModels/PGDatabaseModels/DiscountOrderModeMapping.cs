@@ -12,6 +12,4 @@ public partial class DiscountOrderModeMapping
     public int OrderModeId { get; set; }
 
     public bool IsActive { get; set; }
-
-    public virtual Discount Discount { get; set; } = null!;
 }

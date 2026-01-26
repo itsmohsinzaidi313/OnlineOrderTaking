@@ -6,24 +6,28 @@ namespace ImportService.Entities
     [Table("BranchDayMapping")]
     public class BranchDayMapping
     {
-        [Key]
-        [Column(TypeName = "INTEGER")]
         public int BranchDayMappingId { get; set; }
 
-        [Column(TypeName = "INTEGER")]
-        [Required]
         public int BranchId { get; set; }
 
-        [Column(TypeName = "INTEGER")]
-        [Required]
         public int DayId { get; set; }
 
-        [Column(TypeName = "TIME")]
         public TimeSpan? StartTime { get; set; }
 
-        [Column(TypeName = "TIME")]
         public TimeSpan? EndTime { get; set; }
 
         public bool IsActive { get; set; } = true;
+        public BranchDayMapping CopyWith(BranchDayMapping instance)
+        {
+            return new BranchDayMapping
+            {
+                BranchDayMappingId = instance.BranchDayMappingId,
+                BranchId = instance.BranchId,
+                DayId = instance.DayId,
+                StartTime = instance.StartTime,
+                EndTime = instance.EndTime,
+                IsActive = instance.IsActive
+            };
+        }
     }
 }
