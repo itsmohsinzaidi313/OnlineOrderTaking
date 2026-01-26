@@ -44,7 +44,8 @@ builder.Services
     .AddScoped<IFlavourMigrationService, FlavourMigrationService>()
     .AddScoped<ICityMigrationService, CityMigrationService>()
     .AddScoped<IAreaMigrationService, AreaMigrationService>()
-    .AddScoped<ISetupCompanySettingsMigrationService, SetupCompanySettingsMigrationService>();
+    .AddScoped<ISetupCompanySettingsMigrationService, SetupCompanySettingsMigrationService>()
+    .AddScoped<Implementation>();
 
 var app = builder.Build();
 
