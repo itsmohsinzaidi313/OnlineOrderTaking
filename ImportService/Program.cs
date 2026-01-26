@@ -53,7 +53,7 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Imple
 {
     return await impl.Import(companyId, httpContext.RequestAborted);
 });
-app.MapGet("health", (SqlServerDbContext sqlServerDbContext) => {
+app.MapGet("health", ([FromServices] SqlServerDbContext sqlServerDbContext) => {
     if (sqlServerDbContext.Database.CanConnect() == false)
     {
         return Results.Problem("Sql Database connection failed", statusCode: 503);
