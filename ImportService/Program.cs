@@ -3,6 +3,7 @@ using ImportService.Data;
 using ImportService.Interfaces;
 using ImportService.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,7 +49,7 @@ builder.Services
 var app = builder.Build();
 
 // Optional: minimal endpoint (useful for health checks)
-app.MapGet("/import/{companyId:int}", async (int companyId, Implementation impl, HttpContext httpContext) =>
+app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Implementation impl, HttpContext httpContext) =>
 {
     return await impl.Import(companyId, httpContext.RequestAborted);
 });
