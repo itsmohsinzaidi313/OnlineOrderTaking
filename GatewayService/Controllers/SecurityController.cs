@@ -28,7 +28,7 @@ namespace GatewayService.Controllers
             var httpClient = new HttpClient
             {
                 Timeout = TimeSpan.FromMinutes(5),
-                BaseAddress = new Uri("http://importservice")
+                BaseAddress = new Uri("http://importservice:8080")
             };
 
             var response = await httpClient.GetAsync("health");
