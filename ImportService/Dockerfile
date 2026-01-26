@@ -6,7 +6,7 @@ WORKDIR /src
 
 # Copy only csproj files first to leverage Docker layer caching
 # IMPORTANT: This assumes the build context is the repo root
-COPY DataService/ImportService.csproj ImportService/
+COPY ImportService/ImportService.csproj ImportService/
 COPY PointofSaleModels/PointofSaleModels.csproj PointofSaleModels/
 
 # Restore dependencies
