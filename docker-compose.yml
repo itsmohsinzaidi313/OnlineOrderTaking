@@ -146,7 +146,6 @@ services:
     build:
       context: .
       dockerfile: ./DataService/Dockerfile
-    container_name: dataservice
     environment:
       - ConnectionStrings__Postgres=${ROSQLCONNECTION}
       - ConnectionStrings__Redis=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
@@ -166,7 +165,6 @@ services:
     build:
       context: .
       dockerfile: ./ImportService/Dockerfile
-    container_name: importservice
     environment:
       - ConnectionStrings__SqlServer=Server=163.61.91.143;Database=WebOrdering;User Id=sa;Password=Zid2801ealyk;TrustServerCertificate=True;
     networks:
@@ -222,7 +220,6 @@ services:
     build:
       context: .
       dockerfile: ./GatewayService/Dockerfile
-    container_name: gatewayservice
     ports:
       - "8090:8080"
     environment:
