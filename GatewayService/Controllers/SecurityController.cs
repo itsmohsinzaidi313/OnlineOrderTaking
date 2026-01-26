@@ -49,7 +49,7 @@ namespace GatewayService.Controllers
                 return StatusCode((int)response.StatusCode, $"Import service failed for companyId: {companyId}");
             }
 
-            return Ok($"Service is running for companyId: {companyId}");
+            return Ok($"Import completed successfully for companyId: {companyId}");
         }
 
         [HttpPost("generate-token")]
