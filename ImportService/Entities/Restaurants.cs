@@ -6,6 +6,7 @@ namespace ImportService.Entities
     public class Restaurants
     {
         [Key]
+        [Column("id")]
         public int Id { get; set; }
         [Column("name")]
         public string Name { get; set; } = string.Empty;

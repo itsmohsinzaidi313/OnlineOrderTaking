@@ -373,5 +373,12 @@ namespace ImportService.Data
         }
 
         public DbSet<Restaurants> Restaurants => Set<Restaurants>();
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Restaurants>()
+                .ToTable("restaurants")
+                .HasKey(x => x.Id);
+        }
     }
 }
