@@ -82,7 +82,7 @@ namespace ImportService
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message, statusCode: 500);
+                return Results.Problem(ex.InnerException?.Message ?? ex.Message, statusCode: 500);
             }
         }
 
