@@ -278,9 +278,6 @@ services:
 
 volumes:
   etcd_data:
-  patroni1_data:
-  patroni2_data:
-  patroni3_data:
   redis_data:
   rabbitmq_data:
 

@@ -20,7 +20,7 @@ COPY PointofSaleModels/ PointofSaleModels/
 RUN dotnet publish GatewayService/GatewayService.csproj -c Release -o /app/out
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 
 # Install curl for healthcheck and create non-root user for security
 RUN apt-get update \
