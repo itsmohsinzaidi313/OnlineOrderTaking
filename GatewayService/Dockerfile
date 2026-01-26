@@ -35,8 +35,8 @@ WORKDIR /app
 RUN rm -rf /app/out/appsettings.*.json
 COPY --from=build /app/out .
 
-ENTRYPOINT ["dotnet", "GatewayService.dll", "--urls", "http://0.0.0.0:80"]
+ENTRYPOINT ["dotnet", "GatewayService.dll"]
 
 # Healthcheck to ensure the service is running
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost/health || exit 1
+    CMD curl -f http://localhost:8080/health || exit 1

@@ -16,6 +16,12 @@ namespace GatewayService.Controllers
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
 
+        [HttpGet("health")]
+        public IActionResult Health()
+        {
+            return Ok("Gateway Service is healthy.");
+        }
+
         [HttpGet("import/{companyId:int}")]
         public async Task<IActionResult> Import(int companyId)
         {

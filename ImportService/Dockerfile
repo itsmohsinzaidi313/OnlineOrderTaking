@@ -36,6 +36,6 @@ COPY --from=build /app/out .
 
 # Health check - use the actual health endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -fsS http://localhost/health || exit 1
+    CMD curl -fsS http://localhost:8080/health || exit 1
 
-ENTRYPOINT ["dotnet", "ImportService.dll", "--urls", "http://0.0.0.0:80"]
+ENTRYPOINT ["dotnet", "ImportService.dll"]
