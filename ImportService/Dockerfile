@@ -6,18 +6,18 @@ WORKDIR /src
 
 # Copy only csproj files first to leverage Docker layer caching
 # IMPORTANT: This assumes the build context is the repo root
-COPY GatewayService/GatewayService.csproj GatewayService/
+COPY DataService/ImportService.csproj ImportService/
 COPY PointofSaleModels/PointofSaleModels.csproj PointofSaleModels/
 
 # Restore dependencies
-RUN dotnet restore GatewayService/GatewayService.csproj
+RUN dotnet restore ImportService/ImportService.csproj
 
 # Copy the remaining source
-COPY GatewayService/ GatewayService/
+COPY ImportService/ ImportService/
 COPY PointofSaleModels/ PointofSaleModels/
 
 # Publish the service
-RUN dotnet publish GatewayService/GatewayService.csproj -c Release -o /app/out
+RUN dotnet publish ImportService/ImportService.csproj -c Release -o /app/out -v minimal
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
@@ -32,11 +32,10 @@ RUN chown -R appuser /app
 USER appuser
 
 WORKDIR /app
-RUN rm -rf /app/out/appsettings.*.json
 COPY --from=build /app/out .
 
-ENTRYPOINT ["dotnet", "GatewayService.dll", "--urls", "http://0.0.0.0:80"]
+# Health check - use the actual health endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -fsS http://localhost/health || exit 1
 
-# Healthcheck to ensure the service is running
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost/health || exit 1
+ENTRYPOINT ["dotnet", "ImportService.dll"]

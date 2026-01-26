@@ -1,8 +1,10 @@
+using ImportService.Data;
+
 namespace ImportService.Interfaces
 {
 	public interface IMenuMigrationService
 	{
-		Task<int> MigrateMenuAsync(int companyId,  CancellationToken ct = default);
+		Task MigrateMenuAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default);
 	}
 }
 

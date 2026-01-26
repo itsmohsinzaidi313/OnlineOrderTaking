@@ -5,41 +5,17 @@ using Microsoft.EntityFrameworkCore;
 namespace ImportService.Services
 {
     public class ProductSizeMigrationService(
-        SqlServerDbContext sqlDb,
-        PostgresDbContext pgDb,
-        ILogger<ProductSizeMigrationService> logger) : IProductSizeMigrationService
+        SqlServerDbContext sqlDb) : IProductSizeMigrationService
     {
-        public async Task<int> MigrateProductSizesAsync(int companyId, CancellationToken ct = default)
+        public async Task MigrateProductSizesAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default)
         {
-            int migrated = 0;
+            var productSizes = await sqlDb.ProductSizes
+                .Where(x => x.IsActive == true && x.CompanyId == companyId)
+                .AsNoTracking()
+                .ToListAsync(ct);
 
-            try
-            {
-                var productSizes = await sqlDb.ProductSizes
-                    .Where(x => x.IsActive == true && (x.CompanyId == null || x.CompanyId == companyId))
-                    .AsNoTracking()
-                    .ToListAsync(ct);
-
-                if (productSizes == null || productSizes.Count == 0)
-                {
-                    logger.LogInformation("No ProductSize rows to migrate for CompanyId={CompanyId}", companyId);
-                    return 0;
-                }
-
-                await pgDb.ProductSizes.ExecuteDeleteAsync(ct);
-                await pgDb.ProductSizes.AddRangeAsync(productSizes, ct);
-
-                migrated = await pgDb.SaveChangesAsync(ct);
-                logger.LogInformation("✅ ProductSize migration completed for CompanyId={CompanyId}. Rows affected: {Count}",
-                    companyId, migrated);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "❌ Error migrating ProductSizes for CompanyId={CompanyId}", companyId);
-                throw;
-            }
-
-            return migrated;
+            await pgDb.ProductSizes.ExecuteDeleteAsync(ct);
+            await pgDb.ProductSizes.AddRangeAsync(productSizes, ct);
         }
     }
 }

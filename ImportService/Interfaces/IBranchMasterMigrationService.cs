@@ -1,7 +1,9 @@
-﻿namespace ImportService.Interfaces
+﻿using ImportService.Data;
+
+namespace ImportService.Interfaces
 {
     public interface IBranchMasterMigrationService
     {
-        Task<int> MigrateBranchMasterAsync(int companyId, CancellationToken ct = default);
+        Task MigrateBranchMasterAsync(int companyId, PostgresDbContext PgDb, CancellationToken ct = default);
     }
 }

@@ -1,8 +1,10 @@
+using ImportService.Data;
+
 namespace ImportService.Interfaces
 {
     public interface IGSTMigrationService
     {
-        Task<int> MigrateGSTsAsync(int companyId, CancellationToken ct = default);
+        Task MigrateGSTsAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default);
     }
 }
 

@@ -162,6 +162,22 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  importservice:
+    build:
+      context: .
+      dockerfile: ./ImportService/Dockerfile
+    container_name: importservice
+    environment:
+      - ConnectionStrings__Postgres=Host=haproxy;Port=5433;Database=restaurants;Username=postgres;Password=postgrespass
+      - ConnectionStrings__SqlServer=Server=163.61.91.143;Database=WebOrdering;User Id=sa;Password=Zid2801ealyk;TrustServerCertificate=True;
+    networks:
+      - patroni-net
+    depends_on:
+      haproxy:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
   createorderservice:
     build:
       context: .

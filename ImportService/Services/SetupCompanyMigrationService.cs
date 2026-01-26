@@ -1,39 +1,21 @@
 ﻿using ImportService.Data;
 using ImportService.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ImportService.Services
 {
-    public class SetupCompanyMigrationService : ISetupCompanyMigrationService
+    public class SetupCompanyMigrationService(SqlServerDbContext SqlDb) : ISetupCompanyMigrationService
     {
-        private readonly SqlServerDbContext _sqlDb;
-        private readonly PostgresDbContext _pgDb;
-        private readonly ILogger<SetupCompanyMigrationService> _logger;
-
-        public SetupCompanyMigrationService(SqlServerDbContext sqlDb, PostgresDbContext pgDb, ILogger<SetupCompanyMigrationService> logger)
+        public async Task MigrateSetupCompanyAsync(int companyId, PostgresDbContext PgDb, CancellationToken ct = default)
         {
-            _sqlDb = sqlDb;
-            _pgDb = pgDb;
-            _logger = logger;
-        }
-
-        public async Task<int> MigrateSetupCompanyAsync(int companyId, CancellationToken ct = default)
-        {
-            var source = await _sqlDb.SetupCompanies
+            var source = await SqlDb.SetupCompanies
                 .Where(x => x.CompanyId == companyId)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(ct);
-
-            if (source == null)
-            {
-                _logger.LogWarning("No company found with ID {CompanyId}", companyId);
-                return 0;
-            }
-
-            await _pgDb.SetupCompanies.ExecuteDeleteAsync(ct);
-            await _pgDb.SetupCompanies.AddAsync(source, ct);
-
-            return await _pgDb.SaveChangesAsync(ct);
+            await PgDb.SetupCompanies.ExecuteDeleteAsync(ct);
+            if (source == null) return;
+            await PgDb.SetupCompanies.AddAsync(source, ct);
         }
 
     }

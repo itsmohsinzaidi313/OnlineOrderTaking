@@ -98,11 +98,5 @@ namespace ImportService.Entities
         [Column("VocherCodeEnd", TypeName = "varchar(100)")]
         public string? VocherCodeEnd { get; set; }
 
-        // Navigation Properties
-        public ICollection<DiscountOrderModeMapping>? DiscountOrderModeMappings { get; set; }
-        public ICollection<DiscountOrderTypeMapping>? DiscountOrderTypeMappings { get; set; }
-        public ICollection<DiscountBranchMapping>? DiscountBranchMappings { get; set; }
-        public ICollection<DiscountProductDetailMapping>? DiscountProductDetailMappings { get; set; }
-        public ICollection<DiscountDayMapping>? DiscountDayMappings { get; set; }
     }
 }

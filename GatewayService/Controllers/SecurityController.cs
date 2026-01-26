@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace GatewayService.Controllers
 {
@@ -14,6 +15,36 @@ namespace GatewayService.Controllers
     public class SecurityController(IOptions<JwtSettings> jwtOptions, ILogger<SecurityController> logger) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
+
+        [HttpGet("import/{companyId:int}")]
+        public async Task<IActionResult> Import(int companyId)
+        {
+            var httpClient = new HttpClient
+            {
+                Timeout = TimeSpan.FromMinutes(5),
+                BaseAddress = new Uri("http://importservice")
+            };
+
+            var response = await httpClient.GetAsync("health");
+            if (!response.IsSuccessStatusCode)
+            {
+                return StatusCode((int)response.StatusCode, "Import service is not healthy.");
+            }
+
+            response = await httpClient.GetAsync($"import/{companyId}");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
+            {
+                return StatusCode((int)response.StatusCode, $"Import service encountered an internal error for companyId: {companyId}.\n{response.RequestMessage}");
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return StatusCode((int)response.StatusCode, $"Import service failed for companyId: {companyId}");
+            }
+
+            return Ok($"Service is running for companyId: {companyId}");
+        }
 
         [HttpPost("generate-token")]
         public IActionResult GenerateToken([FromBody] LoginRequest request)

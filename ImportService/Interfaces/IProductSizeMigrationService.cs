@@ -1,8 +1,10 @@
+using ImportService.Data;
+
 namespace ImportService.Interfaces
 {
     public interface IProductSizeMigrationService
     {
-        Task<int> MigrateProductSizesAsync(int companyId, CancellationToken ct = default);
+        Task MigrateProductSizesAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default);
     }
 }
 

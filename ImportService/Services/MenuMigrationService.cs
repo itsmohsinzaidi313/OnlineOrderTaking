@@ -4,15 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ImportService.Services
 {
-    public class MenuMigrationService(SqlServerDbContext sqlDb, PostgresDbContext pgDb, ILogger<MenuMigrationService> logger) : IMenuMigrationService
+    public class MenuMigrationService(SqlServerDbContext SqlDb) : IMenuMigrationService
     {
-        public async Task<int> MigrateMenuAsync(int companyId, CancellationToken ct = default)
+        public async Task MigrateMenuAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default)
         {
-            int migrated = 0;
-
             // 3) Categories
-            var categories = await sqlDb.ProductCategories
-                .Where(x => x.IsActive == true && x.CompanyId == companyId || x.CompanyId == null)
+            var categories = await SqlDb.ProductCategories
+                .Where(x => x.IsActive == true && x.CompanyId == companyId)
                 .AsNoTracking()
                 .ToListAsync(ct);
 
@@ -23,8 +21,8 @@ namespace ImportService.Services
             var categoryIds = categories.Select(c => c.CategoryId).ToHashSet();
 
             // 3.1) CategoryAvailability (by categories of this company)
-            var categoryAvailabilities = await sqlDb.CategoryAvailabilities
-                .Where(ca => ca.IsActive == true && ca.CategoryId != null && categoryIds.Contains(ca.CategoryId.Value))
+            var categoryAvailabilities = await SqlDb.CategoryAvailabilities
+                .Where(ca => ca.IsActive == true && categoryIds.Contains(ca.CategoryId.Value))
                 .AsNoTracking()
                 .ToListAsync(ct);
 
@@ -32,9 +30,8 @@ namespace ImportService.Services
             await pgDb.CategoryAvailabilities.AddRangeAsync(categoryAvailabilities, ct);
 
             // 4) Products (by categories of this company)
-            var products = await sqlDb.Products
-                .Where(p => //p.ProductId == 9503 && 
-                p.IsActive == true && (p.ProductCategoryId == null || categoryIds.Contains(p.ProductCategoryId.Value)))
+            var products = await SqlDb.Products
+                .Where(p => p.IsActive == true && categoryIds.Contains(p.ProductCategoryId.Value))
                 .AsNoTracking()
                 .ToListAsync(ct);
 
@@ -44,7 +41,7 @@ namespace ImportService.Services
             var productIds = products.Select(x => x.ProductId).ToHashSet();
 
             // 5) ProductDetails (by products of this company)
-            var details = await sqlDb.ProductDetails
+            var details = await SqlDb.ProductDetails
                 .Where(d => d.IsActive == true && productIds.Contains(d.ProductId))
                 .AsNoTracking()
                 .ToListAsync(ct);
@@ -53,7 +50,7 @@ namespace ImportService.Services
             await pgDb.ProductDetails.AddRangeAsync(details, ct);
 
             // 5.1) Get branch IDs for this company
-            var branchIds = await sqlDb.BranchMasters
+            var branchIds = await SqlDb.BranchMasters
                 .Where(b => b.CompanyId == companyId && b.IsActive == true)
                 .Select(b => b.BranchId)
                 .ToListAsync(ct);
@@ -62,9 +59,9 @@ namespace ImportService.Services
             // 6) ProductDetailBranchMapping (for the migrated product details and company branches)
             var productDetailIds = details.Select(x => x.ProductDetailId).ToHashSet();
 
-            var productDetailBranchMappings = await sqlDb.ProductDetailBranchMappings
+            var productDetailBranchMappings = await SqlDb.ProductDetailBranchMappings
                 .Where(pdbm => productDetailIds.Contains(pdbm.ProductDetailId!.Value) &&
-                               (pdbm.BranchId == null || branchIdsSet.Contains(pdbm.BranchId.Value)))
+                               branchIdsSet.Contains(pdbm.BranchId.Value))
                 .AsNoTracking()
                 .ToListAsync(ct);
 
@@ -74,8 +71,8 @@ namespace ImportService.Services
             // 6.1) ProductDetailAvailability (for the migrated ProductDetailBranchMappings)
             var productBranchMappingIds = productDetailBranchMappings.Select(x => x.ProductDetailBranchMappingId).ToHashSet();
 
-            var productDetailAvailabilities = await sqlDb.ProductDetailAvailabilities
-                .Where(pda => pda.ProductBranchId != null && productBranchMappingIds.Contains(pda.ProductBranchId.Value) &&
+            var productDetailAvailabilities = await SqlDb.ProductDetailAvailabilities
+                .Where(pda => productBranchMappingIds.Contains(pda.ProductBranchId.Value) &&
                               pda.IsActive == true)
                 .AsNoTracking()
                 .ToListAsync(ct);
@@ -84,10 +81,10 @@ namespace ImportService.Services
             await pgDb.ProductDetailAvailabilities.AddRangeAsync(productDetailAvailabilities, ct);
 
             // 6.2) ProductDetailOrderSourcePriceMapping (for the migrated product details)
-            var productDetailOrderSourcePriceMappings = await sqlDb.ProductDetailOrderSourcePriceMappings
+            var productDetailOrderSourcePriceMappings = await SqlDb.ProductDetailOrderSourcePriceMappings
                 .Where(pdosm => productDetailIds.Contains(pdosm.ProductDetailId.Value) &&
                                 pdosm.IsActive == true &&
-                                (pdosm.BranchId == null || branchIdsSet.Contains(pdosm.BranchId.Value)))
+                                branchIdsSet.Contains(pdosm.BranchId.Value))
                 .AsNoTracking()
                 .ToListAsync(ct);
 
@@ -96,9 +93,8 @@ namespace ImportService.Services
 
             // 7) DealItemDetails (for the migrated product details)
 
-            var dealItems = await sqlDb.DealItemDetails
-                .Where(di => di.IsActive == true && productDetailIds.Contains(di.ProductDetailId)
-                )
+            var dealItems = await SqlDb.DealItemDetails
+                .Where(di => di.IsActive == true && productDetailIds.Contains(di.ProductDetailId))
                 .AsNoTracking()
                 .ToListAsync(ct);
 
@@ -108,19 +104,14 @@ namespace ImportService.Services
             // 7) DealDescriptions (linked via DealItemId or ProductDetailId)
             var dealItemIds = dealItems.Select(x => x.DealItemId).ToHashSet();
 
-            var dealDescriptions = await sqlDb.DealDescriptions
-                .Where(dd => dd.IsActive == true &&
-                    (dd.DealItemId != null && dealItemIds.Contains(dd.DealItemId.Value))
+            var dealDescriptions = await SqlDb.DealDescriptions
+                .Where(dd => dd.IsActive == true && dealItemIds.Contains(dd.DealItemId.Value)
                     )
                 .AsNoTracking()
                 .ToListAsync(ct);
 
             await pgDb.DealDescriptions.ExecuteDeleteAsync(ct);
             await pgDb.DealDescriptions.AddRangeAsync(dealDescriptions, ct);
-
-            migrated += await pgDb.SaveChangesAsync(ct);
-            logger.LogInformation("✅ Menu migration completed for CompanyId={CompanyId}. Rows affected: {Count}", companyId, migrated);
-            return migrated;
         }
     }
 }

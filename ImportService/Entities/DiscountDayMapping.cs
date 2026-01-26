@@ -30,8 +30,5 @@ namespace ImportService.Entities
         [Column("IsActive")]
         public bool IsActive { get; set; }
 
-        // 🔗 Navigation Property
-        [ForeignKey(nameof(DiscountId))]
-        public virtual Discount? Discount { get; set; }
     }
 }

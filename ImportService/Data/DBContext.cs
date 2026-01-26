@@ -352,5 +352,18 @@ namespace ImportService.Data
                 .ToTable("order_detail")
                 .HasKey(x => x.OrderDetailId);
         }
+
+    }
+    public class RestaurantsDbContext : DbContext
+    {
+        public RestaurantsDbContext(DbContextOptions options) : base(options)
+        {
+        }
+
+        protected RestaurantsDbContext()
+        {
+        }
+
+        public DbSet<Restaurants> Restaurants => Set<Restaurants>();
     }
 }

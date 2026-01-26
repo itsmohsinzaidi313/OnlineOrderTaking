@@ -21,12 +21,5 @@ namespace ImportService.Entities
         [Required]
         [Column("IsActive")]
         public bool IsActive { get; set; }
-
-        // 🔗 Navigation Properties
-        [ForeignKey(nameof(DiscountId))]
-        public virtual Discount? Discount { get; set; }
-
-        [ForeignKey(nameof(ProductDetailId))]
-        public virtual ProductDetail? ProductDetail { get; set; }
     }
 }

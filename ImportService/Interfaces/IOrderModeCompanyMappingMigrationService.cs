@@ -1,8 +1,10 @@
+using ImportService.Data;
+
 namespace ImportService.Interfaces
 {
     public interface IOrderModeCompanyMappingMigrationService
     {
-        Task<int> MigrateOrderModeCompanyMappingsAsync(int companyId, CancellationToken ct = default);
+        Task MigrateOrderModeCompanyMappingsAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default);
     }
 }
 

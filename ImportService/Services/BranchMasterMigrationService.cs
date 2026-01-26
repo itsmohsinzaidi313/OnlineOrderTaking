@@ -4,13 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ImportService.Services
 {
-    public class BranchMasterMigrationService(SqlServerDbContext SqlDb, PostgresDbContext PgDb, ILogger<BranchMasterMigrationService> logger) : IBranchMasterMigrationService
+    public class BranchMasterMigrationService(SqlServerDbContext SqlDb) : IBranchMasterMigrationService
     {
-        public async Task<int> MigrateBranchMasterAsync(int companyId, CancellationToken ct = default)
+        public async Task MigrateBranchMasterAsync(int companyId, PostgresDbContext PgDb, CancellationToken ct = default)
         {
-            logger.LogInformation("Starting Branch Migration for CompanyId={CompanyId}", companyId);
-
-            // 1️⃣ Get all branches for the company (and optional branch)
             var branches = await SqlDb.BranchMasters
                         .Where(b => b.CompanyId == companyId && b.IsActive == true)
                         .AsNoTracking()
@@ -30,25 +27,24 @@ namespace ImportService.Services
                         .AsNoTracking()
                         .ToListAsync(ct);
 
-            if (branches == null)
-            {
-                logger.LogWarning("No branch found");
-                return 0;
-            }
-
-            int migratedCount = 0;
 
             await PgDb.BranchMasters.ExecuteDeleteAsync(ct);
+            if (branches.Count >= 1)
+            {
+                await PgDb.BranchMasters.AddRangeAsync(branches, ct);
+            }
+
             await PgDb.BranchDetails.ExecuteDeleteAsync(ct);
+            if (branchDetails.Count >= 1)
+            {
+                await PgDb.BranchDetails.AddRangeAsync(branchDetails, ct);
+            }
+
             await PgDb.BranchDayMappings.ExecuteDeleteAsync(ct);
-
-            await PgDb.BranchMasters.AddRangeAsync(branches);
-            await PgDb.BranchDetails.AddRangeAsync(branchDetails);
-            await PgDb.BranchDayMappings.AddRangeAsync(branchDayMappings);
-            migratedCount = await PgDb.SaveChangesAsync(ct);
-
-            logger.LogInformation("✅ Migration complete. Total branches migrated: {Count}", migratedCount);
-            return migratedCount;
+            if (branchDayMappings.Count >= 1)
+            {
+                await PgDb.BranchDayMappings.AddRangeAsync(branchDayMappings, ct);
+            }
         }
     }
 }
