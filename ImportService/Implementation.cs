@@ -27,7 +27,7 @@ namespace ImportService
         IAreaMigrationService service_area,
         ISetupCompanySettingsMigrationService service_setupCompanySettings)
     {
-        private const string PostgresHost = "85.190.242.39";
+        private const string PostgresHost = "haproxy";
         public async Task<IResult?> Import(int companyId, CancellationToken cancellationToken = default)
         {
             try
