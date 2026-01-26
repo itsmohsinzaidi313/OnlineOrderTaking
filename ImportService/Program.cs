@@ -23,16 +23,6 @@ var sqlServerConnectionString =
 
 // Services
 builder.Services
-    .AddDbContextFactory<PostgresDbContext>(options =>
-        options.UseNpgsql(
-            postgresConnectionString,
-            npgsqlOptions =>
-            {
-                npgsqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorCodesToAdd: null);
-            }))
     .AddDbContextFactory<SqlServerDbContext>(options =>
         options.UseSqlServer(
             sqlServerConnectionString,
