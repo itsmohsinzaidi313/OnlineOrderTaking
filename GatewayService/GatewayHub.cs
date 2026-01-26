@@ -36,10 +36,6 @@ namespace GatewayService
 
         public async Task DataRequest(string domainName, string requestType, int branchId, string responseKey)
         {
-            var http = Context.GetHttpContext();
-            var headers = http?.Request?.Headers;
-            Console.WriteLine("SignalR headers: {Headers}",
-                headers == null ? "null" : string.Join(", ", headers.Select(h => $"{h.Key}={h.Value}")));
             var obj = new DataServicePayload
             {
                 DomainName = domainName,
