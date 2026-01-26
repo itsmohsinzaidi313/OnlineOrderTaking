@@ -22,16 +22,16 @@ RUN dotnet publish DataService/DataService.csproj -c Release -o /app/out -v mini
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 
-# Install curl for healthcheck and create non-root user for security
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN rm -rf /var/lib/apt/lists/*
-RUN adduser --disabled-password --home /app --gecos '' appuser
-RUN chown -R appuser /app
-USER appuser
+RUN useradd -m -d /app -s /usr/sbin/nologin appuser
 
 WORKDIR /app
 COPY --from=build /app/out .
+RUN chown -R appuser:appuser /app
+
+USER appuser
 
 ENTRYPOINT ["dotnet", "DataService.dll"]
