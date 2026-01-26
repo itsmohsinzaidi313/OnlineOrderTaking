@@ -217,6 +217,7 @@ services:
   #     rabbitmq:
   #       condition: service_healthy
 
+
   gatewayservice:
     build:
       context: .
