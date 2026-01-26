@@ -13,10 +13,6 @@ builder.Configuration
     ;
 
 // Connection strings
-var postgresConnectionString =
-    builder.Configuration.GetConnectionString("Postgres")
-    ?? throw new InvalidOperationException("Postgres connection string is not configured.");
-
 var sqlServerConnectionString =
     builder.Configuration.GetConnectionString("SqlServer")
     ?? throw new InvalidOperationException("SqlServer connection string is not configured.");
