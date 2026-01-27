@@ -308,19 +308,19 @@ internal class Implementation()
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbItemDiscounts.AddRange([.. from a in dbContext.Discounts
+                dbItemDiscounts.AddRange([.. (from a in dbContext.Discounts
                                             join b in dbContext.DiscountProductDetailMappings on a.DiscountId equals b.DiscountId
                                             join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
                                             where dbProductDetailBranchMapping.Contains(c.ProductDetailId)
-                                            select a]);
+                                            select a).Distinct()]);
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbItemDiscountsMapping.AddRange([.. from a in dbContext.DiscountProductDetailMappings
+                dbItemDiscountsMapping.AddRange([.. (from a in dbContext.DiscountProductDetailMappings
                                                 join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
                                                 where dbProductDetailBranchMapping.Contains(b.ProductDetailId)
-                                                select a]);
+                                                select a).Distinct()]);
             })
         };
 
@@ -365,21 +365,16 @@ internal class Implementation()
                                         b => b.DiscountId,
                                         (a, b) => new { Discount = a, DiscountMapping = b })
                                     .Where(x => x.DiscountMapping.ProductDetailId == dbProductDetail.ProductDetailId)
-                                    .Select(x => x.Discount)
+                                    .Select(x => new Discount
+                                    {
+                                        Id = x.Discount.DiscountId,
+                                        Name = x.Discount.DiscountName ?? string.Empty,
+                                        MaxCap = decimal.ToDouble(x.Discount.DiscountCapEnd),
+                                        MinCap = decimal.ToDouble(x.Discount.DiscountCapStart),
+                                        Type = x.Discount.IsPercentage ? PointofSaleModels.Application.ValueType.Percentage : PointofSaleModels.Application.ValueType.Amount,
+                                        Value = x.Discount.DiscountPercent
+                                    })
                                     .FirstOrDefault();
-
-                    if (itemDiscount != null)
-                    {
-                        item.Discount = new Discount
-                        {
-                            Id = itemDiscount.DiscountId,
-                            Name = itemDiscount.DiscountName ?? string.Empty,
-                            MaxCap = decimal.ToDouble(itemDiscount.DiscountCapEnd),
-                            MinCap = decimal.ToDouble(itemDiscount.DiscountCapStart),
-                            Type = itemDiscount.IsPercentage ? PointofSaleModels.Application.ValueType.Percentage : PointofSaleModels.Application.ValueType.Amount,
-                            Value = itemDiscount.DiscountPercent
-                        };
-                    }
 
                     var sizeItem = (from x in dbMenuData.ProductSizes
                                     where x.SizeId == dbProductDetail.SizeId
@@ -403,6 +398,7 @@ internal class Implementation()
                         Size = sizeItem,
                         Flavour = flavourItem,
                         Price = dbProductDetail.Price,
+                        Discount = itemDiscount
                     };
                     foreach (var dbDealItem in dbMenuData.DealItemDetails.Where(x => x.ProductDetailId == dbProductDetail.ProductDetailId))
                     {
@@ -432,6 +428,7 @@ internal class Implementation()
                     if (item.Price == 0.0 || item.Price > variation.Price)
                     {
                         item.Price = variation.Price;
+                        item.Discount = variation.Discount;
                     }
                     item.Variations.Add(variation);
                 }
