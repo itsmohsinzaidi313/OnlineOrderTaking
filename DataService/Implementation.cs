@@ -263,60 +263,45 @@ internal class Implementation()
                 dbFlavours.AddRange([.. from a in dbContext.Flavours
                                     select a]);
             }),
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbProducts.AddRange([.. from a in dbContext.Products
-                                    join b in dbContext.ProductDetails on a.ProductId equals b.ProductId
-                                    where dbProductDetailBranchMapping.Contains(b.ProductDetailId)
-                                    && a.IsActive == true
-                                    select a]);
+
+                dbProducts.AddRange(await (from a in dbContext.Products
+                                       join b in dbContext.ProductDetails on a.ProductId equals b.ProductId
+                                       where dbProductDetailBranchMapping.Contains(b.ProductDetailId)
+                                       select a).Distinct().ToListAsync());
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
                 dbDealItemDetails.AddRange([.. from a in dbContext.DealItemDetails
-                                           join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
-                                           join c in dbContext.Products on b.ProductId equals c.ProductId
-                                           where a.IsActive == true
                                            select a]);
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbDealDescription.AddRange([.. from a in dbContext.DealDescriptions
-                                           join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
-                                           join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
-                                           join d in dbContext.Products on c.ProductId equals d.ProductId
-                                           where a.IsActive == true
-                                           select a]);
+                dbDealDescription.AddRange([.. from x in dbContext.DealDescriptions select x]);
             }),
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbDealDescriptionProducts.AddRange([.. from a in dbContext.DealDescriptions
-                                                   join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
-                                                   join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
-                                                   join d in dbContext.Products on c.ProductId equals d.ProductId
-                                                   join e in dbContext.ProductDetails on a.ProductDetailId equals e.ProductDetailId
-                                                   join f in dbContext.Products on e.ProductId equals f.ProductId
-                                                    where a.IsActive == true
-                                                   select f]);
+                dbDealDescriptionProducts.AddRange([.. (from a in dbContext.Products
+                                                   join b in dbContext.ProductDetails on a.ProductId equals b.ProductId
+                                                   join c in dbContext.DealDescriptions on b.ProductDetailId equals c.ProductDetailId
+                                                   select a).Distinct()]);
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
                 dbDepartments = (from a in dbContext.ProductCategories
-                                 where a.IsActive == true
                                 select new { a.CategoryId, a.DepartmentId }).ToDictionary(x => x.CategoryId, x => x.DepartmentId.ToString() ?? "N/A");
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
                 dbProductDetails.AddRange([.. from a in dbContext.ProductDetails
-                                            join b in dbContext.Products on a.ProductId equals b.ProductId
                                             where dbProductDetailBranchMapping.Contains(a.ProductDetailId)
-                                            && b.IsActive == true
                                             select a]);
 
             }),
@@ -327,7 +312,6 @@ internal class Implementation()
                                             join b in dbContext.DiscountProductDetailMappings on a.DiscountId equals b.DiscountId
                                             join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
                                             where dbProductDetailBranchMapping.Contains(c.ProductDetailId)
-                                            && a.IsActive == true
                                             select a]);
             }),
             Task.Run(() =>

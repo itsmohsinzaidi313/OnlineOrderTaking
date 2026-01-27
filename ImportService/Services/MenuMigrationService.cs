@@ -22,7 +22,7 @@ namespace ImportService.Services
 
             // 3.1) CategoryAvailability (by categories of this company)
             var categoryAvailabilities = await SqlDb.CategoryAvailabilities
-                .Where(ca => ca.IsActive == true && categoryIds.Contains(ca.CategoryId.Value))
+                .Where(ca => ca.IsActive == true && categoryIds.Contains(ca.CategoryId ?? 0))
                 .AsNoTracking()
                 .ToListAsync(ct);
 
@@ -31,7 +31,7 @@ namespace ImportService.Services
 
             // 4) Products (by categories of this company)
             var products = await SqlDb.Products
-                .Where(p => p.IsActive == true && categoryIds.Contains(p.ProductCategoryId.Value))
+                .Where(p => p.IsActive == true && categoryIds.Contains(p.ProductCategoryId ?? 0))
                 .AsNoTracking()
                 .ToListAsync(ct);
 
