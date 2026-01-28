@@ -1,11 +1,12 @@
+using GatewayService.Models;
+using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using GatewayService.Models;
-using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
+using StackExchange.Redis;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using StackExchange.Redis;
 
 namespace GatewayService.Controllers
 {
@@ -15,11 +16,19 @@ namespace GatewayService.Controllers
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
         [HttpGet("clear")]
-        public IActionResult ClearCache([FromQuery] string domain)
+        public async Task<IActionResult> ClearCacheAsync([FromQuery] string domain)
         {
             var db = redis.GetDatabase();
-            db.KeyDelete($"{domain}:*:Menu");
-            db.KeyDelete($"{domain}:*:DAndP");
+            var server = redis.GetServer(redis.GetEndPoints().First());
+            foreach (var key in server.Keys(pattern: $"{domain}:*:Menu"))
+            {
+                await db.KeyDeleteAsync(key);
+            }
+
+            foreach (var key in server.Keys(pattern: $"{domain}:*:DAndP"))
+            {
+                await db.KeyDeleteAsync(key);
+            }
             return Ok();
         }
 
