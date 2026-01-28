@@ -371,7 +371,7 @@ internal class Implementation()
                                         Name = x.Discount.DiscountName ?? string.Empty,
                                         MaxCap = decimal.ToDouble(x.Discount.DiscountCapEnd),
                                         MinCap = decimal.ToDouble(x.Discount.DiscountCapStart),
-                                        Type = x.Discount.IsPercentage ? PointofSaleModels.Application.ValueType.Percentage : PointofSaleModels.Application.ValueType.Amount,
+                                        Type = x.Discount.IsPercentage ? PointofSaleModels.Application.ValueType.Percentage.ToString() : PointofSaleModels.Application.ValueType.Amount.ToString(),
                                         Value = x.Discount.DiscountPercent
                                     })
                                     .FirstOrDefault();
