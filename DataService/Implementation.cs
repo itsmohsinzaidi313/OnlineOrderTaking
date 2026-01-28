@@ -33,6 +33,12 @@ internal class Implementation()
         var areas = await (from x in dbContext.Areas join y in dbContext.BranchDetails on x.AreaId equals y.AreaId select x).ToListAsync();
         var branches = await dbContext.BranchMasters.ToListAsync();
         var branchDetails = await dbContext.BranchDetails.ToListAsync();
+        var setupMasterId = await dbContext.SetupMasters.Where(x => x.SetupMasterName == "Day").Select(x => x.SetupMasterId).FirstOrDefaultAsync();
+        var days = dbContext.SetupMasterDetails
+                    .Where(x => x.SetupMasterId == setupMasterId)
+                    .Distinct()
+                    .ToDictionary(x => x.SetupDetailId, x => x.SetupDetailName);
+
         foreach (var item in cities)
         {
             var areasJsonArray = new JsonArray();
@@ -71,12 +77,45 @@ internal class Implementation()
                     ["BranchPhoneNumber"] = x.BranchPhoneNumber,
                     ["BusinessStartTime"] = x.BusinessDayStartTime.ToString(),
                     ["BusinessEndTime"] = x.BusinessDayEndTime.ToString(),
-                    ["IsBranchOpen"] = x.BusinessDayStartTime.HasValue && x.BusinessDayEndTime.HasValue
-    ? DateTime.UtcNow.TimeOfDay >= x.BusinessDayStartTime.Value && DateTime.UtcNow.TimeOfDay <= x.BusinessDayEndTime.Value
-    : false
                 }))
             {
                 var branchId = item2["BranchId"]?.GetValue<int>();
+                var businessDaysMapping = await dbContext.BranchDayMappings.Where(x => x.BranchId == branchId).ToListAsync();
+                var todayDow = DateTime.Today.DayOfWeek.ToString();
+                var isBranchOpen = false;
+                foreach (var dayMapping in businessDaysMapping)
+                {
+                    var value = days[dayMapping.DayId]?.ToString() ?? string.Empty;
+                    if (value == todayDow)
+                    {
+                        var startTime = dayMapping.StartTime;
+                        var endTime = dayMapping.EndTime;
+                        var timeOfDay = DateTime.Now.TimeOfDay;
+                        if (startTime > endTime)
+                        {
+                            var maybeOpen = startTime > timeOfDay;
+                            if (maybeOpen)
+                            {
+                                isBranchOpen = true;
+                            }
+                            else
+                            {
+                                isBranchOpen = timeOfDay > endTime;
+                            }
+                        }
+                        else if (startTime < endTime)
+                        {
+                            if (timeOfDay >= startTime && timeOfDay <= endTime)
+                            {
+                                isBranchOpen = true;
+                            }
+                        }
+                        item2["IsBranchOpen"] = isBranchOpen;
+                        break;
+                    }
+                }
+                item2["IsBranchOpen"] = isBranchOpen;
+
                 var branchDetail = branchDetails.FirstOrDefault(bd => bd.BranchId == branchId);
                 if (branchDetail != null)
                 {
