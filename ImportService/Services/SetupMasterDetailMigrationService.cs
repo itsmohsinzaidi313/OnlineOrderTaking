@@ -10,7 +10,7 @@ namespace ImportService.Services
         public async Task MigrateSetupMasterDetailAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default)
         {
             var details = await sqlDb.SetupMasterDetails
-                .Where(d => d.CompanyId == companyId && d.IsActive == true)
+                .Where(d => (d.CompanyId == null || d.CompanyId == companyId) && d.IsActive == true)
                 .AsNoTracking()
                 .ToListAsync(ct);
             await pgDb.SetupMasterDetails.ExecuteDeleteAsync(ct);
