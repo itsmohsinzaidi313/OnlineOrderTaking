@@ -51,6 +51,7 @@ namespace GatewayService
                 if (!response.IsNull)
                 {
                     var payload = JsonSerializer.Deserialize<DataServicePayload>(response.ToString());
+                    await Clients.Caller.SendAsync("Ack", new { status = "cached" });
                     await Clients.Caller.SendAsync("MenuResponse", payload);
                     return;
                 }
