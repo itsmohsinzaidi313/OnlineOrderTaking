@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Application;
-using System.Linq;
 using System.Text.Json.Nodes;
-using System.Threading.Tasks;
 using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace DataService;

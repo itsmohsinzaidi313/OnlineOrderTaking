@@ -1,7 +1,6 @@
 ﻿using ImportService.Data;
 using ImportService.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace ImportService.Services
 {

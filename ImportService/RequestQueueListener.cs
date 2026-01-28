@@ -1,10 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using PointofSaleModels.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using PointofSaleModels.Services;
 
 namespace ImportService
 {

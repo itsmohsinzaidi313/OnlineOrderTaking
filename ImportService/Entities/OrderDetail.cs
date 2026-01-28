@@ -1,6 +1,4 @@
-﻿using PointofSaleModels.PGDatabaseModels;
-
-namespace ImportService.Entities;
+﻿namespace ImportService.Entities;
 
 public partial class OrderDetail
 {

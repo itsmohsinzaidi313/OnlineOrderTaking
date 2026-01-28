@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace ImportService.Entities
+﻿namespace ImportService.Entities
 {
     public class SetupCompany
     {

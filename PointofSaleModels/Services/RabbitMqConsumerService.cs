@@ -1,10 +1,8 @@
 using System.Text;
-using System.Text.Json;
 using RabbitMQ.Client.Events;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
-using PointofSaleModels.ServicePayloads;
 
 namespace PointofSaleModels.Services
 {

@@ -1,7 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
-namespace ImportService.Entities
+﻿namespace ImportService.Entities
 {
     public class DiscountOrderModeMapping
     {

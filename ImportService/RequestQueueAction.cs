@@ -1,13 +1,6 @@
 ﻿using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.Design;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace ImportService
 {

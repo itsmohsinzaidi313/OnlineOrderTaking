@@ -5,16 +5,23 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
-using System.Security.Cryptography;
-using System.Threading.Tasks;
+using StackExchange.Redis;
 
 namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class SecurityController(IOptions<JwtSettings> jwtOptions, ILogger<SecurityController> logger) : ControllerBase
+    public class SecurityController(IOptions<JwtSettings> jwtOptions, ILogger<SecurityController> logger, IConnectionMultiplexer redis) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
+        [HttpGet("clear")]
+        public IActionResult ClearCache([FromQuery] string domain)
+        {
+            var db = redis.GetDatabase();
+            db.KeyDelete($"{domain}:*:Menu");
+            db.KeyDelete($"{domain}:*:DAndP");
+            return Ok();
+        }
 
         [HttpGet("health")]
         public IActionResult Health()
