@@ -79,11 +79,15 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Imple
             BaseAddress = new Uri($"http://gatewayservice:8080")
         };
 
-        await httpClient.GetAsync($"clear?domain={domain}");
+        var httpResponse = await httpClient.GetAsync($"clear?domain={domain}");
+        if (httpResponse.IsSuccessStatusCode == false)
+        {
+            return Results.Ok($"Import completed but failed to clear cache\nStatusCode: {httpResponse.StatusCode}");
+        }
     }
     catch (Exception ex)
     {
-        return Results.Ok("Import completed but failed to clear cache\n" + ex.Message);
+        return Results.Ok($"Import completed but failed to clear cache\n{ex.Message}");
     }
     return response;
 });
