@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace PointofSaleModels.PGDatabaseModels;
+﻿namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class SetupCompany
 {
@@ -24,12 +21,4 @@ public partial class SetupCompany
     public int? BusinessTypeId { get; set; }
 
     public bool? IsEnable { get; set; }
-
-    public virtual ICollection<Gst> Gsts { get; set; } = new List<Gst>();
-
-    public virtual ICollection<OrderModeCompanyMapping> OrderModeCompanyMappings { get; set; } = new List<OrderModeCompanyMapping>();
-
-    public virtual ICollection<PaymentMode> PaymentModes { get; set; } = new List<PaymentMode>();
-
-    public virtual ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
 }

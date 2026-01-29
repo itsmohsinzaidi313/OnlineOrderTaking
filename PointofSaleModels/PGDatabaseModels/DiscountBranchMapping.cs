@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace PointofSaleModels.PGDatabaseModels;
+﻿namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class DiscountBranchMapping
 {
@@ -12,8 +9,4 @@ public partial class DiscountBranchMapping
     public int BranchId { get; set; }
 
     public bool IsActive { get; set; }
-
-    public virtual BranchMaster Branch { get; set; } = null!;
-
-    public virtual Discount Discount { get; set; } = null!;
 }

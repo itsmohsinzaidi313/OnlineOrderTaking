@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace PointofSaleModels.PGDatabaseModels;
+﻿namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class DiscountOrderTypeMapping
 {
@@ -12,6 +9,4 @@ public partial class DiscountOrderTypeMapping
     public int OrderTypeId { get; set; }
 
     public bool IsActive { get; set; }
-
-    public virtual Discount Discount { get; set; } = null!;
 }

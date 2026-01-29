@@ -1,19 +1,72 @@
+using GatewayService.Models;
+using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using GatewayService.Models;
-using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
+using StackExchange.Redis;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Security.Cryptography;
 
 namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class SecurityController(IOptions<JwtSettings> jwtOptions, ILogger<SecurityController> logger) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
+        [HttpGet("clear")]
+        public async Task<IActionResult> ClearCacheAsync([FromQuery] string domain)
+        {
+            var db = redis.GetDatabase();
+            var server = redis.GetServer(redis.GetEndPoints().First());
+            foreach (var key in server.Keys(pattern: $"{domain}:*:Menu"))
+            {
+                await db.KeyDeleteAsync(key);
+            }
+
+            foreach (var key in server.Keys(pattern: $"{domain}:*:DAndP"))
+            {
+                await db.KeyDeleteAsync(key);
+            }
+            return Ok();
+        }
+
+        [HttpGet("health")]
+        public IActionResult Health()
+        {
+            return Ok("Gateway Service is healthy.");
+        }
+
+        [HttpGet("import/{companyId:int}")]
+        public async Task<IActionResult> Import(int companyId)
+        {
+            var httpClient = new HttpClient
+            {
+                Timeout = TimeSpan.FromMinutes(5),
+                BaseAddress = new Uri("http://importservice:8080")
+            };
+
+            var response = await httpClient.GetAsync("health");
+            if (!response.IsSuccessStatusCode)
+            {
+                return StatusCode((int)response.StatusCode, "Import service is not healthy.");
+            }
+
+            response = await httpClient.GetAsync($"import/{companyId}");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
+            {
+                return StatusCode((int)response.StatusCode, $"Import service encountered an internal error for companyId: {companyId}.\n{response.RequestMessage}");
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return StatusCode((int)response.StatusCode, $"Import service failed for companyId: {companyId}");
+            }
+
+            return Ok($"Import completed successfully for companyId: {companyId}");
+        }
 
         [HttpPost("generate-token")]
         public IActionResult GenerateToken([FromBody] LoginRequest request)

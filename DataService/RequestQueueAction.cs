@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using PointofSaleModels.Application;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;

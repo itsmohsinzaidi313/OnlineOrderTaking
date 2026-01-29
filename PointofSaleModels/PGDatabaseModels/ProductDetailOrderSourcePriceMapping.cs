@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace PointofSaleModels.PGDatabaseModels;
+﻿namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class ProductDetailOrderSourcePriceMapping
 {
@@ -20,10 +17,4 @@ public partial class ProductDetailOrderSourcePriceMapping
     public double? PreviousPrice { get; set; }
 
     public int? BranchId { get; set; }
-
-    public virtual BranchMaster? Branch { get; set; }
-
-    public virtual SetupMasterDetail? OrderSource { get; set; }
-
-    public virtual ProductDetail? ProductDetail { get; set; }
 }

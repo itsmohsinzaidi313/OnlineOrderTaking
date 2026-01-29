@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace PointofSaleModels.PGDatabaseModels;
+﻿namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class DealItemDetail
 {
@@ -24,6 +21,4 @@ public partial class DealItemDetail
     public int? TempDealItemId { get; set; }
 
     public int? MaxQuantity { get; set; }
-
-    public virtual ICollection<DealDescription> DealDescriptions { get; set; } = new List<DealDescription>();
 }

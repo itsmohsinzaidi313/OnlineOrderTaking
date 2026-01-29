@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Application;
-using System.Linq;
 using System.Text.Json.Nodes;
-using System.Threading.Tasks;
 using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace DataService;
@@ -33,6 +31,12 @@ internal class Implementation()
         var areas = await (from x in dbContext.Areas join y in dbContext.BranchDetails on x.AreaId equals y.AreaId select x).ToListAsync();
         var branches = await dbContext.BranchMasters.ToListAsync();
         var branchDetails = await dbContext.BranchDetails.ToListAsync();
+        var setupMasterId = await dbContext.SetupMasters.Where(x => x.SetupMasterName == "Day").Select(x => x.SetupMasterId).FirstOrDefaultAsync();
+        var days = dbContext.SetupMasterDetails
+                    .Where(x => x.SetupMasterId == setupMasterId)
+                    .Distinct()
+                    .ToDictionary(x => x.SetupDetailId, x => x.SetupDetailName);
+
         foreach (var item in cities)
         {
             var areasJsonArray = new JsonArray();
@@ -71,12 +75,45 @@ internal class Implementation()
                     ["BranchPhoneNumber"] = x.BranchPhoneNumber,
                     ["BusinessStartTime"] = x.BusinessDayStartTime.ToString(),
                     ["BusinessEndTime"] = x.BusinessDayEndTime.ToString(),
-                    ["IsBranchOpen"] = x.BusinessDayStartTime.HasValue && x.BusinessDayEndTime.HasValue
-    ? DateTime.UtcNow.TimeOfDay >= x.BusinessDayStartTime.Value.ToTimeSpan() && DateTime.UtcNow.TimeOfDay <= x.BusinessDayEndTime.Value.ToTimeSpan()
-    : false
                 }))
             {
                 var branchId = item2["BranchId"]?.GetValue<int>();
+                var businessDaysMapping = await dbContext.BranchDayMappings.Where(x => x.BranchId == branchId).ToListAsync();
+                var todayDow = DateTime.Today.DayOfWeek.ToString();
+                var isBranchOpen = false;
+                foreach (var dayMapping in businessDaysMapping)
+                {
+                    var value = days[dayMapping.DayId]?.ToString() ?? string.Empty;
+                    if (value == todayDow)
+                    {
+                        var startTime = dayMapping.StartTime;
+                        var endTime = dayMapping.EndTime;
+                        var timeOfDay = DateTime.Now.TimeOfDay;
+                        if (startTime > endTime)
+                        {
+                            var maybeOpen = startTime > timeOfDay;
+                            if (maybeOpen)
+                            {
+                                isBranchOpen = true;
+                            }
+                            else
+                            {
+                                isBranchOpen = timeOfDay > endTime;
+                            }
+                        }
+                        else if (startTime < endTime)
+                        {
+                            if (timeOfDay >= startTime && timeOfDay <= endTime)
+                            {
+                                isBranchOpen = true;
+                            }
+                        }
+                        item2["IsBranchOpen"] = isBranchOpen;
+                        break;
+                    }
+                }
+                item2["IsBranchOpen"] = isBranchOpen;
+
                 var branchDetail = branchDetails.FirstOrDefault(bd => bd.BranchId == branchId);
                 if (branchDetail != null)
                 {
@@ -227,7 +264,11 @@ internal class Implementation()
         if (bid == 0)
         {
             using var dbContext = GetDbContext(connectionString);
-            bid = dbContext.BranchMasters.First(x => x.IsActive).BranchId;
+            var activeBranch = dbContext.BranchMasters.FirstOrDefault(x => x.IsActive);
+            if (activeBranch != null)
+                bid = activeBranch.BranchId;
+            else
+                bid = 0;
         }
         var dbSizes = new List<Db.ProductSize>();
         var dbFlavours = new List<Db.Flavour>();
@@ -259,80 +300,64 @@ internal class Implementation()
                 dbFlavours.AddRange([.. from a in dbContext.Flavours
                                     select a]);
             }),
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbProducts.AddRange([.. from a in dbContext.Products
-                                    join b in dbContext.ProductDetails on a.ProductId equals b.ProductId
-                                    where dbProductDetailBranchMapping.Contains(b.ProductDetailId)
-                                    && a.IsActive == true
-                                    select a]);
+
+                dbProducts.AddRange(await (from a in dbContext.Products
+                                       join b in dbContext.ProductDetails on a.ProductId equals b.ProductId
+                                       where dbProductDetailBranchMapping.Contains(b.ProductDetailId)
+                                       select a).Distinct().ToListAsync());
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
                 dbDealItemDetails.AddRange([.. from a in dbContext.DealItemDetails
-                                           join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
-                                           join c in dbContext.Products on b.ProductId equals c.ProductId
-                                           where a.IsActive == true
                                            select a]);
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbDealDescription.AddRange([.. from a in dbContext.DealDescriptions
-                                           join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
-                                           join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
-                                           join d in dbContext.Products on c.ProductId equals d.ProductId
-                                           where a.IsActive == true
-                                           select a]);
+                dbDealDescription.AddRange([.. from x in dbContext.DealDescriptions select x]);
             }),
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbDealDescriptionProducts.AddRange([.. from a in dbContext.DealDescriptions
-                                                   join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
-                                                   join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
-                                                   join d in dbContext.Products on c.ProductId equals d.ProductId
-                                                   join e in dbContext.ProductDetails on a.ProductDetailId equals e.ProductDetailId
-                                                   join f in dbContext.Products on e.ProductId equals f.ProductId
-                                                    where a.IsActive == true
-                                                   select f]);
+                dbDealDescriptionProducts.AddRange([.. (from a in dbContext.Products
+                                                   join b in dbContext.ProductDetails on a.ProductId equals b.ProductId
+                                                   join c in dbContext.DealDescriptions on b.ProductDetailId equals c.ProductDetailId
+                                                   select a).Distinct()]);
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
                 dbDepartments = (from a in dbContext.ProductCategories
-                                 where a.IsActive == true
                                 select new { a.CategoryId, a.DepartmentId }).ToDictionary(x => x.CategoryId, x => x.DepartmentId.ToString() ?? "N/A");
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
                 dbProductDetails.AddRange([.. from a in dbContext.ProductDetails
-                                            join b in dbContext.Products on a.ProductId equals b.ProductId
                                             where dbProductDetailBranchMapping.Contains(a.ProductDetailId)
-                                            && b.IsActive == true
                                             select a]);
 
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbItemDiscounts.AddRange([.. from a in dbContext.Discounts
+                dbItemDiscounts.AddRange([.. (from a in dbContext.Discounts
                                             join b in dbContext.DiscountProductDetailMappings on a.DiscountId equals b.DiscountId
                                             join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
                                             where dbProductDetailBranchMapping.Contains(c.ProductDetailId)
-                                            && a.IsActive == true
-                                            select a]);
+                                            select a).Distinct()]);
             }),
             Task.Run(() =>
             {
                 using var dbContext = GetDbContext(connectionString);
-                dbItemDiscountsMapping.AddRange([.. from a in dbContext.DiscountProductDetailMappings
+                dbItemDiscountsMapping.AddRange([.. (from a in dbContext.DiscountProductDetailMappings
                                                 join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
                                                 where dbProductDetailBranchMapping.Contains(b.ProductDetailId)
-                                                select a]);
+                                                select a).Distinct()]);
             })
         };
 
@@ -377,40 +402,40 @@ internal class Implementation()
                                         b => b.DiscountId,
                                         (a, b) => new { Discount = a, DiscountMapping = b })
                                     .Where(x => x.DiscountMapping.ProductDetailId == dbProductDetail.ProductDetailId)
-                                    .Select(x => x.Discount)
+                                    .Select(x => new Discount
+                                    {
+                                        Id = x.Discount.DiscountId,
+                                        Name = x.Discount.DiscountName ?? string.Empty,
+                                        MaxCap = decimal.ToDouble(x.Discount.DiscountCapEnd),
+                                        MinCap = decimal.ToDouble(x.Discount.DiscountCapStart),
+                                        Type = x.Discount.IsPercentage ? PointofSaleModels.Application.ValueType.Percentage.ToString() : PointofSaleModels.Application.ValueType.Amount.ToString(),
+                                        Value = x.Discount.DiscountPercent
+                                    })
                                     .FirstOrDefault();
 
-                    if (itemDiscount != null)
-                    {
-                        item.Discount = new Discount
-                        {
-                            Id = itemDiscount.DiscountId,
-                            Name = itemDiscount.DiscountName ?? string.Empty,
-                            MaxCap = decimal.ToDouble(itemDiscount.DiscountCapEnd),
-                            MinCap = decimal.ToDouble(itemDiscount.DiscountCapStart),
-                            Type = itemDiscount.IsPercentage ? PointofSaleModels.Application.ValueType.Percentage : PointofSaleModels.Application.ValueType.Amount,
-                            Value = itemDiscount.DiscountPercent
-                        };
-                    }
+                    var sizeItem = (from x in dbMenuData.ProductSizes
+                                    where x.SizeId == dbProductDetail.SizeId
+                                    select new ItemSize
+                                    {
+                                        Id = x.SizeId,
+                                        Name = x.SizeName ?? "N/A",
+                                    }).FirstOrDefault() ?? new ItemSize { Id = dbProductDetail.SizeId, Name = "N/A" };
+
+                    var flavourItem = (from x in dbMenuData.Flavours
+                                       where x.FlavourId == dbProductDetail.FlavourId
+                                       select new ItemFlavour
+                                       {
+                                           Id = x.FlavourId,
+                                           Name = x.FlavourName ?? "N/A",
+                                       }).FirstOrDefault() ?? new ItemFlavour { Id = dbProductDetail.FlavourId ?? 0, Name = "N/A" };
 
                     var variation = new ItemVariation
                     {
                         Id = dbProductDetail.ProductDetailId,
-                        Size = (from x in dbMenuData.ProductSizes
-                                where x.SizeId == dbProductDetail.SizeId
-                                select new ItemSize
-                                {
-                                    Id = x.SizeId,
-                                    Name = x.SizeName ?? "N/A",
-                                }).First(),
-                        Flavour = (from x in dbMenuData.Flavours
-                                   where x.FlavourId == dbProductDetail.FlavourId
-                                   select new ItemFlavour
-                                   {
-                                       Id = x.FlavourId,
-                                       Name = x.FlavourName ?? "N/A",
-                                   }).First(),
+                        Size = sizeItem,
+                        Flavour = flavourItem,
                         Price = dbProductDetail.Price,
+                        Discount = itemDiscount
                     };
                     foreach (var dbDealItem in dbMenuData.DealItemDetails.Where(x => x.ProductDetailId == dbProductDetail.ProductDetailId))
                     {
@@ -431,7 +456,7 @@ internal class Implementation()
                             {
                                 Id = dbDescription.ProductDetailId ?? 0,
                                 Price = dbDescription.Price ?? 0.0,
-                                Name = list.First().ProductName ?? string.Empty,
+                                Name = list.FirstOrDefault()?.ProductName ?? string.Empty,
                             };
                             itemChoice.ItemOptions.Add(itemOption);
                         }
@@ -440,6 +465,7 @@ internal class Implementation()
                     if (item.Price == 0.0 || item.Price > variation.Price)
                     {
                         item.Price = variation.Price;
+                        item.Discount = variation.Discount;
                     }
                     item.Variations.Add(variation);
                 }

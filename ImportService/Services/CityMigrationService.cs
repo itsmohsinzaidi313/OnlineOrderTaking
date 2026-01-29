@@ -1,0 +1,25 @@
+using ImportService.Data;
+using ImportService.Interfaces;
+using Microsoft.EntityFrameworkCore;
+
+namespace ImportService.Services
+{
+    public class CityMigrationService(
+        SqlServerDbContext sqlDb) : ICityMigrationService
+    {
+        public async Task MigrateCitiesAsync(PostgresDbContext pgDb, CancellationToken ct = default)
+        {
+
+            var cities = await sqlDb.Cities
+                .AsNoTracking()
+                .ToListAsync(ct);
+
+            await pgDb.Cities.ExecuteDeleteAsync(ct);
+            if (cities.Count >= 1)
+            {
+                await pgDb.Cities.AddRangeAsync(cities, ct);
+            }
+        }
+    }
+}
+

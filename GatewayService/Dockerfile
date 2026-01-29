@@ -1,5 +1,5 @@
 # Build stage
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 # Use a root-level workdir for multi-project build
 WORKDIR /src
@@ -20,19 +20,21 @@ COPY PointofSaleModels/ PointofSaleModels/
 RUN dotnet publish GatewayService/GatewayService.csproj -c Release -o /app/out
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 
-# Install curl for healthcheck and create non-root user for security
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN rm -rf /var/lib/apt/lists/*
-RUN adduser --disabled-password --home /app --gecos '' appuser
-RUN chown -R appuser /app
-USER appuser
+RUN useradd -m -d /app -s /usr/sbin/nologin appuser
 
 WORKDIR /app
-RUN rm -rf /app/out/appsettings.*.json
 COPY --from=build /app/out .
+RUN chown -R appuser:appuser /app
+
+USER appuser
 
 ENTRYPOINT ["dotnet", "GatewayService.dll"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1

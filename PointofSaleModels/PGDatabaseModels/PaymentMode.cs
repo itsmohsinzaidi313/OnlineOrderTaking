@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace PointofSaleModels.PGDatabaseModels;
+﻿namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class PaymentMode
 {
@@ -28,8 +25,4 @@ public partial class PaymentMode
     public bool IsPartyAccount { get; set; }
 
     public string? Description { get; set; }
-
-    public virtual SetupCompany? Company { get; set; }
-
-    public virtual ICollection<Gst> Gsts { get; set; } = new List<Gst>();
 }

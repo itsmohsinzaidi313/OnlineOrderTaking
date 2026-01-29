@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace PointofSaleModels.PGDatabaseModels;
+﻿namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class OrderModeCompanyMapping
 {
@@ -12,6 +9,4 @@ public partial class OrderModeCompanyMapping
     public int? CompanyId { get; set; }
 
     public bool IsActive { get; set; }
-
-    public virtual SetupCompany? Company { get; set; }
 }

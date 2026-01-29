@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace PointofSaleModels.PGDatabaseModels;
+﻿namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class SetupMasterDetail
 {
@@ -26,12 +23,4 @@ public partial class SetupMasterDetail
     public int? ConstantValue { get; set; }
 
     public string? Description { get; set; }
-
-    public virtual ICollection<BranchDayMapping> BranchDayMappings { get; set; } = new List<BranchDayMapping>();
-
-    public virtual ICollection<CategoryAvailability> CategoryAvailabilities { get; set; } = new List<CategoryAvailability>();
-
-    public virtual ICollection<ProductDetailAvailability> ProductDetailAvailabilities { get; set; } = new List<ProductDetailAvailability>();
-
-    public virtual ICollection<ProductDetailOrderSourcePriceMapping> ProductDetailOrderSourcePriceMappings { get; set; } = new List<ProductDetailOrderSourcePriceMapping>();
 }

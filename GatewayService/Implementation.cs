@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.SignalR;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
-using PointofSaleModels.Settings;
 using StackExchange.Redis;
 using System.Text.Json;
 

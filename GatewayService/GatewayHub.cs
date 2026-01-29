@@ -3,13 +3,15 @@ using Microsoft.AspNetCore.SignalR;
 using PointofSaleModels.Application;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Settings;
+using StackExchange.Redis;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace GatewayService
 {
 
     [Authorize]
-    public class GatewayHub(Implementation implementation) : Hub
+    public class GatewayHub(Implementation implementation, IConnectionMultiplexer redis) : Hub
     {
         public override async Task OnConnectedAsync()
         {
@@ -26,12 +28,34 @@ namespace GatewayService
             await base.OnDisconnectedAsync(ex);
         }
 
+        public async Task ImportRequest(int restaurantId)
+        {
+            await QueuePayload(RabbitMqQueues.ImportRequestQueue, new ImportServicePayload
+            {
+                RestaurantId = restaurantId
+            }.FillContext(Context));
+        }
+
         public async Task DataRequest(string domainName, string requestType, int branchId, string responseKey)
         {
-            var http = Context.GetHttpContext();
-            var headers = http?.Request?.Headers;
-            Console.WriteLine("SignalR headers: {Headers}",
-                headers == null ? "null" : string.Join(", ", headers.Select(h => $"{h.Key}={h.Value}")));
+            var db = redis.GetDatabase();
+            var redisKey = requestType switch
+            {
+                "Menu" => "Menu",
+                "DeliveryAndPickup" => "DAndP",
+                _ => string.Empty
+            };
+            if (!string.IsNullOrEmpty(redisKey))
+            {
+                var response = await db.StringGetAsync($"{domainName}:{branchId}:{redisKey}");
+                if (!response.IsNull)
+                {
+                    var payload = JsonSerializer.Deserialize<DataServicePayload>(response.ToString());
+                    await Clients.Caller.SendAsync("Ack", new { status = "cached" });
+                    await Clients.Caller.SendAsync("MenuResponse", payload);
+                    return;
+                }
+            }
             var obj = new DataServicePayload
             {
                 DomainName = domainName,

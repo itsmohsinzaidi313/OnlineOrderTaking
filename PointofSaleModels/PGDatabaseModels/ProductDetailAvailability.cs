@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace PointofSaleModels.PGDatabaseModels;
+﻿namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class ProductDetailAvailability
 {
@@ -16,8 +13,4 @@ public partial class ProductDetailAvailability
     public TimeSpan? EndTime { get; set; }
 
     public bool? IsActive { get; set; }
-
-    public virtual SetupMasterDetail? Day { get; set; }
-
-    public virtual ProductDetailBranchMapping? ProductBranch { get; set; }
 }
