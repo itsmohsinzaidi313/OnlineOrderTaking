@@ -12,7 +12,7 @@ namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class SecurityController(IOptions<JwtSettings> jwtOptions, ILogger<SecurityController> logger, IConnectionMultiplexer redis) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
         [HttpGet("clear")]

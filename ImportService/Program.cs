@@ -2,8 +2,9 @@ using ImportService;
 using ImportService.Data;
 using ImportService.Interfaces;
 using ImportService.Services;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Threading;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,11 +51,44 @@ builder.Services
 var app = builder.Build();
 
 // Optional: minimal endpoint (useful for health checks)
-app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Implementation impl, HttpContext httpContext) =>
+app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Implementation impl, [FromServices] SqlServerDbContext sqlServerDbContext, HttpContext httpContext) =>
 {
-    return await impl.Import(companyId, httpContext.RequestAborted);
+    var company = await sqlServerDbContext.SetupCompanies.FirstOrDefaultAsync(x => x.CompanyId == companyId, httpContext.RequestAborted);
+    if (company == null)
+    {
+        return Results.NotFound("Company not found");
+    }
+
+    var url = company.WebsiteUrl;
+    if (url == null)
+    {
+        return Results.NotFound("Company website URL not found");
+    }
+    var domain = url
+                .Replace("http://", "")
+                .Replace("https://", "")
+                .Replace("www.", "")
+                .Split('/')[0];
+    var dbName = domain.Split('.')[0];
+    var response = await impl.Import(companyId, dbName, httpContext.RequestAborted);
+    try
+    {
+        var httpClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromMinutes(5),
+            BaseAddress = new Uri($"http://gatewayservice:8080")
+        };
+
+        await httpClient.GetAsync($"clear?domain={domain}");
+    }
+    catch (Exception ex)
+    {
+        return Results.Ok("Import completed but failed to clear cache\n" + ex.Message);
+    }
+    return response;
 });
-app.MapGet("health", ([FromServices] SqlServerDbContext sqlServerDbContext) => {
+app.MapGet("health", ([FromServices] SqlServerDbContext sqlServerDbContext) =>
+{
     if (sqlServerDbContext.Database.CanConnect() == false)
     {
         return Results.Problem("Sql Database connection failed", statusCode: 503);
