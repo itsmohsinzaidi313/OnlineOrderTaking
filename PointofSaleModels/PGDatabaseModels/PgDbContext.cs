@@ -75,6 +75,14 @@ public partial class PgDbContext : DbContext
 
     public virtual DbSet<SetupMasterDetail> SetupMasterDetails { get; set; }
 
+    public virtual DbSet<BranchOrderSequence> OrderNumberSequences { get; set; }
+
+    public virtual DbSet<Customer> Customers { get; set; }
+
+    public virtual DbSet<CustomerAddressDetail> CustomerAddressDetails { get; set; }
+
+    public virtual DbSet<CustomerPhone> CustomerPhones { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Area>(entity =>
@@ -270,6 +278,12 @@ public partial class PgDbContext : DbContext
             entity.ToTable("setup_master_detail");
 
             entity.Property(e => e.ConstantValue).HasColumnName("Constant_Value");
+        });
+
+        modelBuilder.Entity<BranchOrderSequence>(entity =>
+        {
+            entity.HasKey(e => e.BranchId);
+            entity.ToTable("branch_order_sequence");
         });
 
         OnModelCreatingPartial(modelBuilder);

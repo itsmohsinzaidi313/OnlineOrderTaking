@@ -25,44 +25,16 @@ class Implementation(Db.PgDbContext dbContext)
 
     public async Task<string> GenerateOrderNumberAsync(int branchId)
     {
-        // Create an atomic, day-scoped sequence per branch using a DB transaction and advisory lock
+        var id = await dbContext.Database.SqlQuery<long>($"""
+                                            UPDATE branch_order_sequences
+                                            SET last_value = last_value + 1
+                                            WHERE branch_id = {branchId}
+                                            RETURNING last_value
+                                            """).SingleAsync();
         var now = DateTime.UtcNow;
-        var datePrefix = now.ToString("yyyyMMdd");
+        var datePrefix = now.ToString("ddMMyy");
         var prefix = $"{datePrefix}/ORD/";
-
-        await using var tx = await dbContext.Database.BeginTransactionAsync();
-
-        // Acquire a transaction-scoped advisory lock to serialize generators per (branch, day)
-        // This prevents duplicate order numbers across microservice instances.
-        var dateKey = int.Parse(datePrefix); // yyyyMMdd fits in int range
-        await dbContext.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock({0}, {1});", branchId, dateKey);
-
-        var lastForToday = await dbContext.OrderNumberSequences
-            .Where(x => x.BranchId == branchId && x.CurrentOrderNumber.StartsWith(prefix))
-            .OrderByDescending(x => x.Id)
-            .Select(x => x.CurrentOrderNumber)
-            .FirstOrDefaultAsync();
-
-        var next = 1;
-        if (!string.IsNullOrEmpty(lastForToday))
-        {
-            var lastPart = lastForToday!.Split('/').LastOrDefault();
-            if (int.TryParse(lastPart, out var parsed))
-            {
-                next = parsed + 1;
-            }
-        }
-
-        var orderNumber = $"{prefix}{next:D4}";
-
-        await dbContext.OrderNumberSequences.AddAsync(new Db.OrderNumberSequence
-        {
-            BranchId = branchId,
-            CurrentOrderNumber = orderNumber,
-        });
-        await dbContext.SaveChangesAsync();
-        await tx.CommitAsync();
-
+        var orderNumber = $"{prefix}{id:D4}";
         return orderNumber;
     }
 
@@ -83,7 +55,6 @@ class Implementation(Db.PgDbContext dbContext)
     {
         var orderSourceId = SOURCE_ID;
         var discount = order.Discount;
-        var tax = order.Tax;
         var orderNumber = order.OrderNumber ?? await GenerateOrderNumberAsync(branchId);
         if (OrderNumberExists(branchId, orderNumber))
         {
@@ -94,7 +65,7 @@ class Implementation(Db.PgDbContext dbContext)
         var orderModeId = GetOrderModeId(order.OrderType.ToString(), companyId);
         var subTotal = order.Items.Select(x => x.Variations.Select(x => x.Price).Sum()).Sum();
 
-        var amountWithTax = subTotal + (subTotal * order.Tax?.Value ?? 0.00);
+        var amountWithTax = subTotal + (subTotal * 0.00);
 
         var orderMaster = new Db.OrderMaster
         {
@@ -108,9 +79,9 @@ class Implementation(Db.PgDbContext dbContext)
             OrderTime = TimeOnly.FromDateTime(DateTime.Now),
             TotalAmountWithoutGst = subTotal,
             TotalAmountWithGst = amountWithTax,
-            DiscountAmount = discount?.Type == ValueType.Amount ? discount.Value : 0.00,
+            DiscountAmount = discount?.Type == ValueType.Amount.ToString() ? discount.Value : 0.00,
             DiscountId = discount?.Id,
-            DiscountPercent = discount?.Type == ValueType.Percentage ? discount.Value : 0.00,
+            DiscountPercent = discount?.Type == ValueType.Percentage.ToString() ? discount.Value : 0.00,
             Gstamount = subTotal * (tax?.Value / 100) ?? 0.00,
             Gstid = tax?.Id,
             Gstpercent = tax?.Value ?? 0.00,
