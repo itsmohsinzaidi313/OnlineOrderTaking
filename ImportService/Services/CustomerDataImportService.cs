@@ -20,11 +20,15 @@ namespace ImportService.Services
             }
             await PgDb.CustomerPhones.AddRangeAsync(customerPhones, ct);
 
-            var phoneIds = customerPhones.Select(x => x.PhoneId).ToList();
-
             var customers = await SqlDb.Customers
-                .Where(x => x.IsActive == true && phoneIds.Contains(x.PhoneId ?? 0) && x.CompanyId == companyId)
+                .Join(SqlDb.CustomerPhones
+                      .Where(x => x.IsActive == true && x.CompanyId == companyId),
+                        customer => customer.PhoneId,
+                        phone => phone.PhoneId,
+                        (customer, phone) => customer)
                 .AsNoTracking()
+                .GroupBy(x => x.CustomerId)
+                .Select(x => x.First())
                 .ToListAsync(ct);
 
             await PgDb.Customers.ExecuteDeleteAsync(ct);
@@ -35,8 +39,16 @@ namespace ImportService.Services
             await PgDb.Customers.AddRangeAsync(customers, ct);
 
             var customerAddressDetails = await SqlDb.CustomerAddressDetails
-                .Where(x => x.IsActive == true && phoneIds.Contains(x.PhoneId ?? 0) && x.CompanyId == companyId)
+                .Join(
+                    SqlDb.CustomerPhones
+                    .Where(ph => ph.IsActive == true && ph.CompanyId == companyId),
+                    address => address.PhoneId,
+                    phone => phone.PhoneId,
+                    (address, phone) => address
+                )
                 .AsNoTracking()
+                .GroupBy(ad => ad.CustomerAddressId)
+                .Select(g => g.First())
                 .ToListAsync(ct);
 
             await PgDb.CustomerAddressDetails.ExecuteDeleteAsync(ct);

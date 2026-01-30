@@ -3,9 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ImportService.Data
 {
-    public class SqlServerDbContext : DbContext
+    public class SqlServerDbContext(DbContextOptions<SqlServerDbContext> options) : DbContext(options)
     {
-        public SqlServerDbContext(DbContextOptions<SqlServerDbContext> options) : base(options) { }
         public DbSet<SetupCompany> SetupCompanies => Set<SetupCompany>();
         public DbSet<BranchMaster> BranchMasters => Set<BranchMaster>();
         public DbSet<City> Cities => Set<City>();
