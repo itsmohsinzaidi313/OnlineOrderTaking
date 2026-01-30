@@ -16,7 +16,8 @@ namespace ImportService
         IFlavourMigrationService service_flavour,
         ICityMigrationService service_city,
         IAreaMigrationService service_area,
-        ISetupCompanySettingsMigrationService service_setupCompanySettings)
+        ISetupCompanySettingsMigrationService service_setupCompanySettings,
+        ICustomerDataImportService service_customerData)
     {
         private const string PostgresHost = "haproxy";
         public async Task<IResult?> Import(int companyId, string dbName, CancellationToken cancellationToken = default)
@@ -56,6 +57,9 @@ namespace ImportService
                 await service_setupCompanySettings.MigrateSetupCompanySettingsAsync(companyId, postgresDbContext, cancellationToken);
 
                 await service_discount.MigrateDiscountsAsync(companyId, postgresDbContext, cancellationToken);
+
+                await service_customerData.MigrateCustomerDataAsync(companyId, postgresDbContext, cancellationToken);
+
                 await postgresDbContext.SaveChangesAsync(cancellationToken);
                 return Results.Ok("Import completed successfully");
             }
