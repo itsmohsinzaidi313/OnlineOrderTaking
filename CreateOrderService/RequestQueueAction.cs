@@ -26,6 +26,7 @@ namespace CreateOrderService
 
         private async Task<string> GetConnectionString(string domainName)
         {
+            return "Host=85.190.242.39;Port=5434;Database=rollinnbbq;Username=postgres;Password=postgrespass";
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
             return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
         }

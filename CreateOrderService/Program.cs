@@ -12,16 +12,20 @@ var builder = Host.CreateDefaultBuilder(args);
 
 builder.ConfigureAppConfiguration((hostingContext, config) =>
 {
-    config.AddEnvironmentVariables();
+    config
+    .AddEnvironmentVariables()
+    .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
 })
 .ConfigureServices((context, services) =>
 {
-    var dbConnectionString = context.Configuration.GetConnectionString("Default");
+    var dbConnectionString = context.Configuration.GetConnectionString("Postgres")
+            ?? throw new InvalidOperationException("Postgres connection string is not configured.");
 
     var redisConnectionString = context.Configuration.GetConnectionString("Redis")
     ?? throw new InvalidOperationException("Redis connection string is not configured.");
+
     services
-    .AddDbContext<PgDbContext>(
+    .AddDbContext<RestaurantsContext>(
         options => options.UseNpgsql(
             dbConnectionString,
                 npgsqlOptions =>

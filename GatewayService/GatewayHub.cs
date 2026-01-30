@@ -80,7 +80,7 @@ namespace GatewayService
             await QueuePayload(RabbitMqQueues.LoginRequestQueue, obj);
         }
 
-        public async Task PlaceOrder(CustomerOrder order)
+        public async Task PlaceOrder(CustomerOrder order, string responseKey)
         {
             var obj = new OrderServicePayload
             {
