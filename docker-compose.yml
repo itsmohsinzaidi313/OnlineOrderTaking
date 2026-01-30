@@ -179,7 +179,6 @@ services:
     build:
       context: .
       dockerfile: ./CreateOrderService/Dockerfile
-    container_name: createorderservice
     environment:
       - ConnectionStrings__Postgres=${ROSQLCONNECTION}
       - ConnectionStrings__Redis=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
