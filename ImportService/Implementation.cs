@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ImportService
 {
     public class Implementation(
+        ILogger<Implementation> logger,
         ISetupCompanyMigrationService service_setupCompany,
         IBranchMasterMigrationService service_branchMaster,
         IMenuMigrationService service_menu,
@@ -61,10 +62,13 @@ namespace ImportService
                 await service_customerData.MigrateCustomerDataAsync(companyId, postgresDbContext, cancellationToken);
 
                 await postgresDbContext.SaveChangesAsync(cancellationToken);
+
+                logger.LogInformation("Data import completed successfully for database: {DbName}", dbName);
                 return Results.Ok("Import completed successfully");
             }
             catch (Exception ex)
             {
+                logger.LogError(ex, "Error occurred while importing data");
                 return Results.Problem(ex.InnerException?.Message ?? ex.Message, statusCode: 500);
             }
         }
