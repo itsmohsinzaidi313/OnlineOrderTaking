@@ -18,7 +18,7 @@ builder.Configuration
 var sqlServerConnectionString =
     builder.Configuration.GetConnectionString("SqlServer")
     ?? throw new InvalidOperationException("SqlServer connection string is not configured.");
-const string PostgressConnectionString = "Host=85.190.242.39;Port=5433;Database=restaurants;Username=postgres;Password=postgrespass";
+const string PostgressConnectionString = "Host=haproxy;Port=5433;Database=restaurants;Username=postgres;Password=postgrespass";
 // Services
 builder.Services
     .AddDbContextFactory<SqlServerDbContext>(options =>

@@ -22,7 +22,7 @@ namespace ImportService
         ICustomerDataImportService service_customerData,
         IGSTMigrationService service_gst)
     {
-        private const string PostgresHost = "85.190.242.39";
+        private const string PostgresHost = "haproxy";
         public async Task<IResult?> Import(int companyId, string dbName, CancellationToken cancellationToken = default)
         {
             try
