@@ -286,6 +286,24 @@ public partial class PgDbContext : DbContext
             entity.ToTable("branch_order_sequence");
         });
 
+        modelBuilder.Entity<Customer>(entity =>
+        {
+            entity.ToTable("customer")
+            .HasKey(x => x.CustomerId);
+        });
+
+        modelBuilder.Entity<CustomerAddressDetail>(entity =>
+        {
+            entity.ToTable("customer_address_detail")
+            .HasKey(x => x.CustomerAddressId);
+        });
+
+        modelBuilder.Entity<CustomerPhone>(entity =>
+        {
+            entity.ToTable("customer_phone")
+            .HasKey(x => x.PhoneId);
+        });
+
         OnModelCreatingPartial(modelBuilder);
     }
 
