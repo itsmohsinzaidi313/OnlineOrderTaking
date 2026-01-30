@@ -9,15 +9,6 @@ namespace ImportService.Entities
         public int? CompanyId { get; set; }
 
         public bool IsActive { get; set; }
-        public OrderModeCompanyMapping CopyWith(OrderModeCompanyMapping instance)
-        {
-            return new OrderModeCompanyMapping
-            {
-                OrderModeMappingId = instance.OrderModeMappingId,
-                OrderModeId = instance.OrderModeId,
-                CompanyId = instance.CompanyId,
-                IsActive = instance.IsActive
-            };
-        }
+        
     }
 }

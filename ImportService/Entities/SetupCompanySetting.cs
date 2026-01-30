@@ -13,17 +13,6 @@
         public int? CompanyId { get; set; }
 
         public int? BranchId { get; set; }
-        public SetupCompanySetting CopyWith(SetupCompanySetting instance)
-        {
-            return new SetupCompanySetting
-            {
-                SettingId = instance.SettingId,
-                SetupDetailId = instance.SetupDetailId,
-                SettingValue = instance.SettingValue,
-                IsActive = instance.IsActive,
-                CompanyId = instance.CompanyId,
-                BranchId = instance.BranchId
-            };
-        }
+        
     }
 }

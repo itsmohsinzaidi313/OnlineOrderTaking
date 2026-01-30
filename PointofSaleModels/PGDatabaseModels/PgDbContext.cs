@@ -21,9 +21,17 @@ public partial class PgDbContext : DbContext
 
     public virtual DbSet<BranchMaster> BranchMasters { get; set; }
 
+    public virtual DbSet<BranchOrderSequence> BranchOrderSequences { get; set; }
+
     public virtual DbSet<CategoryAvailability> CategoryAvailabilities { get; set; }
 
     public virtual DbSet<City> Cities { get; set; }
+
+    public virtual DbSet<Customer> Customers { get; set; }
+
+    public virtual DbSet<CustomerAddressDetail> CustomerAddressDetails { get; set; }
+
+    public virtual DbSet<CustomerPhone> CustomerPhones { get; set; }
 
     public virtual DbSet<DealDescription> DealDescriptions { get; set; }
 
@@ -75,14 +83,6 @@ public partial class PgDbContext : DbContext
 
     public virtual DbSet<SetupMasterDetail> SetupMasterDetails { get; set; }
 
-    public virtual DbSet<BranchOrderSequence> OrderNumberSequences { get; set; }
-
-    public virtual DbSet<Customer> Customers { get; set; }
-
-    public virtual DbSet<CustomerAddressDetail> CustomerAddressDetails { get; set; }
-
-    public virtual DbSet<CustomerPhone> CustomerPhones { get; set; }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Area>(entity =>
@@ -110,6 +110,13 @@ public partial class PgDbContext : DbContext
             entity.Property(e => e.Ntnnumber).HasColumnName("NTNNumber");
         });
 
+        modelBuilder.Entity<BranchOrderSequence>(entity =>
+        {
+            entity.HasKey(e => e.BranchId);
+
+            entity.ToTable("branch_order_sequence");
+        });
+
         modelBuilder.Entity<CategoryAvailability>(entity =>
         {
             entity.HasKey(e => e.CategoryAvailableId);
@@ -120,6 +127,25 @@ public partial class PgDbContext : DbContext
         modelBuilder.Entity<City>(entity =>
         {
             entity.ToTable("city");
+        });
+
+        modelBuilder.Entity<Customer>(entity =>
+        {
+            entity.ToTable("customer");
+        });
+
+        modelBuilder.Entity<CustomerAddressDetail>(entity =>
+        {
+            entity.HasKey(e => e.CustomerAddressId);
+
+            entity.ToTable("customer_address_detail");
+        });
+
+        modelBuilder.Entity<CustomerPhone>(entity =>
+        {
+            entity.HasKey(e => e.PhoneId);
+
+            entity.ToTable("customer_phone");
         });
 
         modelBuilder.Entity<DealDescription>(entity =>
@@ -278,30 +304,6 @@ public partial class PgDbContext : DbContext
             entity.ToTable("setup_master_detail");
 
             entity.Property(e => e.ConstantValue).HasColumnName("Constant_Value");
-        });
-
-        modelBuilder.Entity<BranchOrderSequence>(entity =>
-        {
-            entity.HasKey(e => e.BranchId);
-            entity.ToTable("branch_order_sequence");
-        });
-
-        modelBuilder.Entity<Customer>(entity =>
-        {
-            entity.ToTable("customer")
-            .HasKey(x => x.CustomerId);
-        });
-
-        modelBuilder.Entity<CustomerAddressDetail>(entity =>
-        {
-            entity.ToTable("customer_address_detail")
-            .HasKey(x => x.CustomerAddressId);
-        });
-
-        modelBuilder.Entity<CustomerPhone>(entity =>
-        {
-            entity.ToTable("customer_phone")
-            .HasKey(x => x.PhoneId);
         });
 
         OnModelCreatingPartial(modelBuilder);

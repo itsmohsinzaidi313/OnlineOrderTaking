@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace PointofSaleModels.Application
+﻿namespace PointofSaleModels.Application
 {
     public class CustomerOrder : CustomerOrderContext
     {

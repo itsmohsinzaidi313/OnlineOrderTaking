@@ -1,9 +1,8 @@
-using System.ComponentModel.DataAnnotations;
+﻿namespace PointofSaleModels.PGDatabaseModels;
 
-namespace PointofSaleModels.PGDatabaseModels;
-
-public class BranchOrderSequence
+public partial class BranchOrderSequence
 {
     public long BranchId { get; set; }
+
     public long LastValue { get; set; }
 }

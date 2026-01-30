@@ -10,7 +10,5 @@ public partial class CustomerPhone
 
     public int? CompanyId { get; set; }
 
-    public virtual ICollection<CustomerAddressDetail> CustomerAddressDetails { get; set; } = [];
-
-    public virtual ICollection<Customer> Customers { get; set; } = [];
+    public int? PhoneTypeId { get; set; }
 }

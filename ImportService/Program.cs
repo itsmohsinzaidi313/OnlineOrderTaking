@@ -4,7 +4,6 @@ using ImportService.Interfaces;
 using ImportService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Threading;
 
 var builder = WebApplication.CreateBuilder(args);
 

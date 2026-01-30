@@ -29,23 +29,5 @@ namespace ImportService.Entities
 
         [Column(TypeName = "text")]
         public string? Description { get; set; }
-        public PaymentMode CopyWith(PaymentMode instance)
-        {
-            return new PaymentMode
-            {
-                PaymentModeId = instance.PaymentModeId,
-                PaymentModeName = instance.PaymentModeName,
-                CompanyId = instance.CompanyId,
-                IsActive = instance.IsActive,
-                IsFoc = instance.IsFoc,
-                IsPosType = instance.IsPosType,
-                IsCashType = instance.IsCashType,
-                IsThirdParty = instance.IsThirdParty,
-                InstantDiscount = instance.InstantDiscount,
-                IsCreditType = instance.IsCreditType,
-                IsPartyAccount = instance.IsPartyAccount,
-                Description = instance.Description
-            };
-        }
     }
 }
