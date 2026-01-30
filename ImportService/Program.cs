@@ -18,7 +18,7 @@ builder.Configuration
 var sqlServerConnectionString =
     builder.Configuration.GetConnectionString("SqlServer")
     ?? throw new InvalidOperationException("SqlServer connection string is not configured.");
-
+const string PostgressConnectionString = "Host=85.190.242.39;Port=5433;Database=restaurants;Username=postgres;Password=postgrespass";
 // Services
 builder.Services
     .AddDbContextFactory<SqlServerDbContext>(options =>
@@ -31,7 +31,14 @@ builder.Services
                     maxRetryDelay: TimeSpan.FromSeconds(5),
                     errorNumbersToAdd: null);
             }))
-
+    .AddDbContextFactory<RestaurantsDbContext>(options =>
+        options.UseNpgsql(PostgressConnectionString, options =>
+        {
+            options.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorCodesToAdd: null);
+        }))
     .AddScoped<ISetupCompanyMigrationService, SetupCompanyMigrationService>()
     .AddScoped<IMenuMigrationService, MenuMigrationService>()
     .AddScoped<IBranchMasterMigrationService, BranchMasterMigrationService>()
@@ -92,6 +99,7 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Imple
     }
     return response;
 });
+
 app.MapGet("health", ([FromServices] SqlServerDbContext sqlServerDbContext) =>
 {
     if (sqlServerDbContext.Database.CanConnect() == false)
