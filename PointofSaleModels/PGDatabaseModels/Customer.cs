@@ -32,7 +32,5 @@ public partial class Customer
 
     public string? Password { get; set; }
 
-    public virtual SetupCompany? Company { get; set; }
-
     public virtual CustomerPhone? Phone { get; set; }
 }
