@@ -84,7 +84,9 @@ namespace GatewayService
         {
             var obj = new OrderServicePayload
             {
-                Order = order
+                Order = order,
+                BranchId = order.BranchId,
+                DomainName = order.Domain
             }.FillContext(Context);
             await QueuePayload(RabbitMqQueues.OrderRequestQueue, obj);
         }

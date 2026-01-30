@@ -4,7 +4,7 @@ namespace PointofSaleModels.Application
 {
     public class CustomerOrder : CustomerOrderContext
     {
-        public string DomainName { get; set; }
+        public string Domain { get; set; }
         public int BranchId { get; set; }
         public CustomerDetail CustomerDetails { get; set; }
         public string OrderNumber { get; set; } = string.Empty;
