@@ -52,7 +52,7 @@ namespace GatewayService
                 {
                     var payload = JsonSerializer.Deserialize<DataServicePayload>(response.ToString());
                     await Clients.Caller.SendAsync("Ack", new { status = "cached" });
-                    await Clients.Caller.SendAsync("MenuResponse", payload);
+                    await Clients.Caller.SendAsync(responseKey, payload);
                     return;
                 }
             }
