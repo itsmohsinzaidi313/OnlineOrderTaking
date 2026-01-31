@@ -125,4 +125,6 @@ public partial class OrderMaster
     public int? PartyPhoneId { get; set; }
 
     public int? PartyCustomerId { get; set; }
+
+    public List<OrderDetail> OrderDetails { get; set; } = null!;
 }

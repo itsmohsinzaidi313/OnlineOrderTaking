@@ -41,4 +41,6 @@ public partial class CustomerAddressDetail
     public int? CaptionId { get; set; }
 
     public string? CompleteAddress { get; set; }
+
+    public CustomerPhone CustomerPhone { get; set; } = null!;
 }

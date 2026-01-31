@@ -143,9 +143,19 @@ public partial class PgDbContext : DbContext
 
         modelBuilder.Entity<CustomerPhone>(entity =>
         {
-            entity.HasKey(e => e.PhoneId);
+            entity.ToTable("customer_phone")
+                .HasKey(x => x.PhoneId);
+            entity
+                .HasMany(x => x.Customers)
+                .WithOne(x => x.CustomerPhone)
+                .HasForeignKey(x => x.PhoneId)
+                .HasPrincipalKey(x => x.PhoneId);
 
-            entity.ToTable("customer_phone");
+            entity
+                .HasMany(x => x.CustomerAddressDetails)
+                .WithOne(x => x.CustomerPhone)
+                .HasForeignKey(x => x.PhoneId)
+                .HasPrincipalKey(x => x.PhoneId);
         });
 
         modelBuilder.Entity<DealDescription>(entity =>

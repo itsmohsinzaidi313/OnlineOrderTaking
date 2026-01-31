@@ -9,10 +9,11 @@ namespace ImportService.Services
     {
         public async Task MigrateCustomerDataAsync(int companyId, PostgresDbContext PgDb, CancellationToken ct = default)
         {
-            var customerPhones = await SqlDb.CustomerPhones
-                .Where(x => x.IsActive == true && x.CompanyId == companyId)
+            var customerPhonesQuery = SqlDb.CustomerPhones
                 .AsNoTracking()
-                .ToListAsync(ct);
+                .Where(x => x.IsActive == true && x.CompanyId == companyId);
+
+            var customerPhones = await customerPhonesQuery.ToListAsync(ct);
             await PgDb.CustomerPhones.ExecuteDeleteAsync(ct);
             if (customerPhones.Count == 0)
             {
@@ -21,14 +22,12 @@ namespace ImportService.Services
             await PgDb.CustomerPhones.AddRangeAsync(customerPhones, ct);
 
             var customers = await SqlDb.Customers
-                .Join(SqlDb.CustomerPhones
-                      .Where(x => x.IsActive == true && x.CompanyId == companyId),
-                        customer => customer.PhoneId,
-                        phone => phone.PhoneId,
-                        (customer, phone) => customer)
                 .AsNoTracking()
-                .GroupBy(x => x.CustomerId)
-                .Select(x => x.First())
+                .Join(customerPhonesQuery,
+                    customer => customer.PhoneId,
+                    phone => phone.PhoneId,
+                    (customer, _) => customer)
+                .Distinct()
                 .ToListAsync(ct);
 
             await PgDb.Customers.ExecuteDeleteAsync(ct);
@@ -39,16 +38,13 @@ namespace ImportService.Services
             await PgDb.Customers.AddRangeAsync(customers, ct);
 
             var customerAddressDetails = await SqlDb.CustomerAddressDetails
+                .AsNoTracking()
                 .Join(
-                    SqlDb.CustomerPhones
-                    .Where(ph => ph.IsActive == true && ph.CompanyId == companyId),
+                    customerPhonesQuery,
                     address => address.PhoneId,
                     phone => phone.PhoneId,
-                    (address, phone) => address
-                )
-                .AsNoTracking()
-                .GroupBy(ad => ad.CustomerAddressId)
-                .Select(g => g.First())
+                    (address, _) => address)
+                .Distinct()
                 .ToListAsync(ct);
 
             await PgDb.CustomerAddressDetails.ExecuteDeleteAsync(ct);

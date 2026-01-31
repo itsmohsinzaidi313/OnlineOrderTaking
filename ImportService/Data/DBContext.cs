@@ -189,6 +189,30 @@ namespace ImportService.Data
             modelBuilder.Entity<CustomerAddressDetail>()
                 .ToTable("CustomerAddressDetail")
                 .HasKey(x => x.CustomerAddressId);
+
+            modelBuilder.Entity<CustomerPhone>()
+                .HasMany(c => c.Customers)
+                .WithOne(p => p.CustomerPhone)
+                .HasPrincipalKey(p => p.PhoneId)
+                .HasForeignKey(x => x.PhoneId);
+
+            modelBuilder.Entity<CustomerPhone>()
+                .HasMany(x => x.CustomerAddressDetails)
+                .WithOne(x => x.CustomerPhone)
+                .HasPrincipalKey(x => x.PhoneId)
+                .HasForeignKey(x => x.PhoneId);
+
+            modelBuilder.Entity<Customer>()
+                .HasOne(c => c.CustomerPhone)        
+                .WithMany(p => p.Customers)
+                .HasForeignKey(c => c.PhoneId)
+                .HasPrincipalKey(p => p.PhoneId);
+
+            modelBuilder.Entity<CustomerAddressDetail>()
+                .HasOne(c => c.CustomerPhone)
+                .WithMany(p => p.CustomerAddressDetails)
+                .HasForeignKey(c => c.PhoneId)
+                .HasPrincipalKey(p => p.PhoneId);
         }
     }
 
@@ -393,6 +417,18 @@ namespace ImportService.Data
             modelBuilder.Entity<CustomerPhone>()
                 .ToTable("customer_phone")
                 .HasKey(x => x.PhoneId);
+
+            modelBuilder.Entity<Customer>()
+                .HasOne(c => c.CustomerPhone)
+                .WithMany(p => p.Customers)
+                .HasForeignKey(c => c.PhoneId)
+                .HasPrincipalKey(p => p.PhoneId);
+
+            modelBuilder.Entity<CustomerAddressDetail>()
+                .HasOne(c => c.CustomerPhone)
+                .WithMany(p => p.CustomerAddressDetails)
+                .HasForeignKey(c => c.PhoneId)
+                .HasPrincipalKey(p => p.PhoneId);
         }
 
     }
