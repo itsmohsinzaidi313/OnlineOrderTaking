@@ -48,14 +48,14 @@ class Implementation()
                                                             RETURNING "LastValue"
                                                         """).ToListAsync();
 
-        var now = DateTime.UtcNow;
+        var now = DateTime.Now;
         var datePrefix = now.ToString("ddMMyy");
         var prefix = $"{datePrefix}/ORD/";
         var orderNumber = $"{prefix}{id.First():D4}";
         return orderNumber;
     }
 
-    private static async Task<int> GetOrderModeIdAsync(Db.PgDbContext dbContext, string orderMode, int companyId)
+    private static async Task<int> GetOrderModeIdAsync(Db.PgDbContext dbContext)
     {
         var setupMaster = await dbContext.SetupMasters.Where(x => x.SetupMasterName == "OrderMode").FirstAsync();
         return (await dbContext.SetupMasterDetails
@@ -70,7 +70,7 @@ class Implementation()
         var discount = order.Discount;
         var orderNumber = await GenerateOrderNumberAsync(dbContext, branchId);
         int orderStatusId = ORDER_STATUS_PENDING;
-        var orderModeId = await GetOrderModeIdAsync(dbContext, order.OrderType.ToString(), companyId);
+        var orderModeId = await GetOrderModeIdAsync(dbContext);
         var subTotal = order.Items.Select(x => x.Variations.Select(x => x.Price).Sum()).Sum();
         var gst = await GetTaxPercentageAsync(dbContext);
         var tax = gst?.Gstpercentage ?? 0.00;
