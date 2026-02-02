@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 namespace ImportService
 {
     public class Implementation(
+        RestaurantsDbContext pgDb,
+        ILogger<Implementation> logger,
         ISetupCompanyMigrationService service_setupCompany,
         IBranchMasterMigrationService service_branchMaster,
         IMenuMigrationService service_menu,
@@ -16,13 +18,15 @@ namespace ImportService
         IFlavourMigrationService service_flavour,
         ICityMigrationService service_city,
         IAreaMigrationService service_area,
-        ISetupCompanySettingsMigrationService service_setupCompanySettings)
+        ISetupCompanySettingsMigrationService service_setupCompanySettings,
+        ICustomerDataImportService service_customerData,
+        IGSTMigrationService service_gst)
     {
         private const string PostgresHost = "haproxy";
         public async Task<IResult?> Import(int companyId, string dbName, CancellationToken cancellationToken = default)
         {
-            try
-            {
+            //try
+            //{
                 var isNewRestaurant = await RestaurantCreated(dbName, cancellationToken);
                 var postgresDbContext = GetPgDbContext($"Host={PostgresHost};Port=5433;Database={dbName};Username=postgres;Password=postgrespass");
 
@@ -56,18 +60,25 @@ namespace ImportService
                 await service_setupCompanySettings.MigrateSetupCompanySettingsAsync(companyId, postgresDbContext, cancellationToken);
 
                 await service_discount.MigrateDiscountsAsync(companyId, postgresDbContext, cancellationToken);
+
+                await service_customerData.MigrateCustomerDataAsync(companyId, postgresDbContext, cancellationToken);
+
+                await service_gst.MigrateGSTsAsync(companyId, postgresDbContext, cancellationToken);
+
                 await postgresDbContext.SaveChangesAsync(cancellationToken);
+
+                logger.LogInformation("Data import completed successfully for database: {DbName}", dbName);
                 return Results.Ok("Import completed successfully");
-            }
-            catch (Exception ex)
-            {
-                return Results.Problem(ex.InnerException?.Message ?? ex.Message, statusCode: 500);
-            }
+            //}
+            //catch (Exception ex)
+            //{
+            //    logger.LogError(ex, "Error occurred while importing data");
+            //    return Results.Problem(ex.InnerException?.Message ?? ex.Message, statusCode: 500);
+            //}
         }
 
-        private static async Task<bool> RestaurantCreated(string dbName, CancellationToken cancellationToken)
+        private async Task<bool> RestaurantCreated(string dbName, CancellationToken cancellationToken)
         {
-            var pgDb = GetRestaurantsDbContext($"Host={PostgresHost};Port=5433;Database=restaurants;Username=postgres;Password=postgrespass");
             var restaurant = await pgDb.Restaurants.FirstOrDefaultAsync(x => x.DomainName.Contains(dbName), cancellationToken);
             if (restaurant == null)
             {
@@ -96,20 +107,6 @@ namespace ImportService
                 })
                 .Options;
             return new PostgresDbContext(options);
-        }
-
-        private static RestaurantsDbContext GetRestaurantsDbContext(string connectionString)
-        {
-            var options = new DbContextOptionsBuilder<RestaurantsDbContext>()
-                .UseNpgsql(connectionString, options =>
-                {
-                    options.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(5),
-                        errorCodesToAdd: null);
-                })
-                .Options;
-            return new RestaurantsDbContext(options);
         }
     }
 }

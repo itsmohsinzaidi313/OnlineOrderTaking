@@ -10,10 +10,8 @@
         public DataServicePayload() : base() { }
         public DataServicePayload(DataServicePayload payload) : base(payload)
         {
-            DomainName = payload.DomainName;
             DataRequestType = payload.DataRequestType;
         }
-        public string DomainName { get; set; }
         public string DataRequestType { get; set; } = string.Empty;
         public object? DataPayload { get; set; }
     }

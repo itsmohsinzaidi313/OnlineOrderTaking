@@ -13,18 +13,18 @@ namespace ImportService.Services
                         .AsNoTracking()
                         .ToListAsync(ct);
 
-            var branchIds = branches.Select(b => b.BranchId).ToList();
-
-            var branchDetails = await SqlDb.BranchDetails
-                        .Join(SqlDb.BranchMasters, a => a.BranchId, b => b.BranchId, (a, b) => a)
-                        .Where(a => a.IsActive == true && branchIds.Contains(a.BranchId))
-                        .AsNoTracking()
+            var branchDetails = await (
+                        from bd in SqlDb.BranchDetails.AsNoTracking()
+                        join bm in SqlDb.BranchMasters.AsNoTracking() on bd.BranchId equals bm.BranchId
+                        where bd.IsActive == true && bm.IsActive == true && bm.CompanyId == companyId
+                        select bd)
                         .ToListAsync(ct);
 
-            var branchDayMappings = await SqlDb.BranchDayMappings.Where(a => a.IsActive == true)
-                        .Join(SqlDb.BranchMasters, a => a.BranchId, b => b.BranchId, (a, b) => a)
-                        .Where(b => branchIds.Contains(b.BranchId) && b.IsActive == true)
-                        .AsNoTracking()
+            var branchDayMappings = await (
+                        from bdm in SqlDb.BranchDayMappings.AsNoTracking()
+                        join bm in SqlDb.BranchMasters.AsNoTracking() on bdm.BranchId equals bm.BranchId
+                        where bdm.IsActive == true && bm.IsActive == true && bm.CompanyId == companyId
+                        select bdm)
                         .ToListAsync(ct);
 
 

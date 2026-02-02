@@ -11,6 +11,7 @@
             RestaurantId = payload.RestaurantId;
             BranchId = payload.BranchId;
             ResponseKey = payload.ResponseKey;
+            DomainName = payload.DomainName;
         }
         public string CorrelationId { get; set; } = string.Empty;
         public string ConnectionId { get; set; } = string.Empty;
@@ -18,9 +19,8 @@
         public string ResponseKey { get; set; }
         public int RestaurantId { get; set; }
         public int BranchId { get; set; }
-
+        public string DomainName { get; set; }
         public string RestaurantIdToString => RestaurantId.ToString();
-
         public string BranchIdToString => BranchId.ToString();
     }
 }

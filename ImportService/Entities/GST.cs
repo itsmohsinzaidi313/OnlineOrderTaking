@@ -15,19 +15,6 @@
         public string? GSTName { get; set; }
 
         public int? PaymentModeId { get; set; }
-
-        public GST CopyWith(GST instance)
-        {
-            return new GST
-            {
-                GSTId = instance.GSTId,
-                GSTPercentage = instance.GSTPercentage,
-                CityId = instance.CityId,
-                CompanyId = instance.CompanyId,
-                IsActive = instance.IsActive,
-                GSTName = instance.GSTName,
-                PaymentModeId = instance.PaymentModeId
-            };
-        }
+        
     }
 }
