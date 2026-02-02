@@ -10,10 +10,13 @@ namespace ImportService.Services
         public async Task MigrateCustomerDataAsync(int companyId, PostgresDbContext PgDb, CancellationToken ct = default)
         {
             var customerPhonesQuery = SqlDb.CustomerPhones
+            var customerPhones = await SqlDb.CustomerPhones
+                .Where(x => x.IsActive == true && x.CompanyId == companyId)
                 .AsNoTracking()
                 .Where(x => x.IsActive == true && x.CompanyId == companyId);
 
             var customerPhones = await customerPhonesQuery.ToListAsync(ct);
+                .ToListAsync(ct);
             await PgDb.CustomerPhones.ExecuteDeleteAsync(ct);
             if (customerPhones.Count == 0)
             {

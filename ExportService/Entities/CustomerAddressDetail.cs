@@ -1,6 +1,6 @@
 ﻿using PointofSaleModels.DatabaseModels;
 
-namespace ImportService.Entities;
+namespace ExportService.Entities;
 
 public partial class CustomerAddressDetail
 {
@@ -43,6 +43,4 @@ public partial class CustomerAddressDetail
     public int? CaptionId { get; set; }
 
     public string? CompleteAddress { get; set; }
-
-    public CustomerPhone CustomerPhone { get; set; } = null!;
 }

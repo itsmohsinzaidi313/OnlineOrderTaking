@@ -1,6 +1,6 @@
 ﻿using PointofSaleModels.DatabaseModels;
 
-namespace ImportService.Entities;
+namespace ExportService.Entities;
 
 public partial class Customer
 {
@@ -33,6 +33,4 @@ public partial class Customer
     public string? Email { get; set; }
 
     public string? Password { get; set; }
-
-    public CustomerPhone CustomerPhone { get; set; } = null!;
 }
