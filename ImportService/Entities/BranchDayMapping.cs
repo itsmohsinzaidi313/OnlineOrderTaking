@@ -16,17 +16,6 @@ namespace ImportService.Entities
         public TimeSpan? EndTime { get; set; }
 
         public bool IsActive { get; set; } = true;
-        public BranchDayMapping CopyWith(BranchDayMapping instance)
-        {
-            return new BranchDayMapping
-            {
-                BranchDayMappingId = instance.BranchDayMappingId,
-                BranchId = instance.BranchId,
-                DayId = instance.DayId,
-                StartTime = instance.StartTime,
-                EndTime = instance.EndTime,
-                IsActive = instance.IsActive
-            };
-        }
+        
     }
 }

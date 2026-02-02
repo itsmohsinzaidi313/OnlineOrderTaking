@@ -4,21 +4,19 @@ using ImportService.Interfaces;
 using ImportService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Threading;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configuration
 builder.Configuration
     .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
-    .AddEnvironmentVariables()
-    ;
+    .AddEnvironmentVariables();
 
 // Connection strings
 var sqlServerConnectionString =
     builder.Configuration.GetConnectionString("SqlServer")
     ?? throw new InvalidOperationException("SqlServer connection string is not configured.");
-
+const string PostgressConnectionString = "Host=haproxy;Port=5433;Database=restaurants;Username=postgres;Password=postgrespass";
 // Services
 builder.Services
     .AddDbContextFactory<SqlServerDbContext>(options =>
@@ -31,7 +29,14 @@ builder.Services
                     maxRetryDelay: TimeSpan.FromSeconds(5),
                     errorNumbersToAdd: null);
             }))
-
+    .AddDbContextFactory<RestaurantsDbContext>(options =>
+        options.UseNpgsql(PostgressConnectionString, options =>
+        {
+            options.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorCodesToAdd: null);
+        }))
     .AddScoped<ISetupCompanyMigrationService, SetupCompanyMigrationService>()
     .AddScoped<IMenuMigrationService, MenuMigrationService>()
     .AddScoped<IBranchMasterMigrationService, BranchMasterMigrationService>()
@@ -46,6 +51,7 @@ builder.Services
     .AddScoped<ICityMigrationService, CityMigrationService>()
     .AddScoped<IAreaMigrationService, AreaMigrationService>()
     .AddScoped<ISetupCompanySettingsMigrationService, SetupCompanySettingsMigrationService>()
+    .AddScoped<ICustomerDataImportService, CustomerDataImportService>()
     .AddScoped<Implementation>();
 
 var app = builder.Build();
@@ -91,6 +97,7 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Imple
     }
     return response;
 });
+
 app.MapGet("health", ([FromServices] SqlServerDbContext sqlServerDbContext) =>
 {
     if (sqlServerDbContext.Database.CanConnect() == false)

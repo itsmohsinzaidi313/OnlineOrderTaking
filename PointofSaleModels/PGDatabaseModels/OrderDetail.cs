@@ -47,4 +47,6 @@ public partial class OrderDetail
     public bool? IsPercentage { get; set; }
 
     public int? DiscountId { get; set; }
+
+    public OrderMaster OrderMaster { get; set; } = null!;
 }

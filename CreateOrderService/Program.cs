@@ -1,44 +1,59 @@
-﻿using CreateOrderService;
+using CreateOrderService;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
 
-var builder = Host.CreateDefaultBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
-builder.ConfigureAppConfiguration((hostingContext, config) =>
-{
-    config.AddEnvironmentVariables();
-})
-.ConfigureServices((context, services) =>
-{
-    var dbConnectionString = context.Configuration.GetConnectionString("Default");
+// Add services to the container.
+// Configuration
+builder.Configuration
+    .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
 
-    var redisConnectionString = context.Configuration.GetConnectionString("Redis")
+// Connection strings
+var dbConnectionString =
+    builder.Configuration.GetConnectionString("Postgres")
+    ?? throw new InvalidOperationException("Postgres connection string is not configured.");
+var redisConnectionString =
+    builder.Configuration.GetConnectionString("Redis")
     ?? throw new InvalidOperationException("Redis connection string is not configured.");
-    services
-    .AddDbContext<PgDbContext>(
+
+var rabbitMqSection = builder.Configuration.GetSection("RABBITMQ");
+
+builder.Services
+    .AddDbContext<RestaurantsContext>(
         options => options.UseNpgsql(
             dbConnectionString,
-                npgsqlOptions =>
-                {
-                    npgsqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(5),
-                        errorCodesToAdd: null);
-                }))
-    .Configure<RabbitMqSettings>(context.Configuration.GetSection("RABBITMQ"))
+            npgsqlOptions =>
+            {
+                npgsqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(5),
+                    errorCodesToAdd: null);
+            }))
+    .Configure<RabbitMqSettings>(rabbitMqSection)
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<Implementation>()
     .AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString))
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
     .AddSingleton<IQueueAction, RequestQueueAction>()
     .AddHostedService<RequestQueueListener>();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+
+app.MapGet("/health", async ([FromServices] RestaurantsContext restaurantsContext) =>
+{
+    if (!await restaurantsContext.Database.CanConnectAsync())
+    {
+        return Results.Problem("Cannot connect to restaurants database.");
+    }
+    return Results.Ok();
 });
 
-var host = builder.Build();
-await host.RunAsync();
+app.Run();

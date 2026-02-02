@@ -1,4 +1,4 @@
-﻿namespace PointofSaleModels.PGDatabaseModels;
+﻿namespace ImportService.Entities;
 
 public partial class CustomerAddressDetail
 {

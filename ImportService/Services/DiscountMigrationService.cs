@@ -25,11 +25,14 @@ namespace ImportService.Services
                 return;
             }
 
-            var discountIds = discounts.Select(x => x.DiscountId).ToHashSet();
+            //var discountIds = discounts.Select(x => x.DiscountId).ToHashSet();
 
             // 2) Migrate DiscountDayMappings for the migrated discounts
             var dayMappings = await sqlDb.DiscountDayMappings
-                .Where(x => discountIds.Contains(x.DiscountId) && x.IsActive == true)
+                .Join(sqlDb.Discounts.Where(x => x.CompanyId == companyId && x.IsActive == true),
+                      a => a.DiscountId,
+                      b => b.DiscountId,
+                      (ddm, d) => ddm)
                 .AsNoTracking()
                 .ToListAsync(ct);
             await pgDb.DiscountDayMappings.ExecuteDeleteAsync(ct);
@@ -39,7 +42,10 @@ namespace ImportService.Services
 
             // 3) Migrate DiscountBranchMappings for the migrated discounts
             var branchMappings = await sqlDb.DiscountBranchMappings
-                .Where(x => discountIds.Contains(x.DiscountId) && x.IsActive == true)
+                .Join(sqlDb.Discounts.Where(x => x.CompanyId == companyId && x.IsActive == true),
+                      a => a.DiscountId,
+                      b => b.DiscountId,
+                      (dbm, d) => dbm)
                 .AsNoTracking()
                 .ToListAsync(ct);
 
@@ -48,7 +54,10 @@ namespace ImportService.Services
 
             // 4) Migrate DiscountOrderTypeMappings for the migrated discounts
             var orderTypeMappings = await sqlDb.DiscountOrderTypeMappings
-                .Where(x => discountIds.Contains(x.DiscountId) && x.IsActive == true)
+                .Join(sqlDb.Discounts.Where(x => x.CompanyId == companyId && x.IsActive == true),
+                      a => a.DiscountId,
+                      b => b.DiscountId,
+                      (otm, d) => otm)
                 .AsNoTracking()
                 .ToListAsync(ct);
 
@@ -57,7 +66,10 @@ namespace ImportService.Services
 
             // 5) Migrate DiscountOrderModeMappings for the migrated discounts
             var orderModeMappings = await sqlDb.DiscountOrderModeMappings
-                .Where(x => discountIds.Contains(x.DiscountId) && x.IsActive == true)
+                .Join(sqlDb.Discounts.Where(x => x.CompanyId == companyId && x.IsActive == true),
+                      a => a.DiscountId,
+                      b => b.DiscountId,
+                      (omm, d) => omm)
                 .AsNoTracking()
                 .ToListAsync(ct);
 
@@ -66,7 +78,10 @@ namespace ImportService.Services
 
             // 6) Migrate DiscountProductDetailMappings for the migrated discounts
             var productDetailMappings = await sqlDb.DiscountProductDetailMappings
-                .Where(x => discountIds.Contains(x.DiscountId) && x.IsActive == true)
+                .Join(sqlDb.Discounts.Where(x => x.CompanyId == companyId && x.IsActive == true),
+                      a => a.DiscountId,
+                      b => b.DiscountId,
+                      (pdm, d) => pdm)
                 .AsNoTracking()
                 .ToListAsync(ct);
 

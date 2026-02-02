@@ -3,9 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ImportService.Data
 {
-    public class SqlServerDbContext : DbContext
+    public class SqlServerDbContext(DbContextOptions<SqlServerDbContext> options) : DbContext(options)
     {
-        public SqlServerDbContext(DbContextOptions<SqlServerDbContext> options) : base(options) { }
         public DbSet<SetupCompany> SetupCompanies => Set<SetupCompany>();
         public DbSet<BranchMaster> BranchMasters => Set<BranchMaster>();
         public DbSet<City> Cities => Set<City>();
@@ -35,6 +34,9 @@ namespace ImportService.Data
         public DbSet<DiscountOrderTypeMapping> DiscountOrderTypeMappings => Set<DiscountOrderTypeMapping>();
         public DbSet<DiscountOrderModeMapping> DiscountOrderModeMappings => Set<DiscountOrderModeMapping>();
         public DbSet<SetupCompanySetting> SetupCompanySettings => Set<SetupCompanySetting>();
+        public DbSet<Customer> Customers => Set<Customer>();
+        public DbSet<CustomerPhone> CustomerPhones => Set<CustomerPhone>();
+        public DbSet<CustomerAddressDetail> CustomerAddressDetails => Set<CustomerAddressDetail>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -175,6 +177,42 @@ namespace ImportService.Data
             modelBuilder.Entity<SetupCompanySetting>()
                 .ToTable("SetupCompanySetting", "dbo")
                 .HasKey(x => x.SettingId);
+
+            modelBuilder.Entity<Customer>()
+                .ToTable("Customer")
+                .HasKey(x => x.CustomerId);
+
+            modelBuilder.Entity<CustomerPhone>()
+                .ToTable("CustomerPhone")
+                .HasKey(x => x.PhoneId);
+
+            modelBuilder.Entity<CustomerAddressDetail>()
+                .ToTable("CustomerAddressDetail")
+                .HasKey(x => x.CustomerAddressId);
+
+            modelBuilder.Entity<CustomerPhone>()
+                .HasMany(c => c.Customers)
+                .WithOne(p => p.CustomerPhone)
+                .HasPrincipalKey(p => p.PhoneId)
+                .HasForeignKey(x => x.PhoneId);
+
+            modelBuilder.Entity<CustomerPhone>()
+                .HasMany(x => x.CustomerAddressDetails)
+                .WithOne(x => x.CustomerPhone)
+                .HasPrincipalKey(x => x.PhoneId)
+                .HasForeignKey(x => x.PhoneId);
+
+            modelBuilder.Entity<Customer>()
+                .HasOne(c => c.CustomerPhone)        
+                .WithMany(p => p.Customers)
+                .HasForeignKey(c => c.PhoneId)
+                .HasPrincipalKey(p => p.PhoneId);
+
+            modelBuilder.Entity<CustomerAddressDetail>()
+                .HasOne(c => c.CustomerPhone)
+                .WithMany(p => p.CustomerAddressDetails)
+                .HasForeignKey(c => c.PhoneId)
+                .HasPrincipalKey(p => p.PhoneId);
         }
     }
 
@@ -213,6 +251,10 @@ namespace ImportService.Data
         public DbSet<SetupCompanySetting> SetupCompanySettings => Set<SetupCompanySetting>();
         public DbSet<OrderMaster> OrderMasters => Set<OrderMaster>();
         public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
+        public DbSet<Customer> Customers => Set<Customer>();
+        public DbSet<CustomerPhone> CustomerPhones => Set<CustomerPhone>();
+        public DbSet<CustomerAddressDetail> CustomerAddressDetails => Set<CustomerAddressDetail>();
+        public DbSet<BranchOrderSequence> BranchOrderSequences => Set<BranchOrderSequence>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -359,6 +401,34 @@ namespace ImportService.Data
             modelBuilder.Entity<OrderDetail>()
                 .ToTable("order_detail")
                 .HasKey(x => x.OrderDetailId);
+
+            modelBuilder.Entity<BranchOrderSequence>()
+                .ToTable("branch_order_sequence")
+                .HasKey(x => x.BranchId);
+
+            modelBuilder.Entity<Customer>()
+                .ToTable("customer")
+                .HasKey(x => x.CustomerId);
+
+            modelBuilder.Entity<CustomerAddressDetail>()
+                .ToTable("customer_address_detail")
+                .HasKey(x => x.CustomerAddressId);
+
+            modelBuilder.Entity<CustomerPhone>()
+                .ToTable("customer_phone")
+                .HasKey(x => x.PhoneId);
+
+            modelBuilder.Entity<Customer>()
+                .HasOne(c => c.CustomerPhone)
+                .WithMany(p => p.Customers)
+                .HasForeignKey(c => c.PhoneId)
+                .HasPrincipalKey(p => p.PhoneId);
+
+            modelBuilder.Entity<CustomerAddressDetail>()
+                .HasOne(c => c.CustomerPhone)
+                .WithMany(p => p.CustomerAddressDetails)
+                .HasForeignKey(c => c.PhoneId)
+                .HasPrincipalKey(p => p.PhoneId);
         }
 
     }

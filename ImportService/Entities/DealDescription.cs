@@ -13,17 +13,6 @@ namespace ImportService.Entities
         public int? SortOrder { get; set; }
 
         public double? Price { get; set; }
-        public DealDescription CopyWith(DealDescription instance)
-        {
-            return new DealDescription
-            {
-                DealDescId = instance.DealDescId,
-                DealItemId = instance.DealItemId,
-                ProductDetailId = instance.ProductDetailId,
-                IsActive = instance.IsActive,
-                SortOrder = instance.SortOrder,
-                Price = instance.Price
-            };
-        }
+        
     }
 }
