@@ -25,7 +25,13 @@ builder.Services
     .AddSignalR()
     .AddStackExchangeRedis(redisSettings.ConnectionString, opts => opts.Configuration.ChannelPrefix = RedisChannel.Literal("GatewayService"));
 
-builder.Services.AddCors(c => c.AddDefaultPolicy(p => p.AllowAnyHeader().AllowAnyMethod().SetIsOriginAllowed(_ => true).AllowCredentials()));
+builder.Services.AddCors(cors =>
+    cors
+        .AddDefaultPolicy(policy =>
+            policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod()));
 
 builder.Services
     .AddSingleton<RabbitMqConnection>()
