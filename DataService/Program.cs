@@ -19,9 +19,6 @@ var host = Host.CreateDefaultBuilder(args)
         var dbConnectionString = context.Configuration.GetConnectionString("Postgres")
             ?? throw new InvalidOperationException("Postgres connection string is not configured.");
 
-        var redisConnectionString = context.Configuration.GetConnectionString("Redis")
-        ?? throw new InvalidOperationException("Redis connection string is not configured.");
-
         services
         .AddDbContextFactory<RestaurantsContext>(
             options => options.UseNpgsql(
@@ -36,7 +33,6 @@ var host = Host.CreateDefaultBuilder(args)
         .Configure<RabbitMqSettings>(context.Configuration.GetSection("RABBITMQ"))
         .AddSingleton<RabbitMqConnection>()
         .AddSingleton<Implementation>()
-        .AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString))
         .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
         .AddSingleton<IQueueAction, RequestQueueAction>()
         .AddHostedService<RequestQueueListener>();
