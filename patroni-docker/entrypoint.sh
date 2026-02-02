@@ -45,6 +45,10 @@ bootstrap:
         hot_standby: on
         wal_keep_size: 128MB
         wal_log_hints: on
+        tcp_keepalives_idle = 60
+        tcp_keepalives_interval = 10
+        tcp_keepalives_count = 6
+
   initdb:
   - encoding: UTF8
   - locale: en_US.UTF-8
