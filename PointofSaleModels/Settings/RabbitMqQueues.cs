@@ -9,6 +9,7 @@ namespace PointofSaleModels.Settings
         public const string GatewayService = "gateway";
         public const string LoginService = "login";
         public const string ImportService = "import";
+        public const string OrderStatusService = "orderstatus";
         public const string Request = "request";
         public const string Response = "response";
 
@@ -22,6 +23,8 @@ namespace PointofSaleModels.Settings
         public const string LoginResponseQueue = $"{Services}.{LoginService}.{Response}";
         public const string ImportRequestQueue = $"{Services}.{ImportService}.{Request}";
         public const string ImportResponseQueue = $"{Services}.{ImportService}.{Response}";
+        public const string OrderStatusRequestQueue = $"{Services}.{OrderStatusService}.{Request}";
+        public const string OrderStatusResponseQueue = $"{Services}.{OrderStatusService}.{Response}";
         public const string JwtDecryptQueue = $"{GatewayService}.{JwtService}.{Request}.decrypt";
     }
 }
