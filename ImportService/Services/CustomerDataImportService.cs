@@ -9,9 +9,13 @@ namespace ImportService.Services
     {
         public async Task MigrateCustomerDataAsync(int companyId, PostgresDbContext PgDb, CancellationToken ct = default)
         {
+            var customerPhonesQuery = SqlDb.CustomerPhones
             var customerPhones = await SqlDb.CustomerPhones
                 .Where(x => x.IsActive == true && x.CompanyId == companyId)
                 .AsNoTracking()
+                .Where(x => x.IsActive == true && x.CompanyId == companyId);
+
+            var customerPhones = await customerPhonesQuery.ToListAsync(ct);
                 .ToListAsync(ct);
             await PgDb.CustomerPhones.ExecuteDeleteAsync(ct);
             if (customerPhones.Count == 0)
@@ -20,11 +24,13 @@ namespace ImportService.Services
             }
             await PgDb.CustomerPhones.AddRangeAsync(customerPhones, ct);
 
-            var phoneIds = customerPhones.Select(x => x.PhoneId).ToList();
-
             var customers = await SqlDb.Customers
-                .Where(x => x.IsActive == true && phoneIds.Contains(x.PhoneId ?? 0) && x.CompanyId == companyId)
                 .AsNoTracking()
+                .Join(customerPhonesQuery,
+                    customer => customer.PhoneId,
+                    phone => phone.PhoneId,
+                    (customer, _) => customer)
+                .Distinct()
                 .ToListAsync(ct);
 
             await PgDb.Customers.ExecuteDeleteAsync(ct);
@@ -35,8 +41,13 @@ namespace ImportService.Services
             await PgDb.Customers.AddRangeAsync(customers, ct);
 
             var customerAddressDetails = await SqlDb.CustomerAddressDetails
-                .Where(x => x.IsActive == true && phoneIds.Contains(x.PhoneId ?? 0) && x.CompanyId == companyId)
                 .AsNoTracking()
+                .Join(
+                    customerPhonesQuery,
+                    address => address.PhoneId,
+                    phone => phone.PhoneId,
+                    (address, _) => address)
+                .Distinct()
                 .ToListAsync(ct);
 
             await PgDb.CustomerAddressDetails.ExecuteDeleteAsync(ct);

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ImportService
 {
     public class Implementation(
+        RestaurantsDbContext pgDb,
         ILogger<Implementation> logger,
         ISetupCompanyMigrationService service_setupCompany,
         IBranchMasterMigrationService service_branchMaster,
@@ -18,7 +19,8 @@ namespace ImportService
         ICityMigrationService service_city,
         IAreaMigrationService service_area,
         ISetupCompanySettingsMigrationService service_setupCompanySettings,
-        ICustomerDataImportService service_customerData)
+        ICustomerDataImportService service_customerData,
+        IGSTMigrationService service_gst)
     {
         private const string PostgresHost = "haproxy";
         public async Task<IResult?> Import(int companyId, string dbName, CancellationToken cancellationToken = default)
@@ -61,6 +63,8 @@ namespace ImportService
 
                 await service_customerData.MigrateCustomerDataAsync(companyId, postgresDbContext, cancellationToken);
 
+                await service_gst.MigrateGSTsAsync(companyId, postgresDbContext, cancellationToken);
+
                 await postgresDbContext.SaveChangesAsync(cancellationToken);
 
                 logger.LogInformation("Data import completed successfully for database: {DbName}", dbName);
@@ -73,9 +77,8 @@ namespace ImportService
             }
         }
 
-        private static async Task<bool> RestaurantCreated(string dbName, CancellationToken cancellationToken)
+        private async Task<bool> RestaurantCreated(string dbName, CancellationToken cancellationToken)
         {
-            var pgDb = GetRestaurantsDbContext($"Host={PostgresHost};Port=5433;Database=restaurants;Username=postgres;Password=postgrespass");
             var restaurant = await pgDb.Restaurants.FirstOrDefaultAsync(x => x.DomainName.Contains(dbName), cancellationToken);
             if (restaurant == null)
             {
@@ -104,20 +107,6 @@ namespace ImportService
                 })
                 .Options;
             return new PostgresDbContext(options);
-        }
-
-        private static RestaurantsDbContext GetRestaurantsDbContext(string connectionString)
-        {
-            var options = new DbContextOptionsBuilder<RestaurantsDbContext>()
-                .UseNpgsql(connectionString, options =>
-                {
-                    options.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(5),
-                        errorCodesToAdd: null);
-                })
-                .Options;
-            return new RestaurantsDbContext(options);
         }
     }
 }

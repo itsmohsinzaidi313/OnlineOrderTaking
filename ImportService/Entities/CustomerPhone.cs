@@ -13,4 +13,6 @@ public partial class CustomerPhone
     public int? CompanyId { get; set; }
 
     public int? PhoneTypeId { get; set; }
+    public List<Customer> Customers { get; set; } = [];
+    public List<CustomerAddressDetail> CustomerAddressDetails { get; set; } = [];
 }

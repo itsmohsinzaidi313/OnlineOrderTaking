@@ -17,75 +17,83 @@ namespace ImportService.Services
             await pgDb.ProductCategories.ExecuteDeleteAsync(ct);
             await pgDb.ProductCategories.AddRangeAsync(categories, ct);
 
-            // Pre-compute relevant category ids for this company
-            var categoryIds = categories.Select(c => c.CategoryId).ToHashSet();
-
             // 3.1) CategoryAvailability (by categories of this company)
-            var categoryAvailabilities = await SqlDb.CategoryAvailabilities
-                .Where(ca => ca.IsActive == true && categoryIds.Contains(ca.CategoryId ?? 0))
-                .AsNoTracking()
+            var categoryAvailabilities = await (
+                    from ca in SqlDb.CategoryAvailabilities.AsNoTracking()
+                    join c in SqlDb.ProductCategories.AsNoTracking() on ca.CategoryId equals c.CategoryId
+                    where ca.IsActive == true && c.IsActive == true && c.CompanyId == companyId
+                    select ca)
                 .ToListAsync(ct);
 
             await pgDb.CategoryAvailabilities.ExecuteDeleteAsync(ct);
             await pgDb.CategoryAvailabilities.AddRangeAsync(categoryAvailabilities, ct);
 
             // 4) Products (by categories of this company)
-            var products = await SqlDb.Products
-                .Where(p => p.IsActive == true && categoryIds.Contains(p.ProductCategoryId ?? 0))
-                .AsNoTracking()
+            var products = await (
+                    from p in SqlDb.Products.AsNoTracking()
+                    join c in SqlDb.ProductCategories.AsNoTracking() on p.ProductCategoryId equals c.CategoryId
+                    where p.IsActive == true && c.IsActive == true && c.CompanyId == companyId
+                    select p)
                 .ToListAsync(ct);
 
             await pgDb.Products.ExecuteDeleteAsync(ct);
             await pgDb.Products.AddRangeAsync(products, ct);
 
-            var productIds = products.Select(x => x.ProductId).ToHashSet();
-
             // 5) ProductDetails (by products of this company)
-            var details = await SqlDb.ProductDetails
-                .Where(d => d.IsActive == true && productIds.Contains(d.ProductId))
-                .AsNoTracking()
+            var details = await (
+                    from d in SqlDb.ProductDetails.AsNoTracking()
+                    join p in SqlDb.Products.AsNoTracking() on d.ProductId equals p.ProductId
+                    join c in SqlDb.ProductCategories.AsNoTracking() on p.ProductCategoryId equals c.CategoryId
+                    where d.IsActive == true && p.IsActive == true && c.IsActive == true && c.CompanyId == companyId
+                    select d)
                 .ToListAsync(ct);
 
             await pgDb.ProductDetails.ExecuteDeleteAsync(ct);
             await pgDb.ProductDetails.AddRangeAsync(details, ct);
 
-            // 5.1) Get branch IDs for this company
-            var branchIds = await SqlDb.BranchMasters
-                .Where(b => b.CompanyId == companyId && b.IsActive == true)
-                .Select(b => b.BranchId)
-                .ToListAsync(ct);
-            var branchIdsSet = branchIds.ToHashSet();
-
             // 6) ProductDetailBranchMapping (for the migrated product details and company branches)
-            var productDetailIds = details.Select(x => x.ProductDetailId).ToHashSet();
-
-            var productDetailBranchMappings = await SqlDb.ProductDetailBranchMappings
-                .Where(pdbm => productDetailIds.Contains(pdbm.ProductDetailId!.Value) &&
-                               branchIdsSet.Contains(pdbm.BranchId.Value))
-                .AsNoTracking()
+            var productDetailBranchMappings = await (
+                    from pdbm in SqlDb.ProductDetailBranchMappings.AsNoTracking()
+                    where pdbm.ProductDetailId != null && pdbm.BranchId != null
+                    join d in SqlDb.ProductDetails.AsNoTracking() on pdbm.ProductDetailId equals d.ProductDetailId
+                    join p in SqlDb.Products.AsNoTracking() on d.ProductId equals p.ProductId
+                    join c in SqlDb.ProductCategories.AsNoTracking() on p.ProductCategoryId equals c.CategoryId
+                    join b in SqlDb.BranchMasters.AsNoTracking() on pdbm.BranchId equals b.BranchId
+                    where d.IsActive == true && p.IsActive == true && c.IsActive == true &&
+                          b.IsActive == true && c.CompanyId == companyId && b.CompanyId == companyId
+                    select pdbm)
                 .ToListAsync(ct);
 
             await pgDb.ProductDetailBranchMappings.ExecuteDeleteAsync(ct);
             await pgDb.ProductDetailBranchMappings.AddRangeAsync(productDetailBranchMappings, ct);
 
             // 6.1) ProductDetailAvailability (for the migrated ProductDetailBranchMappings)
-            var productBranchMappingIds = productDetailBranchMappings.Select(x => x.ProductDetailBranchMappingId).ToHashSet();
-
-            var productDetailAvailabilities = await SqlDb.ProductDetailAvailabilities
-                .Where(pda => productBranchMappingIds.Contains(pda.ProductBranchId.Value) &&
-                              pda.IsActive == true)
-                .AsNoTracking()
+            var productDetailAvailabilities = await (
+                    from pda in SqlDb.ProductDetailAvailabilities.AsNoTracking()
+                    join pdbm in SqlDb.ProductDetailBranchMappings.AsNoTracking() on pda.ProductBranchId equals pdbm.ProductDetailBranchMappingId
+                    where pda.IsActive == true && pdbm.ProductDetailId != null && pdbm.BranchId != null
+                    join d in SqlDb.ProductDetails.AsNoTracking() on pdbm.ProductDetailId equals d.ProductDetailId
+                    join p in SqlDb.Products.AsNoTracking() on d.ProductId equals p.ProductId
+                    join c in SqlDb.ProductCategories.AsNoTracking() on p.ProductCategoryId equals c.CategoryId
+                    join b in SqlDb.BranchMasters.AsNoTracking() on pdbm.BranchId equals b.BranchId
+                    where d.IsActive == true && p.IsActive == true && c.IsActive == true &&
+                          b.IsActive == true && c.CompanyId == companyId && b.CompanyId == companyId
+                    select pda)
                 .ToListAsync(ct);
 
             await pgDb.ProductDetailAvailabilities.ExecuteDeleteAsync(ct);
             await pgDb.ProductDetailAvailabilities.AddRangeAsync(productDetailAvailabilities, ct);
 
             // 6.2) ProductDetailOrderSourcePriceMapping (for the migrated product details)
-            var productDetailOrderSourcePriceMappings = await SqlDb.ProductDetailOrderSourcePriceMappings
-                .Where(pdosm => productDetailIds.Contains(pdosm.ProductDetailId.Value) &&
-                                pdosm.IsActive == true &&
-                                branchIdsSet.Contains(pdosm.BranchId.Value))
-                .AsNoTracking()
+            var productDetailOrderSourcePriceMappings = await (
+                    from pdosm in SqlDb.ProductDetailOrderSourcePriceMappings.AsNoTracking()
+                    join d in SqlDb.ProductDetails.AsNoTracking() on pdosm.ProductDetailId equals d.ProductDetailId
+                    join p in SqlDb.Products.AsNoTracking() on d.ProductId equals p.ProductId
+                    join c in SqlDb.ProductCategories.AsNoTracking() on p.ProductCategoryId equals c.CategoryId
+                    join b in SqlDb.BranchMasters.AsNoTracking() on pdosm.BranchId equals b.BranchId
+                    where pdosm.IsActive == true && d.IsActive == true && p.IsActive == true &&
+                          c.IsActive == true && b.IsActive == true && c.CompanyId == companyId && b.CompanyId == companyId
+                    select pdosm)
                 .ToListAsync(ct);
 
             await pgDb.ProductDetailOrderSourcePriceMappings.ExecuteDeleteAsync(ct);
@@ -93,21 +101,28 @@ namespace ImportService.Services
 
             // 7) DealItemDetails (for the migrated product details)
 
-            var dealItems = await SqlDb.DealItemDetails
-                .Where(di => di.IsActive == true && productDetailIds.Contains(di.ProductDetailId))
-                .AsNoTracking()
+            var dealItems = await (
+                    from di in SqlDb.DealItemDetails.AsNoTracking()
+                    join d in SqlDb.ProductDetails.AsNoTracking() on di.ProductDetailId equals d.ProductDetailId
+                    join p in SqlDb.Products.AsNoTracking() on d.ProductId equals p.ProductId
+                    join c in SqlDb.ProductCategories.AsNoTracking() on p.ProductCategoryId equals c.CategoryId
+                    where di.IsActive == true && d.IsActive == true && p.IsActive == true && c.IsActive == true && c.CompanyId == companyId
+                    select di)
                 .ToListAsync(ct);
 
             await pgDb.DealItemDetails.ExecuteDeleteAsync(ct);
             await pgDb.DealItemDetails.AddRangeAsync(dealItems, ct);
 
             // 7) DealDescriptions (linked via DealItemId or ProductDetailId)
-            var dealItemIds = dealItems.Select(x => x.DealItemId).ToHashSet();
-
-            var dealDescriptions = await SqlDb.DealDescriptions
-                .Where(dd => dd.IsActive == true && dealItemIds.Contains(dd.DealItemId.Value)
-                    )
-                .AsNoTracking()
+            var dealDescriptions = await (
+                    from dd in SqlDb.DealDescriptions.AsNoTracking()
+                    join di in SqlDb.DealItemDetails.AsNoTracking() on dd.DealItemId equals di.DealItemId
+                    join d in SqlDb.ProductDetails.AsNoTracking() on di.ProductDetailId equals d.ProductDetailId
+                    join p in SqlDb.Products.AsNoTracking() on d.ProductId equals p.ProductId
+                    join c in SqlDb.ProductCategories.AsNoTracking() on p.ProductCategoryId equals c.CategoryId
+                    where dd.IsActive == true && di.IsActive == true && d.IsActive == true &&
+                          p.IsActive == true && c.IsActive == true && c.CompanyId == companyId
+                    select dd)
                 .ToListAsync(ct);
 
             await pgDb.DealDescriptions.ExecuteDeleteAsync(ct);

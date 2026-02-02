@@ -13,17 +13,6 @@
         public TimeSpan? EndTime { get; set; }
 
         public bool? IsActive { get; set; }
-        public CategoryAvailability CopyWith(CategoryAvailability instance)
-        {
-            return new CategoryAvailability
-            {
-                CategoryAvailableId = instance.CategoryAvailableId,
-                CategoryId = instance.CategoryId,
-                DayId = instance.DayId,
-                StartTime = instance.StartTime,
-                EndTime = instance.EndTime,
-                IsActive = instance.IsActive
-            };
-        }
+        
     }
 }

@@ -10,9 +10,7 @@ public partial class CustomerPhone
 
     public int? CompanyId { get; set; }
 
-    public virtual SetupCompany? Company { get; set; }
-
-    public virtual ICollection<CustomerAddressDetail> CustomerAddressDetails { get; set; } = new List<CustomerAddressDetail>();
-
-    public virtual ICollection<Customer> Customers { get; set; } = new List<Customer>();
+    public int? PhoneTypeId { get; set; }
+    public List<Customer> Customers { get; set; } = [];
+    public List<CustomerAddressDetail> CustomerAddressDetails { get; set; } = [];
 }

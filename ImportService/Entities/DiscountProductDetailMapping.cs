@@ -9,15 +9,6 @@
         public int ProductDetailId { get; set; }
 
         public bool IsActive { get; set; }
-        public DiscountProductDetailMapping CopyWith(DiscountProductDetailMapping instance)
-        {
-            return new DiscountProductDetailMapping
-            {
-                DiscountProductDetailMappingId = instance.DiscountProductDetailMappingId,
-                DiscountId = instance.DiscountId,
-                ProductDetailId = instance.ProductDetailId,
-                IsActive = instance.IsActive
-            };
-        }
+        
     }
 }

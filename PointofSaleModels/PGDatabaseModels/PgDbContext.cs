@@ -21,9 +21,17 @@ public partial class PgDbContext : DbContext
 
     public virtual DbSet<BranchMaster> BranchMasters { get; set; }
 
+    public virtual DbSet<BranchOrderSequence> BranchOrderSequences { get; set; }
+
     public virtual DbSet<CategoryAvailability> CategoryAvailabilities { get; set; }
 
     public virtual DbSet<City> Cities { get; set; }
+
+    public virtual DbSet<Customer> Customers { get; set; }
+
+    public virtual DbSet<CustomerAddressDetail> CustomerAddressDetails { get; set; }
+
+    public virtual DbSet<CustomerPhone> CustomerPhones { get; set; }
 
     public virtual DbSet<DealDescription> DealDescriptions { get; set; }
 
@@ -110,6 +118,13 @@ public partial class PgDbContext : DbContext
             entity.Property(e => e.Ntnnumber).HasColumnName("NTNNumber");
         });
 
+        modelBuilder.Entity<BranchOrderSequence>(entity =>
+        {
+            entity.HasKey(e => e.BranchId);
+
+            entity.ToTable("branch_order_sequence");
+        });
+
         modelBuilder.Entity<CategoryAvailability>(entity =>
         {
             entity.HasKey(e => e.CategoryAvailableId);
@@ -120,6 +135,35 @@ public partial class PgDbContext : DbContext
         modelBuilder.Entity<City>(entity =>
         {
             entity.ToTable("city");
+        });
+
+        modelBuilder.Entity<Customer>(entity =>
+        {
+            entity.ToTable("customer");
+        });
+
+        modelBuilder.Entity<CustomerAddressDetail>(entity =>
+        {
+            entity.HasKey(e => e.CustomerAddressId);
+
+            entity.ToTable("customer_address_detail");
+        });
+
+        modelBuilder.Entity<CustomerPhone>(entity =>
+        {
+            entity.ToTable("customer_phone")
+                .HasKey(x => x.PhoneId);
+            entity
+                .HasMany(x => x.Customers)
+                .WithOne(x => x.CustomerPhone)
+                .HasForeignKey(x => x.PhoneId)
+                .HasPrincipalKey(x => x.PhoneId);
+
+            entity
+                .HasMany(x => x.CustomerAddressDetails)
+                .WithOne(x => x.CustomerPhone)
+                .HasForeignKey(x => x.PhoneId)
+                .HasPrincipalKey(x => x.PhoneId);
         });
 
         modelBuilder.Entity<DealDescription>(entity =>

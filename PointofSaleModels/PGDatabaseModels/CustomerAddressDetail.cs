@@ -42,11 +42,5 @@ public partial class CustomerAddressDetail
 
     public string? CompleteAddress { get; set; }
 
-    public virtual Area Area { get; set; } = null!;
-
-    public virtual City City { get; set; } = null!;
-
-    public virtual SetupCompany Company { get; set; } = null!;
-
-    public virtual CustomerPhone? Phone { get; set; }
+    public CustomerPhone CustomerPhone { get; set; } = null!;
 }

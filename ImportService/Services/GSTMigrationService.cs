@@ -14,7 +14,7 @@ namespace ImportService.Services
                 .ToListAsync(ct);
 
             await pgDb.GSTs.ExecuteDeleteAsync(ct);
-            await pgDb.GSTs.AddRangeAsync(source);
+            await pgDb.GSTs.AddRangeAsync(source, ct);
         }
     }
 }

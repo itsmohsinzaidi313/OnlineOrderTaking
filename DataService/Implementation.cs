@@ -471,7 +471,10 @@ internal class Implementation()
                 }
                 category.Items.Add(item);
             }
-            yield return category;
+            if (category.Items.Count >= 1)
+            {
+                yield return category;
+            }
         }
     }
 
