@@ -25,14 +25,6 @@ builder.Services
     .AddSignalR()
     .AddStackExchangeRedis(redisSettings.ConnectionString, opts => opts.Configuration.ChannelPrefix = RedisChannel.Literal("GatewayService"));
 
-builder.Services.AddCors(cors =>
-    cors
-        .AddDefaultPolicy(policy =>
-            policy
-            .AllowAnyOrigin()
-            .AllowAnyHeader()
-            .AllowAnyMethod()));
-
 builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
@@ -86,7 +78,6 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 app.UseRouting();
-app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
