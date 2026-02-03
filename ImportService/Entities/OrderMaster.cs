@@ -6,7 +6,7 @@
 
         public int CompanyId { get; set; }
 
-        public string OrderNumber { get; set; } = null!;
+        public string OrderNumber { get; set; }
 
         public int BranchId { get; set; }
 
