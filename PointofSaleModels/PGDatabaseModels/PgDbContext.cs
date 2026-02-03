@@ -229,6 +229,17 @@ public partial class PgDbContext : DbContext
         modelBuilder.Entity<OrderMaster>(entity =>
         {
             entity.ToTable("order_master");
+            entity
+                .Property(o => o.OrderDate)
+                .HasColumnType("timestamp without time zone");
+            entity
+                .Property(o => o.AdvanceOrderDate)
+                .HasColumnType("timestamp without time zone");
+            entity
+                .HasMany(o => o.OrderDetails)
+                .WithOne(od => od.OrderMaster)
+                .HasForeignKey(od => od.OrderMasterId)
+                .HasPrincipalKey(o => o.OrderMasterId);
         });
 
         modelBuilder.Entity<OrderModeCompanyMapping>(entity =>
