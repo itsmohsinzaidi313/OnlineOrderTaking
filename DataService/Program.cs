@@ -18,9 +18,6 @@ var host = Host.CreateDefaultBuilder(args)
         var dbConnectionString = context.Configuration.GetConnectionString("Postgres")
             ?? throw new InvalidOperationException("Postgres connection string is not configured.");
 
-        var redisConnectionString = context.Configuration.GetConnectionString("Redis")
-        ?? throw new InvalidOperationException("Redis connection string is not configured.");
-
         services
         .AddDbContextFactory<RestaurantsContext>(
             options => options.UseNpgsql(
