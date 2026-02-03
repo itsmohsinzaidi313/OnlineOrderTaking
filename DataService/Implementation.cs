@@ -500,7 +500,7 @@ internal class Implementation()
         var dealItemDetails = await dbContext.DealItemDetails.ToListAsync();
         var dealDescriptions = await dbContext.DealDescriptions.ToListAsync();
 
-        foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId && x.OrderMasterId >= 131689).ToListAsync())
+        foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId && x.OrderMasterId >= 130560).ToListAsync())
         {
             var order = new CustomerOrder
             {
