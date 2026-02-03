@@ -508,7 +508,7 @@ internal class Implementation()
         var flavours = await dbContext.Flavours.ToListAsync();
         var sizes = await dbContext.ProductSizes.ToListAsync();
 
-        foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId && x.OrderMasterId >= 130560).ToListAsync())
+        foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId).ToListAsync())
         {
             var order = new CustomerOrder
             {
@@ -545,9 +545,6 @@ internal class Implementation()
 
     private async IAsyncEnumerable<MenuItem> GetOrderItemsAsync(Db.PgDbContext dbContext, int orderMasterId, List<Db.ProductDetail> productDetails, List<Db.DealItemDetail> dealItems, List<Db.Product> products, List<Db.Flavour> flavours, List<Db.ProductSize> sizes, List<Db.DealDescription> dealDescriptions)
     {
-
-
-
         var orderDetails = await dbContext.OrderDetails
             .Where(x => x.OrderMasterId == orderMasterId && x.IsActive == true)
             .ToListAsync() ?? [];
