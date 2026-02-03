@@ -531,6 +531,11 @@ internal class Implementation()
 
             foreach (var dbOd in orderDetails)
             {
+                if(dbOd.DealItemId != null)
+                {
+                    continue;
+                }
+
                 var productId = menuItemIds[dbOd.ProductDetailId];
                 var productname = productDicts[productId];
                 var categoryId = categoryIds[productId];
@@ -547,7 +552,6 @@ internal class Implementation()
                 foreach (var addon in addons)
                 {
                     var addonPdetId = addon.ProductDetailId;
-                    var dealItemId = addon.DealItemId;
 
                     var sizeItem = (from x in dbContext.ProductSizes
                                     join y in dbContext.ProductDetails on x.SizeId equals y.SizeId
@@ -571,8 +575,11 @@ internal class Implementation()
                         Id = addonPdetId,
                         Size = sizeItem,
                         Flavour = flavourItem,
+                        Price = dbOd.PriceWithoutGst ?? 0.0,
                     };
 
+
+                    var dealItemId = addon.DealItemId;
                     if (dealItemId != null)
                     {
                         var dealItem = dealItemDetails.FirstOrDefault(x => x.DealItemId == dealItemId);
