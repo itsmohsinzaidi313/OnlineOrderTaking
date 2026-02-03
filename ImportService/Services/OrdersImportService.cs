@@ -9,29 +9,14 @@ namespace ImportService.Services
     {
         public async Task MigrateOrdersAsync(int companyId, PostgresDbContext postgresDbContext, CancellationToken cancellationToken)
         {
+
             var orderMasterList = await sqlServerDb.OrderMasters
+                .Include(x => x.OrderDetails)
                 .Where(om => om.CompanyId == companyId)
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
-            var orderDetailList = await sqlServerDb.OrderDetails
-                .AsNoTracking()
-                .Join(sqlServerDb.OrderMasters, od => od.OrderMasterId, om => om.OrderMasterId, (od, om) => new { od, om })
-                .Where(joined => joined.om.CompanyId == companyId)
-                .Select(joined => joined.od)
-                .ToListAsync(cancellationToken);
-
-            foreach (var orderMaster in orderMasterList)
-            {
-                if (string.IsNullOrWhiteSpace(orderMaster.OrderNumber))
-                {
-                    orderMaster.OrderNumber = orderMaster.OrderMasterId.ToString();
-                }
-            };
-
-            // Map and insert into PostgreSQL
 
             await postgresDbContext.OrderMasters.AddRangeAsync(orderMasterList, cancellationToken);
-            await postgresDbContext.OrderDetails.AddRangeAsync(orderDetailList, cancellationToken);
         }
     }
 }

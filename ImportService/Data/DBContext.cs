@@ -205,7 +205,7 @@ namespace ImportService.Data
                 .HasForeignKey(x => x.PhoneId);
 
             modelBuilder.Entity<Customer>()
-                .HasOne(c => c.CustomerPhone)        
+                .HasOne(c => c.CustomerPhone)
                 .WithMany(p => p.Customers)
                 .HasForeignKey(c => c.PhoneId)
                 .HasPrincipalKey(p => p.PhoneId);
@@ -449,6 +449,13 @@ namespace ImportService.Data
                 .WithOne(od => od.OrderMaster)
                 .HasForeignKey(od => od.OrderMasterId)
                 .HasPrincipalKey(o => o.OrderMasterId);
+
+            modelBuilder.Entity<OrderMaster>()
+                .Property(o => o.OrderDate)
+                .HasColumnType("timestamp without time zone");
+            modelBuilder.Entity<OrderMaster>()
+                .Property(o => o.AdvanceOrderDate)
+                .HasColumnType("timestamp without time zone");
 
             modelBuilder.Entity<OrderDetail>()
                 .ToTable("order_detail")
