@@ -20,6 +20,14 @@ namespace ImportService.Services
                 .Select(joined => joined.od)
                 .ToListAsync(cancellationToken);
 
+            foreach (var orderMaster in orderMasterList)
+            {
+                if (string.IsNullOrWhiteSpace(orderMaster.OrderNumber))
+                {
+                    orderMaster.OrderNumber = orderMaster.OrderMasterId.ToString();
+                }
+            };
+
             // Map and insert into PostgreSQL
 
             await postgresDbContext.OrderMasters.AddRangeAsync(orderMasterList, cancellationToken);
