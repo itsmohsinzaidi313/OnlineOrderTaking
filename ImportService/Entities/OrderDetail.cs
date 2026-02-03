@@ -48,5 +48,5 @@ public partial class OrderDetail
 
     public int? DiscountId { get; set; }
 
-    public OrderMaster MyProperty { get; set; } = new();
+    public OrderMaster OrderMaster { get; set; } = new();
 }
