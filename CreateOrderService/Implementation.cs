@@ -7,8 +7,6 @@ namespace CreateOrderService;
 
 class Implementation()
 {
-    const int ORDER_STATUS_PENDING = 802;
-    const int SOURCE_ID = 532;
     private static Db.PgDbContext GetDbContext(string connectionString)
     {
         var options = new DbContextOptionsBuilder<Db.PgDbContext>()
@@ -66,15 +64,14 @@ class Implementation()
     private async Task<Db.OrderMaster> GetOrderMasterAsync(Db.PgDbContext dbContext, int branchId, CustomerOrder order)
     {
         var companyId = await dbContext.SetupCompanies.Select(x => x.CompanyId).FirstAsync();
-        var orderSourceId = SOURCE_ID;
         var discount = order.Discount;
         var orderNumber = await GenerateOrderNumberAsync(dbContext, branchId);
-        int orderStatusId = ORDER_STATUS_PENDING;
         var orderModeId = await GetOrderModeIdAsync(dbContext);
         var subTotal = order.Items.Select(x => x.Variations.Select(x => x.Price).Sum()).Sum();
         var gst = await GetTaxPercentageAsync(dbContext);
         var tax = gst?.Gstpercentage ?? 0.00;
         var amountWithTax = subTotal + (subTotal * tax / 100);
+        var orderSourceId = await dbContext.SetupMasterDetails.Where(x => x.CompanyId == companyId && x.Flex1 == "WEB").Select(x => x.SetupDetailId).FirstOrDefaultAsync();
 
         var orderMaster = new Db.OrderMaster
         {
@@ -82,7 +79,6 @@ class Implementation()
             OrderNumber = orderNumber,
             CompanyId = companyId,
             BranchId = branchId,
-            OrderStatusId = orderStatusId,
             OrderModeId = orderModeId,
             OrderDate = DateOnly.FromDateTime(DateTime.Now),
             OrderTime = TimeOnly.FromDateTime(DateTime.Now),
@@ -95,17 +91,16 @@ class Implementation()
             Gstid = gst?.Gstid,
             Gstpercent = tax,
             IsActive = true,
-            Cover = 0,
             SpecialInstruction = order.Description,
         };
-        foreach (var orderDetail in GetOrderDetails(order.Items))
+        foreach (var orderDetail in GetOrderDetails(order.Items, gst))
         {
             orderMaster.OrderDetails.Add(orderDetail);
         }
         return orderMaster;
     }
 
-    private static List<Db.OrderDetail> GetOrderDetails(List<MenuItem> items)
+    private static List<Db.OrderDetail> GetOrderDetails(List<MenuItem> items, Db.Gst? gst = null)
     {
         var list = new List<Db.OrderDetail>();
         foreach (var item in items)
@@ -136,9 +131,19 @@ class Implementation()
                             Quantity = choice.Quantity,
                             IsKot = true,
                             IsActive = true,
+                            Gstid = gst?.Gstid,
+                            PriceWithGst = option.Price + (option.Price * (gst?.Gstpercentage ?? 0) / 100),
+                            PriceWithoutGst = option.Price,
                         });
                     }
                 }
+            }
+            if (gst != null)
+            {
+                orderDetail.Gstid = gst.Gstid;
+                orderDetail.PriceWithGst = variation?.Price;
+                orderDetail.PriceWithoutGst = variation != null ? variation.Price / (1 + (gst.Gstpercentage / 100)) : 0.00;
+
             }
             list.Add(orderDetail);
         }
