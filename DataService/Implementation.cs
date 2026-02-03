@@ -258,7 +258,7 @@ internal class Implementation()
         return settingsData;
     }
 
-    internal async IAsyncEnumerable<Category> GetMenuAsync(string connectionString, int branchId)
+    private static async Task<DbMenuData> GetDbMenuDataAsync(string connectionString, int branchId)
     {
         var bid = branchId;
         if (bid == 0)
@@ -362,7 +362,13 @@ internal class Implementation()
         };
 
         await Task.WhenAll(tasks);
-        var package = new DbMenuData(dbSizes, dbFlavours, dbProducts, dbProductDetails, dbDepartments, dbDealItemDetails, dbDealDescription, dbItemDiscounts, dbItemDiscountsMapping);
+        return new DbMenuData(dbSizes, dbFlavours, dbProducts, dbProductDetails, dbDepartments, dbDealItemDetails, dbDealDescription, dbItemDiscounts, dbItemDiscountsMapping);
+    }
+
+    internal async IAsyncEnumerable<Category> GetMenuAsync(string connectionString, int branchId)
+    {
+
+        var package = await GetDbMenuDataAsync(connectionString, branchId);
         foreach (var item in GetCategories(connectionString, package))
         {
             yield return item;
@@ -475,6 +481,135 @@ internal class Implementation()
             {
                 yield return category;
             }
+        }
+    }
+
+    internal static async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int branchId)
+    {
+        var dbContext = GetDbContext(connectionString);
+        var menuItemIds = await dbContext.ProductDetails
+            .ToDictionaryAsync(x => x.ProductDetailId, y => y.ProductId);
+
+        var productDicts = await dbContext.Products
+            .ToDictionaryAsync(x => x.ProductId, x => x.ProductName ?? "N/A");
+
+        var categoryIds = await dbContext.Products
+            .Join(dbContext.ProductCategories, a => a.ProductCategoryId, b => b.CategoryId,
+                (a, b) => new { a.ProductId, b.CategoryId })
+            .ToDictionaryAsync(x => x.ProductId, y => y.CategoryId);
+        var dealItemDetails = await dbContext.DealItemDetails.ToListAsync();
+        var dealDescriptions = await dbContext.DealDescriptions.ToListAsync();
+
+        foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId).ToListAsync())
+        {
+            var order = new CustomerOrder
+            {
+                OrderNumber = dbOrder.OrderNumber ?? "N/A",
+                Items = [],
+            };
+
+            var phoneId = dbOrder.PhoneId;
+            var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
+            if (customerPhone != null)
+            {
+                var customer = await dbContext.Customers.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
+                var addressDetails = await dbContext.CustomerAddressDetails.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
+
+                var customerDetail = new CustomerDetail
+                {
+                    FullName = customer?.CustomerName ?? "N/A",
+                    MobileNumber = customerPhone.PhoneNumber ?? "N/A",
+                    DeliveryAddress = addressDetails?.CompleteAddress ?? "N/A",
+                    NearestLandmark = addressDetails?.LandMark ?? "N/A",
+                    DeliveryInstructions = addressDetails?.Remarks ?? "N/A"
+                };
+                order.CustomerDetails = customerDetail;
+            }
+
+
+            var orderDetails = await dbContext.OrderDetails.Where(x => x.OrderMasterId == dbOrder.OrderMasterId).ToListAsync();
+
+            foreach (var dbOd in orderDetails)
+            {
+                var productId = menuItemIds[dbOd.ProductDetailId];
+                var productname = productDicts[productId];
+                var categoryId = categoryIds[productId];
+                var item = new MenuItem
+                {
+                    Id = productId,
+                    Name = productname,
+                    Quantity = dbOd.Quantity ?? 0,
+                    CategoryId = categoryIds[productId].ToString(),
+                };
+
+                var addons = orderDetails.Where(x => x.RandomId == dbOd.RandomId).ToList();
+
+                foreach (var addon in addons)
+                {
+                    var addonPdetId = addon.ProductDetailId;
+                    var dealItemId = addon.DealItemId;
+
+                    var sizeItem = (from x in dbContext.ProductSizes
+                                    join y in dbContext.ProductDetails on x.SizeId equals y.SizeId
+                                    where y.ProductDetailId == addonPdetId
+                                    select new ItemSize
+                                    {
+                                        Id = x.SizeId,
+                                        Name = x.SizeName ?? "N/A",
+                                    }).FirstOrDefault() ?? new ItemSize { Id = 0, Name = "N/A" };
+
+                    var flavourItem = (from x in dbContext.Flavours
+                                       join y in dbContext.ProductDetails on x.FlavourId equals y.FlavourId
+                                       where y.ProductDetailId == addonPdetId
+                                       select new ItemFlavour
+                                       {
+                                           Id = x.FlavourId,
+                                           Name = x.FlavourName ?? "N/A",
+                                       }).FirstOrDefault() ?? new ItemFlavour { Id = 0, Name = "N/A" };
+                    var variation = new ItemVariation
+                    {
+                        Id = addonPdetId,
+                        Size = sizeItem,
+                        Flavour = flavourItem,
+                    };
+
+                    if (dealItemId != null)
+                    {
+                        var dealItem = dealItemDetails.FirstOrDefault(x => x.DealItemId == dealItemId);
+                        if (dealItem != null)
+                        {
+                            var itemChoice = new ItemChoice
+                            {
+                                Id = dealItem.DealItemId,
+                                Name = dealItem.DealOptionName ?? "N/A",
+                                Quantity = dealItem.Quantity ?? 0,
+                                MaxChoice = dealItem.MaxQuantity ?? 0,
+                            };
+                            var descriptions = dealDescriptions.Where(x => x.DealItemId == dealItem.DealItemId).ToList();
+                            foreach (var desc in descriptions)
+                            {
+                                var list = (from x in dbContext.ProductDetails
+                                            join y in dbContext.Products on x.ProductId equals y.ProductId
+                                            where x.ProductDetailId == desc.ProductDetailId
+                                            select y).ToList();
+                                var itemOption = new ItemOption
+                                {
+                                    Id = desc.ProductDetailId ?? 0,
+                                    Price = desc.Price ?? 0.0,
+                                    Name = list.FirstOrDefault()?.ProductName ?? string.Empty,
+                                };
+                                itemChoice.ItemOptions.Add(itemOption);
+                            }
+                            item.Price = variation.Price + itemChoice.ItemOptions.Sum(x => x.Price);
+                            variation.ItemChoices.Add(itemChoice);
+                        }
+                    }
+                    item.Variations.Add(variation);
+                }
+                order.Items.Add(item);
+            }
+
+            yield return order;
         }
     }
 
