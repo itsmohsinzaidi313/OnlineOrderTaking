@@ -40,6 +40,7 @@ namespace DataService
                     {
                         orders.Add(order);
                     }
+                    payload = orders;
                 }
             }
             catch (Exception ex)
