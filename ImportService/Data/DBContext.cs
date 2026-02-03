@@ -37,6 +37,8 @@ namespace ImportService.Data
         public DbSet<Customer> Customers => Set<Customer>();
         public DbSet<CustomerPhone> CustomerPhones => Set<CustomerPhone>();
         public DbSet<CustomerAddressDetail> CustomerAddressDetails => Set<CustomerAddressDetail>();
+        public DbSet<OrderMaster> OrderMasters => Set<OrderMaster>();
+        public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -203,7 +205,7 @@ namespace ImportService.Data
                 .HasForeignKey(x => x.PhoneId);
 
             modelBuilder.Entity<Customer>()
-                .HasOne(c => c.CustomerPhone)        
+                .HasOne(c => c.CustomerPhone)
                 .WithMany(p => p.Customers)
                 .HasForeignKey(c => c.PhoneId)
                 .HasPrincipalKey(p => p.PhoneId);
@@ -213,6 +215,14 @@ namespace ImportService.Data
                 .WithMany(p => p.CustomerAddressDetails)
                 .HasForeignKey(c => c.PhoneId)
                 .HasPrincipalKey(p => p.PhoneId);
+
+            modelBuilder.Entity<OrderMaster>()
+                .ToTable("OrderMaster")
+                .HasKey(x => x.OrderMasterId);
+
+            modelBuilder.Entity<OrderDetail>()
+                .ToTable("OrderDetail")
+                .HasKey(x => x.OrderDetailId);
         }
     }
 
@@ -429,6 +439,27 @@ namespace ImportService.Data
                 .WithMany(p => p.CustomerAddressDetails)
                 .HasForeignKey(c => c.PhoneId)
                 .HasPrincipalKey(p => p.PhoneId);
+
+            modelBuilder.Entity<OrderMaster>()
+                .ToTable("order_master")
+                .HasKey(x => x.OrderMasterId);
+
+            modelBuilder.Entity<OrderMaster>()
+                .HasMany(o => o.OrderDetails)
+                .WithOne(od => od.OrderMaster)
+                .HasForeignKey(od => od.OrderMasterId)
+                .HasPrincipalKey(o => o.OrderMasterId);
+
+            modelBuilder.Entity<OrderMaster>()
+                .Property(o => o.OrderDate)
+                .HasColumnType("timestamp without time zone");
+            modelBuilder.Entity<OrderMaster>()
+                .Property(o => o.AdvanceOrderDate)
+                .HasColumnType("timestamp without time zone");
+
+            modelBuilder.Entity<OrderDetail>()
+                .ToTable("order_detail")
+                .HasKey(x => x.OrderDetailId);
         }
 
     }
