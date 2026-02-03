@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace PointofSaleModels.PGDatabaseModels;
 
@@ -229,12 +230,15 @@ public partial class PgDbContext : DbContext
         modelBuilder.Entity<OrderMaster>(entity =>
         {
             entity.ToTable("order_master");
+            var dateOnlyConverter = new DateOnlyToDateTimeConverter();
             entity
                 .Property(o => o.OrderDate)
-                .HasColumnType("timestamp without time zone");
+                .HasColumnType("timestamp without time zone")
+                .HasConversion(dateOnlyConverter);
             entity
                 .Property(o => o.AdvanceOrderDate)
-                .HasColumnType("timestamp without time zone");
+                .HasColumnType("timestamp without time zone")
+                .HasConversion(dateOnlyConverter);
             entity
                 .HasMany(o => o.OrderDetails)
                 .WithOne(od => od.OrderMaster)
@@ -331,4 +335,14 @@ public partial class PgDbContext : DbContext
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+}
+
+// Add this class to your file or in a suitable shared location if you are targeting .NET 6 or earlier
+// (DateOnlyToDateTimeConverter is not available in EF Core < 7.0)
+public class DateOnlyToDateTimeConverter : ValueConverter<DateOnly, DateTime>
+{
+    public DateOnlyToDateTimeConverter() : base(
+        d => d.ToDateTime(TimeOnly.MinValue),
+        d => DateOnly.FromDateTime(d))
+    { }
 }
