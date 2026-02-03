@@ -106,8 +106,6 @@
 
         public double Tip { get; set; }
 
-        public double ReceivedAmount { get; set; }
-
         public double ChangeAmount { get; set; }
 
         public string? VoucherCode { get; set; }
