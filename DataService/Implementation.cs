@@ -484,7 +484,7 @@ internal class Implementation()
         }
     }
 
-    internal static async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int branchId)
+    internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int branchId)
     {
         var dbContext = GetDbContext(connectionString);
         var menuItemIds = await dbContext.ProductDetails
