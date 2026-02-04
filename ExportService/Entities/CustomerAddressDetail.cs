@@ -1,6 +1,4 @@
-﻿using PointofSaleModels.DatabaseModels;
-
-namespace ExportService.Entities;
+﻿namespace ExportService.Entities;
 
 public partial class CustomerAddressDetail
 {
