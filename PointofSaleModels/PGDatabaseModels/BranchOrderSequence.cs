@@ -1,4 +1,6 @@
-﻿namespace PointofSaleModels.PGDatabaseModels;
+using System.ComponentModel.DataAnnotations;
+
+namespace PointofSaleModels.PGDatabaseModels;
 
 public partial class BranchOrderSequence
 {

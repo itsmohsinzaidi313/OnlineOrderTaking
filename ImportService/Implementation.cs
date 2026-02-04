@@ -20,13 +20,14 @@ namespace ImportService
         IAreaMigrationService service_area,
         ISetupCompanySettingsMigrationService service_setupCompanySettings,
         ICustomerDataImportService service_customerData,
-        IGSTMigrationService service_gst)
+        IGSTMigrationService service_gst,
+        IOrdersImportService service_orders)
     {
         private const string PostgresHost = "haproxy";
         public async Task<IResult?> Import(int companyId, string dbName, CancellationToken cancellationToken = default)
         {
-            //try
-            //{
+            try
+            {
                 var isNewRestaurant = await RestaurantCreated(dbName, cancellationToken);
                 var postgresDbContext = GetPgDbContext($"Host={PostgresHost};Port=5433;Database={dbName};Username=postgres;Password=postgrespass");
 
@@ -65,16 +66,18 @@ namespace ImportService
 
                 await service_gst.MigrateGSTsAsync(companyId, postgresDbContext, cancellationToken);
 
+                await service_orders.MigrateOrdersAsync(companyId, postgresDbContext, cancellationToken);
+
                 await postgresDbContext.SaveChangesAsync(cancellationToken);
 
                 logger.LogInformation("Data import completed successfully for database: {DbName}", dbName);
                 return Results.Ok("Import completed successfully");
-            //}
-            //catch (Exception ex)
-            //{
-            //    logger.LogError(ex, "Error occurred while importing data");
-            //    return Results.Problem(ex.InnerException?.Message ?? ex.Message, statusCode: 500);
-            //}
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error occurred while importing data");
+                return Results.Problem(ex.InnerException?.Message ?? ex.Message, statusCode: 500);
+            }
         }
 
         private async Task<bool> RestaurantCreated(string dbName, CancellationToken cancellationToken)
