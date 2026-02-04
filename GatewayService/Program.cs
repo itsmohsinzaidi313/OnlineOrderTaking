@@ -7,6 +7,7 @@ using StackExchange.Redis;
 using GatewayService.Models;
 using System.Text;
 using GatewayService.ServiceResponseListeners;
+using GatewayService.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -39,8 +40,11 @@ builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
     .AddSingleton<DataServiceResponseAction>()
-    .AddSingleton<IQueueAction>(context => context.GetRequiredService<DataServiceResponseAction>())
+    .AddSingleton<IDataServiceResponseAction>(context => context.GetRequiredService<DataServiceResponseAction>())
     .AddHostedService<DataServiceResponseListener>()
+    .AddSingleton<CreateOrderServiceResponseAction>()
+    .AddSingleton<ICreateOrderResponseAction>(context => context.GetRequiredService<CreateOrderServiceResponseAction>())
+    .AddHostedService<CreateOrderServiceResponseListener>()
     .AddSingleton<IConnectionMultiplexer>(context =>
     {
         var configuration = ConfigurationOptions.Parse(redisSettings.ConnectionString, true);

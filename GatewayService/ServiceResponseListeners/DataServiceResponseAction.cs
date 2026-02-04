@@ -1,4 +1,5 @@
-﻿using PointofSaleModels.ServicePayloads;
+﻿using GatewayService.Interfaces;
+using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
@@ -6,7 +7,7 @@ using System.Text.Json;
 
 namespace GatewayService.ServiceResponseListeners
 {
-    public class DataServiceResponseAction(Implementation implementation, IConnectionMultiplexer redis) : IQueueAction
+    public class DataServiceResponseAction(Implementation implementation, IConnectionMultiplexer redis) : IDataServiceResponseAction
     {
         public string QueueName() => RabbitMqQueues.DataResponseQueue;
         public async Task OnMessage(string svcPayload)
