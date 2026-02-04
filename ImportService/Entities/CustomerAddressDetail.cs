@@ -1,4 +1,6 @@
-﻿namespace ImportService.Entities;
+﻿using PointofSaleModels.DatabaseModels;
+
+namespace ImportService.Entities;
 
 public partial class CustomerAddressDetail
 {

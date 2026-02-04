@@ -7,24 +7,42 @@ using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace CreateOrderService
 {
-    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, Db.RestaurantsContext context) : IQueueAction
+    internal class RequestQueueAction(
+        ILogger<RequestQueueAction> logger, 
+        IRabbitMqPublisher publisher,
+        Implementation impl,
+        IDbContextFactory<Db.RestaurantsContext> contextFactory) : IQueueAction
     {
 
         public string QueueName() => RabbitMqQueues.OrderRequestQueue;
         public async Task OnMessage(string transport)
         {
-            var payload = System.Text.Json.JsonSerializer.Deserialize<OrderServicePayload>(transport);
-            if (payload == null)
+            object? response = null;
+            try
             {
-                logger.LogWarning("Invalid or missing order payload for company {CompanyId}, branch {BranchId}", payload.RestaurantId, payload.BranchId);
-                throw new InvalidOperationException("Invalid order payload");
+                var requestPayload = System.Text.Json.JsonSerializer.Deserialize<OrderServicePayload>(transport);
+                if (requestPayload == null)
+                {
+                    logger.LogWarning("Invalid or missing order payload for company {CompanyId}, branch {BranchId}", requestPayload?.RestaurantId, requestPayload?.BranchId);
+                    throw new InvalidOperationException("Invalid order payload");
+                }
+                var connectionString = await GetConnectionString(requestPayload.DomainName);
+                connectionString = connectionString.Replace("5434", "5433");
+                var orderNumber = await impl.SaveOrderAsync(connectionString, requestPayload.BranchId, requestPayload.Order!);
+                response = new { Success = true , Message = "Order processed successfully", OrderNumber = orderNumber };
             }
-            var connectionString = await GetConnectionString(payload.DomainName);
-            await impl.SaveOrderAsync(connectionString, payload.BranchId, payload.Order!);
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error processing order request message");
+                response = new { Success = false, ex.Message };
+            }
+
+            await publisher.PublishToQueueAsync(RabbitMqQueues.OrderResponseQueue, response);
         }
 
         private async Task<string> GetConnectionString(string domainName)
         {
+            await using var context = await contextFactory.CreateDbContextAsync();
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
             return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
         }

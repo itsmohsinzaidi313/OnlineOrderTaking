@@ -6,7 +6,6 @@ using Microsoft.Extensions.Hosting;
 using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using StackExchange.Redis;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((context, config) =>

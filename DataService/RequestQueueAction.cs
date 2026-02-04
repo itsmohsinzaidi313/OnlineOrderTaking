@@ -33,6 +33,15 @@ namespace DataService
                     }
                     payload = menuItems;
                 }
+                else if(requestPayload.DataRequestType == "Orders")
+                {
+                    var orders = new List<CustomerOrder>();
+                    await foreach (var order in impl.GetOrdersAsync(connectionString, requestPayload.BranchId))
+                    {
+                        orders.Add(order);
+                    }
+                    payload = orders;
+                }
             }
             catch (Exception ex)
             {
