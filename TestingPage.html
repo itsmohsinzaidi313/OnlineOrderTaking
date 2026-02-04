@@ -215,6 +215,7 @@
       const urlWithToken = `${SERVER_URL}/gatewayHub`;
       builder.withUrl(urlWithToken, {
         accessTokenFactory: () => currentToken,
+        withCredentials: false
       });
       return builder.build();
     }
@@ -273,7 +274,7 @@
         throw new Error("No connection available");
       }
       try {
-        await conn.invoke("DataRequest", DOMAIN, "Menu", 247, "MenuResponse");
+        await conn.invoke("DataRequest", DOMAIN, "Orders", 247, "MenuResponse");
       } catch (err) {
         const msg = err && err.toString ? err.toString() : String(err);
         log("Send error: " + msg);
@@ -294,7 +295,7 @@
             log("Reconnected with refreshed token");
 
             // retry original request
-            await conn.invoke("DataRequest", DOMAIN, "Menu", 247, "MenuResponse");
+            await conn.invoke("DataRequest", DOMAIN, "Orders", 247, "MenuResponse");
             log("Retried request after refresh: success");
           } catch (refreshErr) {
             log("Token refresh/retry failed: " + refreshErr);

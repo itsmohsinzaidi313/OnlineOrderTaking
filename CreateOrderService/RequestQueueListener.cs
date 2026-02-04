@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using PointofSaleModels.Services;
+﻿using PointofSaleModels.Services;
 
 namespace CreateOrderService
 {

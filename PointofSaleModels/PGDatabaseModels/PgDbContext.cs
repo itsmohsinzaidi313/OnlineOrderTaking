@@ -86,12 +86,6 @@ public partial class PgDbContext : DbContext
 
     public virtual DbSet<BranchOrderSequence> OrderNumberSequences { get; set; }
 
-    public virtual DbSet<Customer> Customers { get; set; }
-
-    public virtual DbSet<CustomerAddressDetail> CustomerAddressDetails { get; set; }
-
-    public virtual DbSet<CustomerPhone> CustomerPhones { get; set; }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Area>(entity =>
