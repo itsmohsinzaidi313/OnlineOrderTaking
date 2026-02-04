@@ -29,7 +29,10 @@ namespace CreateOrderService
                 var connectionString = await GetConnectionString(requestPayload.DomainName);
                 connectionString = connectionString.Replace("5434", "5433");
                 var orderNumber = await impl.SaveOrderAsync(connectionString, requestPayload.BranchId, requestPayload.Order!);
-                response = new { Success = true , Message = "Order processed successfully", OrderNumber = orderNumber };
+                response = new OrderServicePayload(requestPayload)
+                {
+                    DataPayload = new { Success = true , Message = "Order processed successfully", OrderNumber = orderNumber }
+                };
             }
             catch (Exception ex)
             {
