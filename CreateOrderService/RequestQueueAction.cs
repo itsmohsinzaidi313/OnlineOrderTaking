@@ -7,7 +7,11 @@ using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace CreateOrderService
 {
-    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, IRabbitMqPublisher publisher, Implementation impl, Db.RestaurantsContext context) : IQueueAction
+    internal class RequestQueueAction(
+        ILogger<RequestQueueAction> logger, 
+        IRabbitMqPublisher publisher,
+        Implementation impl,
+        IDbContextFactory<Db.RestaurantsContext> contextFactory) : IQueueAction
     {
 
         public string QueueName() => RabbitMqQueues.OrderRequestQueue;
@@ -33,11 +37,12 @@ namespace CreateOrderService
                 response = new { Success = false, ex.Message };
             }
 
-            await publisher.PublishToQueueAsync(RabbitMqQueues.DataResponseQueue, response);
+            await publisher.PublishToQueueAsync(RabbitMqQueues.OrderResponseQueue, response);
         }
 
         private async Task<string> GetConnectionString(string domainName)
         {
+            await using var context = await contextFactory.CreateDbContextAsync();
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
             return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
         }

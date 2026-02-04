@@ -5,9 +5,9 @@ using ValueType = PointofSaleModels.Application.ValueType;
 
 namespace CreateOrderService;
 
-class Implementation()
+public class Implementation()
 {
-    private static Db.PgDbContext GetDbContext(string connectionString)
+    private Db.PgDbContext GetDbContext(string connectionString)
     {
         var options = new DbContextOptionsBuilder<Db.PgDbContext>()
             .UseNpgsql(connectionString, options =>
@@ -28,14 +28,14 @@ class Implementation()
         return await SaveOrderAsync(dbContext, orderMaster);
     }
 
-    private static async Task<string> SaveOrderAsync(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
+    private async Task<string> SaveOrderAsync(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
     {
         await dbContext.OrderMasters.AddAsync(orderMaster);
         await dbContext.SaveChangesAsync();
         return orderMaster.OrderNumber;
     }
 
-    public static async Task<string> GenerateOrderNumberAsync(Db.PgDbContext dbContext, int branchId)
+    public async Task<string> GenerateOrderNumberAsync(Db.PgDbContext dbContext, int branchId)
     {
         var id = await dbContext.Database.SqlQuery<long>($"""
                                                             INSERT INTO branch_order_sequence ("BranchId", "LastValue")
@@ -53,7 +53,7 @@ class Implementation()
         return orderNumber;
     }
 
-    private static async Task<int> GetOrderModeIdAsync(Db.PgDbContext dbContext)
+    private async Task<int> GetOrderModeIdAsync(Db.PgDbContext dbContext)
     {
         var setupMaster = await dbContext.SetupMasters.Where(x => x.SetupMasterName == "OrderMode").FirstAsync();
         return (await dbContext.SetupMasterDetails
@@ -92,6 +92,7 @@ class Implementation()
             Gstpercent = tax,
             IsActive = true,
             SpecialInstruction = order.Description,
+            OrderDetails = [],
         };
         foreach (var orderDetail in GetOrderDetails(order.Items, gst))
         {
@@ -100,7 +101,7 @@ class Implementation()
         return orderMaster;
     }
 
-    private static List<Db.OrderDetail> GetOrderDetails(List<MenuItem> items, Db.Gst? gst = null)
+    private List<Db.OrderDetail> GetOrderDetails(List<MenuItem> items, Db.Gst? gst = null)
     {
         var list = new List<Db.OrderDetail>();
         foreach (var item in items)
@@ -220,7 +221,7 @@ class Implementation()
         return (cityId, areaId);
     }
 
-    private static async Task<Db.CustomerPhone> SaveCustomerPhoneAsync(Db.PgDbContext dbContext, int companyId, CustomerOrder order)
+    private async Task<Db.CustomerPhone> SaveCustomerPhoneAsync(Db.PgDbContext dbContext, int companyId, CustomerOrder order)
     {
         Db.CustomerPhone? dbCustomerPhone;
         var cust = order.Customer ?? throw new Exception("Customer is required");
@@ -254,7 +255,7 @@ class Implementation()
         return dbCustomerPhone;
     }
 
-    private static async Task<Db.Gst?> GetTaxPercentageAsync(Db.PgDbContext dbContext)
+    private async Task<Db.Gst?> GetTaxPercentageAsync(Db.PgDbContext dbContext)
     {
         return await dbContext.Gsts
             .FirstOrDefaultAsync();

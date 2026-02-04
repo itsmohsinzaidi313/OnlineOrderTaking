@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,14 +17,11 @@ builder.Configuration
 var dbConnectionString =
     builder.Configuration.GetConnectionString("Postgres")
     ?? throw new InvalidOperationException("Postgres connection string is not configured.");
-var redisConnectionString =
-    builder.Configuration.GetConnectionString("Redis")
-    ?? throw new InvalidOperationException("Redis connection string is not configured.");
 
 var rabbitMqSection = builder.Configuration.GetSection("RABBITMQ");
 
 builder.Services
-    .AddDbContext<RestaurantsContext>(
+    .AddDbContextFactory<RestaurantsContext>(
         options => options.UseNpgsql(
             dbConnectionString,
             npgsqlOptions =>
@@ -38,7 +34,6 @@ builder.Services
     .Configure<RabbitMqSettings>(rabbitMqSection)
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<Implementation>()
-    .AddSingleton<IConnectionMultiplexer>(sp => ConnectionMultiplexer.Connect(redisConnectionString))
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
     .AddSingleton<IQueueAction, RequestQueueAction>()
     .AddHostedService<RequestQueueListener>();
