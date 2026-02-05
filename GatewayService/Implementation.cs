@@ -1,5 +1,6 @@
 ﻿using GatewayService.Models;
 using Microsoft.AspNetCore.SignalR;
+using PointofSaleModels.Application;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using StackExchange.Redis;
@@ -78,14 +79,9 @@ namespace GatewayService
             }
         }
 
-        public async Task SendToBranches<T>(string svcPayload, List<string> clientIds) where T : ServicePayload
+        public async Task SendCustomerOrderToBranches(CustomerOrder svcPayload, List<string> clientIds)
         {
-            using var doc = JsonDocument.Parse(svcPayload);
-            var root = doc.RootElement;
-            var responseKey = root.GetProperty("ResponseKey").GetString() ?? throw new Exception("ResponseKey not found");
-            logger.LogInformation("Gateway: Received {method} message for branches: {branches}", responseKey, string.Join(", ", clientIds));
-            var payload = JsonSerializer.Deserialize<T>(svcPayload)!;
-            await hub.Clients.Users(clientIds).SendAsync(responseKey, payload);
+            await hub.Clients.Users(clientIds).SendAsync("NewOrder", svcPayload);
         }
 
         private async Task PublishForPending(string userId, string payload)

@@ -1,4 +1,5 @@
 ﻿using GatewayService.Interfaces;
+using PointofSaleModels.Application;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
@@ -20,7 +21,9 @@ namespace GatewayService.ServiceResponseListeners
                 var db = redis.GetDatabase();
                 var server = redis.GetServer(redis.GetEndPoints().First());
                 var keys = server.Keys(pattern: $"branch:{branchId}:*");
-                await implementation.SendToBranches<OrderServicePayload>(svcPayload, [.. keys.Select(x => x.ToString())]);
+                var customerOrderProperty = root.GetProperty("Order");
+                var customerOrder = JsonSerializer.Deserialize<CustomerOrder>(customerOrderProperty.GetRawText())!;
+                await implementation.SendCustomerOrderToBranches(customerOrder, keys.Select(x => x.ToString()).ToList());
             }
             await implementation.SendToUser<OrderServicePayload>(svcPayload);
         }
