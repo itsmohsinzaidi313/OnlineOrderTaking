@@ -6,7 +6,7 @@ using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace OrderStatusService
 {
-    public class RequestQueueAction(ILogger<RequestQueueAction> logger, IRabbitMqPublisher publisher, Db.RestaurantsContext context) : IQueueAction
+    public class RequestQueueAction(ILogger<RequestQueueAction> logger, IRabbitMqPublisher publisher, IDbContextFactory<Db.RestaurantsContext> contextFactory) : IQueueAction
     {
         public string QueueName() => RabbitMqQueues.OrderStatusRequestQueue;
 
@@ -16,8 +16,7 @@ namespace OrderStatusService
             object? payload = null;
             try
             {
-                var connectionString = await GetConnectionString(requestPayload.DomainName);
-                var dbContext = GetDbContext(connectionString);
+                var dbContext = await GetDbContextAsync(requestPayload.DomainName);
                 var orderMaster = await dbContext.OrderMasters.Where(x => x.OrderMasterId == requestPayload.OrderId).FirstOrDefaultAsync();
                 if (orderMaster != null)
                 {
@@ -32,17 +31,26 @@ namespace OrderStatusService
                         orderMaster.OrderStatusId = requestPayload.OrderStatusId.Value;
                         await dbContext.SaveChangesAsync();
                     }
+                    payload = new
+                    {
+                        Success = true,
+                        Message = "Order updated successfully"
+                    };
                 }
+                payload = new
+                {
+                    Success = false,
+                    Message = "No order found"
+                };
             }
             catch (Exception ex)
             {
-                logger.LogError("Error processing order status request: {Message}", ex.Message);
-                logger.LogError(ex, "Failed to fetch menu items.");
+                var message = "Error processing order status request: {Message}" + ex.Message;
+                logger.LogError(message);
                 payload = new
                 {
-                    error = true,
-                    message = "Failed to fetch menu items.",
-                    details = ex.ToString()
+                    Success = false,
+                    message,
                 };
             }
             var response = new OrderStatusPayload(requestPayload)
@@ -51,8 +59,15 @@ namespace OrderStatusService
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.OrderStatusResponseQueue, response);
         }
+        private async Task<Db.PgDbContext> GetDbContextAsync(string domainName)
+        {
+            var connectionString = await GetConnectionString(domainName);
+            connectionString = connectionString.Replace("5434", "5433");
+            return GetDbContext(connectionString);
+        }
         private async Task<string> GetConnectionString(string domainName)
         {
+            var context = await contextFactory.CreateDbContextAsync();
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
             return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
         }

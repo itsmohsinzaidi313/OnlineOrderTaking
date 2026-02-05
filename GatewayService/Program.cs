@@ -45,6 +45,9 @@ builder.Services
     .AddSingleton<CreateOrderServiceResponseAction>()
     .AddSingleton<ICreateOrderResponseAction>(context => context.GetRequiredService<CreateOrderServiceResponseAction>())
     .AddHostedService<CreateOrderServiceResponseListener>()
+    .AddSingleton<OrderStatusServiceResponseAction>()
+    .AddSingleton<IOrderStatusResponseAction>(context => context.GetRequiredService<OrderStatusServiceResponseAction>())
+    .AddHostedService<OrderStatusServiceResponseListener>()
     .AddSingleton<IConnectionMultiplexer>(context =>
     {
         var configuration = ConfigurationOptions.Parse(redisSettings.ConnectionString, true);

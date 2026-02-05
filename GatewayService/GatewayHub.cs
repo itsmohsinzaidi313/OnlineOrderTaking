@@ -92,6 +92,20 @@ namespace GatewayService
             await QueuePayload(RabbitMqQueues.OrderRequestQueue, obj);
         }
 
+        public async Task OrderStatus(string domainName, int branchId, string orderNumber, int? orderStatusId, int? branchTransferId, string responseKey)
+        {
+            var obj = new OrderStatusPayload
+            {
+                DomainName = domainName,
+                BranchId = branchId,
+                OrderNumber = orderNumber,
+                ResponseKey = responseKey,
+                BranchTransferId = branchTransferId,
+                OrderStatusId = orderStatusId
+            }.FillContext(Context);
+            await QueuePayload(RabbitMqQueues.OrderStatusRequestQueue, obj);
+        }
+
         private async Task QueuePayload<T>(string queues, T payload)
         {
             await implementation.QueueRequestPayload(queues, payload);

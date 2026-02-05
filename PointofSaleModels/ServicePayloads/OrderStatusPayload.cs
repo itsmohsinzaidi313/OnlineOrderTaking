@@ -13,7 +13,7 @@ namespace PointofSaleModels.ServicePayloads
         public OrderStatusPayload(OrderStatusPayload payload) : base(payload)
         {
         }
-        public int OrderId { get; set; }
+        public string OrderNumber { get; set; }
         public int? OrderStatusId { get; set; }
         public int? BranchTransferId { get; set; }
         public object? DataPayload { get; set; }
