@@ -78,22 +78,32 @@ namespace GatewayService
             }
         }
 
+        public async Task SendToBranches<T>(string svcPayload, List<string> clientIds) where T : ServicePayload
+        {
+            using var doc = JsonDocument.Parse(svcPayload);
+            var root = doc.RootElement;
+            var responseKey = root.GetProperty("ResponseKey").GetString() ?? throw new Exception("ResponseKey not found");
+            logger.LogInformation("Gateway: Received {method} message for branches: {branches}", responseKey, string.Join(", ", clientIds));
+            var payload = JsonSerializer.Deserialize<T>(svcPayload)!;
+            await hub.Clients.Users(clientIds).SendAsync(responseKey, payload);
+        }
+
         private async Task PublishForPending(string userId, string payload)
         {
             var db = redis.GetDatabase();
             await db.ListRightPushAsync($"{PendingKeyPrefix}{userId}", payload);
         }
 
-        internal async Task SetUserOnlineAsync(string userId, string connectionId)
+        internal async Task SetClientOnlineAsync(string clientId, string connectionId)
         {
             var db = redis.GetDatabase();
-            await db.StringSetAsync($"user:{userId}:connection", connectionId);
+            await db.StringSetAsync($"{clientId}:connection", connectionId);
         }
 
-        internal async Task SetUserOfflineAsync(string userId)
+        internal async Task SetUserOfflineAsync(string clientId)
         {
             var db = redis.GetDatabase();
-            await db.KeyDeleteAsync($"user:{userId}:connection");
+            await db.KeyDeleteAsync($"{clientId}:connection");
         }
 
         internal async Task QueueRequestPayload<T>(string queues, T payload)

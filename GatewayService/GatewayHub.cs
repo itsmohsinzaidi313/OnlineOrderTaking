@@ -16,7 +16,7 @@ namespace GatewayService
         public override async Task OnConnectedAsync()
         {
             string userId = ExtractUserIdFromClaims();
-            await implementation.SetUserOnlineAsync(userId, Context.ConnectionId);
+            await implementation.SetClientOnlineAsync(userId, Context.ConnectionId);
             await implementation.SendPendingPayload(userId);
             await base.OnConnectedAsync();
         }
