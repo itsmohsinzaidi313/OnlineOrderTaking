@@ -56,12 +56,12 @@ namespace GatewayService
         {
             using var doc = JsonDocument.Parse(svcPayload);
             var root = doc.RootElement;
-            var userId = root.GetProperty("UserId").GetString() ?? throw new Exception("UserId not found");
+            var clientId = root.GetProperty("UserId").GetString() ?? throw new Exception("UserId not found");
             var responseKey = root.GetProperty("ResponseKey").GetString() ?? throw new Exception("ResponseKey not found");
 
             logger.LogInformation("Gateway: Received {method} message", responseKey);
 
-            if (!UserOnline(userId))
+            if (!UserOnline(clientId))
             {
                 var pendingPayload = new PendingPayload<T>
                 {
@@ -69,12 +69,12 @@ namespace GatewayService
                     Payload = JsonSerializer.Deserialize<T>(svcPayload)!
                 };
                 var pendingPayloadJson = JsonSerializer.Serialize(pendingPayload);
-                await PublishForPending(userId, pendingPayloadJson);
+                await PublishForPending(clientId, pendingPayloadJson);
             }
             else
             {
                 var payload = JsonSerializer.Deserialize<T>(svcPayload)!;
-                await hub.Clients.User(userId).SendAsync(responseKey, payload);
+                await hub.Clients.User(clientId).SendAsync(responseKey, payload);
                 return;
             }
         }

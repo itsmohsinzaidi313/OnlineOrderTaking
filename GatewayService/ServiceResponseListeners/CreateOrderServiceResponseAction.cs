@@ -20,10 +20,19 @@ namespace GatewayService.ServiceResponseListeners
             {
                 var db = redis.GetDatabase();
                 var server = redis.GetServer(redis.GetEndPoints().First());
-                var keys = server.Keys(pattern: $"branch:{branchId}:*");
+                var keys = server.Keys(pattern: $"branch:{branchId}:*:connection");
+                var connctionIds = new List<string>();
+                foreach (var key in keys)
+                {
+                    var connectionId = await db.StringGetAsync(key);
+                    if (!connectionId.IsNullOrEmpty)
+                    {
+                        connctionIds.Add(connectionId.ToString());
+                    }
+                }
                 var customerOrderProperty = root.GetProperty("Order");
                 var customerOrder = JsonSerializer.Deserialize<CustomerOrder>(customerOrderProperty.GetRawText())!;
-                await implementation.SendCustomerOrderToBranches(customerOrder, keys.Select(x => x.ToString()).ToList());
+                await implementation.SendCustomerOrderToBranches(customerOrder, connctionIds);
             }
             await implementation.SendToUser<OrderServicePayload>(svcPayload);
         }
