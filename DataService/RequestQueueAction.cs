@@ -17,12 +17,14 @@ namespace DataService
         {
             var requestPayload = System.Text.Json.JsonSerializer.Deserialize<DataServicePayload>(transport);
             object payload = null;
+            var success = false;
             try
             {
                 var connectionString = await GetConnectionString(requestPayload.DomainName);
                 if (requestPayload.DataRequestType == "DeliveryAndPickup")
                 {
                     payload = await GetDeliveryAndPickupItemsAsync(connectionString);
+                    success = true;
                 }
                 else if (requestPayload.DataRequestType == "Menu")
                 {
@@ -32,6 +34,7 @@ namespace DataService
                         menuItems.Add(item);
                     }
                     payload = menuItems;
+                    success = true;
                 }
                 else if(requestPayload.DataRequestType == "Orders")
                 {
@@ -41,12 +44,13 @@ namespace DataService
                         orders.Add(order);
                     }
                     payload = orders;
+                    success = true;
                 }
             }
             catch (Exception ex)
             {
-                // Log full exception (stack trace and inner exceptions) to help diagnose stream/connection issues
-                logger.LogError(ex, "Failed to fetch menu items.");
+                logger.LogError(ex, "Failed to fetch data.");
+                success = false;
                 payload = new
                 {
                     Success = false,
@@ -55,6 +59,7 @@ namespace DataService
             }
             var response = new DataServicePayload(requestPayload)
             {
+                Success = success,
                 DataPayload = payload
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.DataResponseQueue, response);

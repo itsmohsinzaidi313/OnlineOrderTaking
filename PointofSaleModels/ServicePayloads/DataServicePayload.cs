@@ -14,5 +14,6 @@
         }
         public string DataRequestType { get; set; } = string.Empty;
         public object? DataPayload { get; set; }
+        public bool Success { get; set; }
     }
 }

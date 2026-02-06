@@ -17,8 +17,9 @@ namespace GatewayService.ServiceResponseListeners
             var dataRequestType = root.GetProperty("DataRequestType").GetString() ?? throw new Exception("Unknown request type");
             var branchId = root.GetProperty("BranchId").GetInt32();
             var domainName = root.GetProperty("DomainName").GetString() ?? throw new Exception("DomainName not found");
-            root.GetProperty("DataPayload").TryGetProperty("Success", out var successElement);
-            if (successElement.ValueKind == JsonValueKind.False)
+            var dataPayloadElement = root.GetProperty("DataPayload");
+            var success = root.GetProperty("Success").GetBoolean();
+            if (!success)
             {
                 await implementation.SendToUser<DataServicePayload>(svcPayload);
                 return;
