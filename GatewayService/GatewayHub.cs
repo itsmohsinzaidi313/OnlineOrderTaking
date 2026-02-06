@@ -28,14 +28,6 @@ namespace GatewayService
             await base.OnDisconnectedAsync(ex);
         }
 
-        public async Task ImportRequest(int restaurantId)
-        {
-            await QueuePayload(RabbitMqQueues.ImportRequestQueue, new ImportServicePayload
-            {
-                RestaurantId = restaurantId
-            }.FillContext(Context));
-        }
-
         public async Task DataRequest(string domainName, string requestType, int branchId, string responseKey)
         {
             var db = redis.GetDatabase();
@@ -61,23 +53,10 @@ namespace GatewayService
                 DomainName = domainName,
                 DataRequestType = requestType,
                 BranchId = branchId,
-                ResponseKey = responseKey
+                ResponseKey = responseKey,
+                SignalRMethodName = "DataResponse"
             }.FillContext(Context);
-
             await QueuePayload(RabbitMqQueues.DataRequestQueue, obj);
-        }
-
-        public async Task Login(string phoneNumber)
-        {
-            var obj = new LoginServicePayload
-            {
-                Customer = new Customer
-                {
-                    Contact = phoneNumber
-                }
-            }.FillContext(Context);
-
-            await QueuePayload(RabbitMqQueues.LoginRequestQueue, obj);
         }
 
         public async Task PlaceOrder(CustomerOrder order, string responseKey)
@@ -87,7 +66,8 @@ namespace GatewayService
                 Order = order,
                 BranchId = order.BranchId,
                 DomainName = order.Domain,
-                ResponseKey = responseKey
+                ResponseKey = responseKey,
+                SignalRMethodName = "PlaceOrder"
             }.FillContext(Context);
             await QueuePayload(RabbitMqQueues.OrderRequestQueue, obj);
         }
@@ -101,7 +81,8 @@ namespace GatewayService
                 OrderNumber = orderNumber,
                 ResponseKey = responseKey,
                 BranchTransferId = branchTransferId,
-                OrderStatusId = orderStatusId
+                OrderStatusId = orderStatusId,
+                SignalRMethodName = "OrderStatus"
             }.FillContext(Context);
             await QueuePayload(RabbitMqQueues.OrderStatusRequestQueue, obj);
         }
