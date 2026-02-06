@@ -31,19 +31,20 @@ namespace GatewayService
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
-                if (!root.TryGetProperty("SignalRMethodName", out var methodProp)) continue;
+                if (!root.TryGetProperty("Payload", out var payloadProp)) continue;
+                var payloadJson = payloadProp.GetRawText();
+
+                if (!payloadProp.TryGetProperty("SignalRMethodName", out var methodProp)) continue;
 
                 var method = methodProp.GetString();
                 if (string.IsNullOrEmpty(method)) continue;
 
-                if (!root.TryGetProperty("Payload", out var payloadProp)) continue;
-                var payloadJson = payloadProp.GetRawText();
-
                 var payload = deserializers[method](payloadJson);
                 if (payload == null) continue;
 
-                if (!root.TryGetProperty("ResponseKey", out var responseKeyProp)) continue;
+                if (!payloadProp.TryGetProperty("ResponseKey", out var responseKeyProp)) continue;
                 var responseKey = responseKeyProp.GetString() ?? throw new Exception("ResposneKey not found");
+
                 await hub.Clients.User(userId).SendAsync(responseKey, payload);
             }
         }
