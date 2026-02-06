@@ -9,7 +9,7 @@ using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace DataService
 {
-    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, IRabbitMqPublisher publisher, Db.RestaurantsContext context) : IQueueAction
+    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, IRabbitMqPublisher publisher, IDbContextFactory<Db.RestaurantsContext> contextFactory) : IQueueAction
     {
         public string QueueName() => RabbitMqQueues.DataRequestQueue;
 
@@ -63,6 +63,7 @@ namespace DataService
 
         private async Task<string> GetConnectionString(string domainName)
         {
+            using var context = contextFactory.CreateDbContext();
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
             return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
         }
