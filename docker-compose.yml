@@ -216,7 +216,6 @@ services:
       dockerfile: ./GatewayService/Dockerfile
     ports:
       - "8090:8080"
-      - "6379:6379"
     environment:
       - ASPNETCORE_ENVIRONMENT=${GATEWAY_ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=${GATEWAY_ASPNETCORE_URLS}
