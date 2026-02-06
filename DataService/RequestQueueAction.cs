@@ -49,9 +49,8 @@ namespace DataService
                 logger.LogError(ex, "Failed to fetch menu items.");
                 payload = new
                 {
-                    error = true,
-                    message = "Failed to fetch menu items.",
-                    details = ex.ToString()
+                    Success = false,
+                    Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message
                 };
             }
             var response = new DataServicePayload(requestPayload)

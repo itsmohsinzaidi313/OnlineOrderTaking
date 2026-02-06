@@ -36,6 +36,7 @@ internal class Implementation()
                     .Where(x => x.SetupMasterId == setupMasterId)
                     .Distinct()
                     .ToDictionary(x => x.SetupDetailId, x => x.SetupDetailName);
+        var gsts = await dbContext.Gsts.ToListAsync();
 
         foreach (var item in cities)
         {
@@ -45,7 +46,11 @@ internal class Implementation()
                 .Select(x => new JsonObject()
                 {
                     ["AreaId"] = x.AreaId,
-                    ["AreaName"] = x.AreaName
+                    ["AreaName"] = x.AreaName,
+                    ["DeliveryTime"] = branchDetails.Where(bd => bd.AreaId == x.AreaId).Select(bd => bd.DeliveryTime).FirstOrDefault() ?? 0,
+                    ["DeliveryCharges"] = branchDetails.Where(bd => bd.AreaId == x.AreaId).Select(bd => bd.DeliveryCharges).FirstOrDefault() ?? 0.00,
+                    ["DeliveryChargesWaiveOffLimit"] = branchDetails.Where(bd => bd.AreaId == x.AreaId).Select(bd => bd.DeliveryChargesWaiveOffLimit).FirstOrDefault() ?? 0.00,
+                    ["MinimumOrder"] = branchDetails.Where(bd => bd.AreaId == x.AreaId).Select(bd => bd.MinimumOrder).FirstOrDefault() ?? 0.00,
                 }))
             {
                 var areaId = item1["AreaId"]?.GetValue<int>();
@@ -117,9 +122,6 @@ internal class Implementation()
                 var branchDetail = branchDetails.FirstOrDefault(bd => bd.BranchId == branchId);
                 if (branchDetail != null)
                 {
-                    item2["DeliveryCharges"] = branchDetail.DeliveryCharges ?? 0.00;
-                    item2["DeliveryChargesWaiveOffLimit"] = branchDetail.DeliveryChargesWaiveOffLimit ?? 0.00;
-                    item2["DeliveryTime"] = branchDetail.DeliveryTime ?? 0;
                     item2["MinimumOrder"] = branchDetail.MinimumOrder ?? 0.00;
                 }
                 branchesJsonArray.Add(item2);
@@ -128,7 +130,8 @@ internal class Implementation()
             var cityObj2 = new JsonObject
             {
                 ["CityName"] = item.CityName,
-                ["Branches"] = branchesJsonArray
+                ["Branches"] = branchesJsonArray,
+                ["Tax"] = gsts.Where(x => x.CityId == item.CityId).Select(x => x.Gstpercentage).FirstOrDefault() ?? 0.00
             };
             pickup[item.CityId.ToString()] = cityObj2;
         }
