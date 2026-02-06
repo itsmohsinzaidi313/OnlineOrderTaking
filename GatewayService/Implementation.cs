@@ -10,15 +10,15 @@ namespace GatewayService
 {
     public class Implementation(ILogger<Implementation> logger, IHubContext<GatewayHub> hub, IConnectionMultiplexer redis, IRabbitMqPublisher publisher)
     {
-        private const string PendingKeyPrefix = "pending:";
+        private const string PendingKeySuffix = ":pending";
+        private const string ConnectionKeySuffix = ":connection";
 
         internal async Task SendPendingPayload(string userId)
         {
             var db = redis.GetDatabase();
-            var pendingKey = $"{PendingKeyPrefix}{userId}";
+            var pendingKey = $"{userId}{PendingKeySuffix}";
             var deserializers = new Dictionary<string, Func<string, ServicePayload?>>()
             {
-                { "LoginResponse", json => JsonSerializer.Deserialize<LoginServicePayload>(json) },
                 { "DataResponse", json => JsonSerializer.Deserialize<DataServicePayload>(json) },
                 { "OrderResponse", json => JsonSerializer.Deserialize<OrderServicePayload>(json) }
             };
@@ -41,14 +41,17 @@ namespace GatewayService
 
                 var payload = deserializers[method](payloadJson);
                 if (payload == null) continue;
-                await hub.Clients.User(userId).SendAsync(method, payload);
+
+                if (!root.TryGetProperty("ResponseKey", out var responseKeyProp)) continue;
+                var responseKey = responseKeyProp.GetString() ?? throw new Exception("ResposneKey not found");
+                await hub.Clients.User(userId).SendAsync(responseKey, payload);
             }
         }
 
-        private bool UserOnline(string userId)
+        private bool UserOnline(string clientId)
         {
             var db = redis.GetDatabase();
-            string? connectionId = db.StringGet($"user:{userId}:connection");
+            string? connectionId = db.StringGet($"{clientId}{ConnectionKeySuffix}");
             return connectionId != null;
         }
 
@@ -65,7 +68,6 @@ namespace GatewayService
             {
                 var pendingPayload = new PendingPayload<T>
                 {
-                    SignalRMethodName = responseKey,
                     Payload = JsonSerializer.Deserialize<T>(svcPayload)!
                 };
                 var pendingPayloadJson = JsonSerializer.Serialize(pendingPayload);
@@ -84,22 +86,22 @@ namespace GatewayService
             await hub.Clients.Users(clientIds).SendAsync("NewOrder", svcPayload);
         }
 
-        private async Task PublishForPending(string userId, string payload)
+        private async Task PublishForPending(string clientId, string payload)
         {
             var db = redis.GetDatabase();
-            await db.ListRightPushAsync($"{PendingKeyPrefix}{userId}", payload);
+            await db.ListRightPushAsync($"{clientId}{PendingKeySuffix}", payload);
         }
 
         internal async Task SetClientOnlineAsync(string clientId, string connectionId)
         {
             var db = redis.GetDatabase();
-            await db.StringSetAsync($"{clientId}:connection", connectionId);
+            await db.StringSetAsync($"{clientId}{ConnectionKeySuffix}", connectionId);
         }
 
         internal async Task SetUserOfflineAsync(string clientId)
         {
             var db = redis.GetDatabase();
-            await db.KeyDeleteAsync($"{clientId}:connection");
+            await db.KeyDeleteAsync($"{clientId}{ConnectionKeySuffix}");
         }
 
         internal async Task QueueRequestPayload<T>(string queues, T payload)
