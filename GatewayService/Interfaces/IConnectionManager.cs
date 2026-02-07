@@ -2,9 +2,9 @@
 {
     public interface IConnectionManager
     {
-        public Task AddClientAsync(string clientId, string connectionId);
+        public Task AddClientIdAsync(string clientId, string connectionId);
         public Task<string?> GetConnectionIdAsync(string clientId);
-        public Task RemoveClientAsync(string clientId);
-        public Task<bool> ClientExistsAsync(string clientId);
+        public Task RemoveClientIdAsync(string clientId);
+        public Task<bool> ClientIdExistsAsync(string clientId);
     }
 }
