@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace GatewayService.ServiceResponseListeners
 {
-    public class DataServiceResponseAction(Implementation implementation, IConnectionMultiplexer redis, ApiDataRequestCoordinator apiResponses) : IDataServiceResponseAction
+    public class DataServiceResponseAction(Implementation implementation, IConnectionMultiplexer redis) : IDataServiceResponseAction
     {
         public string QueueName() => RabbitMqQueues.DataResponseQueue;
         public async Task OnMessage(string svcPayload)
@@ -30,11 +30,6 @@ namespace GatewayService.ServiceResponseListeners
             if (success && !string.IsNullOrEmpty(rediKey))
             {
                 await redis.GetDatabase().StringSetAsync($"{domainName}:{branchId}:{rediKey}", svcPayload);
-            }
-
-            if (!string.IsNullOrWhiteSpace(correlationId) && apiResponses.TryResolve(correlationId, svcPayload))
-            {
-                return;
             }
 
             if (!success)

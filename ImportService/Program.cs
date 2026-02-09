@@ -18,7 +18,7 @@ var sqlServerConnectionString =
     ?? throw new InvalidOperationException("SqlServer connection string is not configured.");
 const string PostgressConnectionString = "Host=haproxy;Port=5433;Database=restaurants;Username=postgres;Password=postgrespass";
 // Services
-builder.Services.AddGrpc();
+
 builder.Services
     .AddDbContextFactory<SqlServerDbContext>(options =>
         options.UseSqlServer(
@@ -101,8 +101,6 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Imple
     return response;
 });
 
-app.MapGrpcService<BranchDataService>();
-
 app.MapGet("health", ([FromServices] SqlServerDbContext sqlServerDbContext) =>
 {
     if (sqlServerDbContext.Database.CanConnect() == false)
@@ -111,6 +109,5 @@ app.MapGet("health", ([FromServices] SqlServerDbContext sqlServerDbContext) =>
     }
     return Results.Ok("Service is healthy");
 });
-
 
 await app.RunAsync();

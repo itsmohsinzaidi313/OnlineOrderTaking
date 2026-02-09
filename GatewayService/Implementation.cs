@@ -83,7 +83,7 @@ namespace GatewayService
         }
 
         public async Task SendCustomerOrderToBranches(CustomerOrder svcPayload, List<string> clientIds)
-        {
+                    {
             await hub.Clients.Users(clientIds).SendAsync("NewOrder", svcPayload);
         }
 

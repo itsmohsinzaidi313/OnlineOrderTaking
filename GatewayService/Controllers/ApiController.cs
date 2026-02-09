@@ -1,4 +1,5 @@
 using GatewayService.Models;
+using Grpc.Net.Client;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -15,11 +16,11 @@ namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, Implementation implementation, ApiDataRequestCoordinator apiResponses) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, Implementation implementation) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
         private readonly Implementation _implementation = implementation;
-        private readonly ApiDataRequestCoordinator _apiResponses = apiResponses;
+
         [HttpGet("clear")]
         public async Task<IActionResult> ClearCacheAsync([FromQuery] string domain)
         {
@@ -50,60 +51,6 @@ namespace GatewayService.Controllers
         public IActionResult Health()
         {
             return Ok("Gateway Service is healthy.");
-        }
-
-        [HttpGet("orders")]
-        public async Task<IActionResult> GetOrdersAsync([FromQuery] string domain, [FromQuery] int branchId, CancellationToken cancellationToken)
-        {
-            var correlationId = Guid.NewGuid().ToString();
-            var payload = new DataServicePayload
-            {
-                CorrelationId = correlationId,
-                DomainName = domain,
-                BranchId = branchId,
-                DataRequestType = "Orders",
-                ResponseKey = "OrdersResponse",
-                SignalRMethodName = "DataResponse",
-                UserId = $"api-{correlationId}"
-            };
-
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeoutCts.CancelAfter(TimeSpan.FromSeconds(10));
-
-            var waitTask = _apiResponses.WaitForResponseAsync(correlationId, timeoutCts.Token);
-            await _implementation.QueueRequestPayload(RabbitMqQueues.DataRequestQueue, payload);
-
-            string responseJson;
-            try
-            {
-                responseJson = await waitTask.ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                if (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
-                {
-                    return StatusCode(504, "Timed out waiting for data service response.");
-                }
-
-                return StatusCode(499, "Request was cancelled.");
-            }
-
-            using var doc = JsonDocument.Parse(responseJson);
-            var root = doc.RootElement;
-            var success = root.TryGetProperty("Success", out var successProp) && successProp.GetBoolean();
-            if (!success)
-            {
-                var errorPayload = root.TryGetProperty("DataPayload", out var err) ? err.GetRawText() : "Request failed.";
-                return BadRequest(new { error = errorPayload });
-            }
-
-            if (!root.TryGetProperty("DataPayload", out var dataPayload))
-            {
-                return StatusCode(500, "Missing data payload in response.");
-            }
-
-            var orders = JsonSerializer.Deserialize<List<CustomerOrder>>(dataPayload.GetRawText()) ?? new List<CustomerOrder>();
-            return Ok(orders);
         }
 
         [HttpGet("import/{companyId:int}")]

@@ -14,13 +14,13 @@ namespace GatewayService.ServiceResponseListeners
         {
             using var doc = JsonDocument.Parse(svcPayload);
             var root = doc.RootElement;
-            var branchId = root.GetProperty("BranchId").GetInt32();
+            var userId = root.GetProperty("UserId").GetInt32();
             var success = root.GetProperty("DataPayload").GetProperty("Success").GetBoolean();
             if (success)
             {
                 var db = redis.GetDatabase();
                 var server = redis.GetServer(redis.GetEndPoints().First());
-                var keys = server.Keys(pattern: $"branch:{branchId}:*:connection");
+                var keys = server.Keys(pattern: $"branch:{userId}:*:connection");
                 var connctionIds = new List<string>();
                 foreach (var key in keys)
                 {

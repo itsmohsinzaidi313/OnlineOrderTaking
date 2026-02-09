@@ -25,7 +25,8 @@ public class Implementation()
         var dbContext = GetDbContext(connectionString);
         var orderMaster = await GetOrderMasterAsync(dbContext, branchId, order);
         await SetOnlineOrder(dbContext, branchId, orderMaster, order);
-        return await SaveOrderAsync(dbContext, orderMaster);
+        order.OrderNumber = await SaveOrderAsync(dbContext, orderMaster);
+        return order.OrderNumber;
     }
 
     private async Task<string> SaveOrderAsync(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)

@@ -487,7 +487,7 @@ internal class Implementation()
         }
     }
 
-    internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int branchId)
+    internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int userId)
     {
         var dbContext = GetDbContext(connectionString);
         var products = await (from x in dbContext.ProductCategories
@@ -510,39 +510,42 @@ internal class Implementation()
                                       select a).ToListAsync();
         var flavours = await dbContext.Flavours.ToListAsync();
         var sizes = await dbContext.ProductSizes.ToListAsync();
-
-        foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId).ToListAsync())
+        
+        foreach (var branchId in await dbContext.UserBranchMappings.Where(x => x.UserId == userId).Select(x => x.BranchId).ToListAsync())
         {
-            var order = new CustomerOrder
+            foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId).ToListAsync())
             {
-                OrderNumber = dbOrder.OrderNumber ?? "N/A",
-                Items = [],
-            };
-
-            var phoneId = dbOrder.PhoneId;
-            var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
-            if (customerPhone != null)
-            {
-                var customer = await dbContext.Customers.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
-                var addressDetails = await dbContext.CustomerAddressDetails.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
-
-                var customerDetail = new CustomerDetail
+                var order = new CustomerOrder
                 {
-                    FullName = customer?.CustomerName ?? "N/A",
-                    MobileNumber = customerPhone.PhoneNumber ?? "N/A",
-                    DeliveryAddress = addressDetails?.CompleteAddress ?? "N/A",
-                    NearestLandmark = addressDetails?.LandMark ?? "N/A",
-                    DeliveryInstructions = addressDetails?.Remarks ?? "N/A"
+                    OrderNumber = dbOrder.OrderNumber ?? "N/A",
+                    Items = [],
                 };
-                order.CustomerDetails = customerDetail;
-            }
-            await foreach (var item in GetOrderItemsAsync(dbContext, dbOrder.OrderMasterId, productDetails, dealItems, products, flavours, sizes, dealDescriptions))
-            {
-                item.Price = item.Variations.Sum(x => x.Price + x.ItemChoices.SelectMany(y => y.ItemOptions).Sum(z => z.Price));
-                order.Items.Add(item);
-            }
 
-            yield return order;
+                var phoneId = dbOrder.PhoneId;
+                var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
+                if (customerPhone != null)
+                {
+                    var customer = await dbContext.Customers.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
+                    var addressDetails = await dbContext.CustomerAddressDetails.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
+
+                    var customerDetail = new CustomerDetail
+                    {
+                        FullName = customer?.CustomerName ?? "N/A",
+                        MobileNumber = customerPhone.PhoneNumber ?? "N/A",
+                        DeliveryAddress = addressDetails?.CompleteAddress ?? "N/A",
+                        NearestLandmark = addressDetails?.LandMark ?? "N/A",
+                        DeliveryInstructions = addressDetails?.Remarks ?? "N/A"
+                    };
+                    order.CustomerDetails = customerDetail;
+                }
+                await foreach (var item in GetOrderItemsAsync(dbContext, dbOrder.OrderMasterId, productDetails, dealItems, products, flavours, sizes, dealDescriptions))
+                {
+                    item.Price = item.Variations.Sum(x => x.Price + x.ItemChoices.SelectMany(y => y.ItemOptions).Sum(z => z.Price));
+                    order.Items.Add(item);
+                }
+
+                yield return order;
+            }
         }
     }
 

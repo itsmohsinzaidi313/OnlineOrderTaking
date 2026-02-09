@@ -56,6 +56,11 @@ namespace GatewayService
                 ResponseKey = responseKey,
                 SignalRMethodName = "DataResponse"
             }.FillContext(Context);
+
+            if (requestType == "Orders")
+            {
+                obj.OrderUserId = branchId;
+            }
             await QueuePayload(RabbitMqQueues.DataRequestQueue, obj);
         }
 

@@ -36,10 +36,12 @@ namespace DataService
                     payload = menuItems;
                     success = true;
                 }
-                else if(requestPayload.DataRequestType == "Orders")
+                else if (requestPayload.DataRequestType == "Orders")
                 {
+                    if (!requestPayload.OrderUserId.HasValue) throw new Exception("UserId missing for userwise orders list");
+
                     var orders = new List<CustomerOrder>();
-                    await foreach (var order in impl.GetOrdersAsync(connectionString, requestPayload.BranchId))
+                    await foreach (var order in impl.GetOrdersAsync(connectionString, requestPayload.OrderUserId.Value))
                     {
                         orders.Add(order);
                     }

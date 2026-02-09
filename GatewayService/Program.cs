@@ -39,7 +39,6 @@ builder.Services
 builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
-    .AddSingleton<ApiDataRequestCoordinator>()
     .AddSingleton<DataServiceResponseAction>()
     .AddSingleton<IDataServiceResponseAction>(context => context.GetRequiredService<DataServiceResponseAction>())
     .AddHostedService<DataServiceResponseListener>()
@@ -49,6 +48,9 @@ builder.Services
     .AddSingleton<OrderStatusServiceResponseAction>()
     .AddSingleton<IOrderStatusResponseAction>(context => context.GetRequiredService<OrderStatusServiceResponseAction>())
     .AddHostedService<OrderStatusServiceResponseListener>()
+    .AddSingleton<OrderNotificationServiceResponseAction>()
+    .AddSingleton<IOrderNotificationResponseAction>(context => context.GetRequiredService<OrderNotificationServiceResponseAction>())
+    .AddHostedService<OrderNotificationServiceResponseListener>()
     .AddSingleton<IConnectionMultiplexer>(context =>
     {
         var configuration = ConfigurationOptions.Parse(redisSettings.ConnectionString, true);
