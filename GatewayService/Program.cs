@@ -39,6 +39,7 @@ builder.Services
 builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
+    .AddSingleton<ApiDataRequestCoordinator>()
     .AddSingleton<DataServiceResponseAction>()
     .AddSingleton<IDataServiceResponseAction>(context => context.GetRequiredService<DataServiceResponseAction>())
     .AddHostedService<DataServiceResponseListener>()
