@@ -155,14 +155,14 @@ public class Implementation()
     {
         var cd = order.CustomerDetails;
         var add = cd.DeliveryAddress ?? string.Empty;
-        order.Customer = new Customer
+
+        var customer = new Customer
         {
             Contact = cd.MobileNumber ?? string.Empty,
             Addresses = [add],
             Name = cd.FullName ?? string.Empty,
             SelectedAddress = add,
         };
-        var customer = order.Customer ?? throw new Exception("Invalid customer information");
         if (customer.Addresses == null || customer.Addresses.Count == 0)
         {
             throw new Exception("Customer must have at least one address");
