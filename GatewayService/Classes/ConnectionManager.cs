@@ -1,7 +1,8 @@
 ﻿using GatewayService.Interfaces;
+using PointofSaleModels.Services;
 using StackExchange.Redis;
 
-namespace GatewayService.Models
+namespace GatewayService.Classes
 {
     public class ConnectionManager(IStorageManager storage) : Interfaces.IConnectionManager
     {

@@ -2,25 +2,28 @@
 {
     public abstract class ServicePayload
     {
-        public ServicePayload() { }
+        public ServicePayload()
+        {
+        }
+
         public ServicePayload(ServicePayload payload)
         {
-            CorrelationId = payload.CorrelationId;
-            ConnectionId = payload.ConnectionId;
-            UserId = payload.UserId;
-            RestaurantId = payload.RestaurantId;
-            BranchId = payload.BranchId;
-            ResponseKey = payload.ResponseKey;
+            ClientId = payload.ClientId;
             DomainName = payload.DomainName;
+            ConnectionId = payload.ConnectionId;
+            CorrelationId = payload.CorrelationId;
+            ResponseKey = payload.ResponseKey;
+            BranchId = payload.BranchId;
+            SignalRMethod = payload.SignalRMethod;
         }
-        public string CorrelationId { get; set; } = string.Empty;
+
+        public string ClientId { get; set; } = string.Empty;
+        public string DomainName { get; set; } = string.Empty;
         public string ConnectionId { get; set; } = string.Empty;
-        public string UserId { get; set; } = string.Empty;
-        public string ResponseKey { get; set; }
-        public int RestaurantId { get; set; }
-        public int BranchId { get; set; }
-        public string DomainName { get; set; }
-        public string RestaurantIdToString => RestaurantId.ToString();
-        public string BranchIdToString => BranchId.ToString();
+        public string CorrelationId { get; set; } = string.Empty;
+        public string ResponseKey { get; set; } = string.Empty;
+        public string BranchId { get; set; } = string.Empty;
+        public string SignalRMethod { get; set; } = string.Empty;
+        public string? DataCode { get; set; }
     }
 }

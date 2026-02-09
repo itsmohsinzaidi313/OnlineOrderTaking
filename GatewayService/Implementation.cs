@@ -1,4 +1,6 @@
-﻿using GatewayService.Models;
+﻿using GatewayService.Classes;
+using GatewayService.Interfaces;
+using GatewayService.Models;
 using Microsoft.AspNetCore.SignalR;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
@@ -7,14 +9,10 @@ using System.Text.Json;
 
 namespace GatewayService
 {
-    public class Implementation(ILogger<Implementation> logger, IHubContext<GatewayHub> hub, IConnectionMultiplexer redis, IRabbitMqPublisher publisher)
+    public class Implementation(ILogger<Implementation> logger, IHubContext<GatewayHub> hub, StorageManager storage, ConnectionManager connectionManager, IRabbitMqPublisher publisher)
     {
-        private const string PendingKeyPrefix = "pending:";
-
         internal async Task SendPendingPayload(string userId)
         {
-            var db = redis.GetDatabase();
-            var pendingKey = $"{PendingKeyPrefix}{userId}";
             var deserializers = new Dictionary<string, Func<string, ServicePayload?>>()
             {
                 { "LoginResponse", json => JsonSerializer.Deserialize<LoginServicePayload>(json) },
@@ -23,10 +21,9 @@ namespace GatewayService
             };
             while (true)
             {
-                var item = await db.ListLeftPopAsync(pendingKey);
-                if (!item.HasValue) break;
+                var json = await storage.GetPendingAndPop(userId);
+                if (json == null) break;
 
-                var json = item.ToString();
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
@@ -44,13 +41,6 @@ namespace GatewayService
             }
         }
 
-        private bool UserOnline(string userId)
-        {
-            var db = redis.GetDatabase();
-            string? connectionId = db.StringGet($"user:{userId}:connection");
-            return connectionId != null;
-        }
-
         public async Task SendToUser<T>(string svcPayload) where T : ServicePayload
         {
             using var doc = JsonDocument.Parse(svcPayload);
@@ -59,8 +49,8 @@ namespace GatewayService
             var responseKey = root.GetProperty("ResponseKey").GetString() ?? throw new Exception("ResponseKey not found");
 
             logger.LogInformation("Gateway: Received {method} message", responseKey);
-
-            if (!UserOnline(userId))
+            var isOnline = await connectionManager.ClientIdExistsAsync(userId);
+            if (!isOnline)
             {
                 var pendingPayload = new PendingPayload<T>
                 {
@@ -68,7 +58,7 @@ namespace GatewayService
                     Payload = JsonSerializer.Deserialize<T>(svcPayload)!
                 };
                 var pendingPayloadJson = JsonSerializer.Serialize(pendingPayload);
-                await PublishForPending(userId, pendingPayloadJson);
+                await storage.PushToPending(userId, pendingPayloadJson);
             }
             else
             {
@@ -76,24 +66,6 @@ namespace GatewayService
                 await hub.Clients.User(userId).SendAsync(responseKey, payload);
                 return;
             }
-        }
-
-        private async Task PublishForPending(string userId, string payload)
-        {
-            var db = redis.GetDatabase();
-            await db.ListRightPushAsync($"{PendingKeyPrefix}{userId}", payload);
-        }
-
-        internal async Task SetUserOnlineAsync(string userId, string connectionId)
-        {
-            var db = redis.GetDatabase();
-            await db.StringSetAsync($"user:{userId}:connection", connectionId);
-        }
-
-        internal async Task SetUserOfflineAsync(string userId)
-        {
-            var db = redis.GetDatabase();
-            await db.KeyDeleteAsync($"user:{userId}:connection");
         }
 
         internal async Task QueueRequestPayload<T>(string queues, T payload)

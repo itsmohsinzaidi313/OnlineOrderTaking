@@ -1,9 +1,9 @@
-﻿using GatewayService.Interfaces;
-using PointofSaleModels.ServicePayloads;
+﻿using PointofSaleModels.ServicePayloads;
 using StackExchange.Redis;
+using System.Security.Cryptography;
 using System.Text.Json;
 
-namespace GatewayService.Models
+namespace PointofSaleModels.Services
 {
     public class StorageManager(IConnectionMultiplexer redis) : IStorageManager
     {
@@ -26,12 +26,12 @@ namespace GatewayService.Models
 
         public async Task CacheMenuData(string domainName, string branchId, DataServicePayload data)
         {
-            await CacheObject($"{domainName}:{branchId}:menu", data);
+            await CacheObjectAsync($"{domainName}:{branchId}:menu", data);
         }
 
         public async Task CacheDeliveryAndPickupData(string domainName, string branchId, DataServicePayload data)
         {
-            await CacheObject($"{domainName}:{branchId}:dandp", data);
+            await CacheObjectAsync($"{domainName}:{branchId}:dandp", data);
         }
 
         public async Task<DataServicePayload?> GetCachedMenuData(string domainName, string branchId)
@@ -54,10 +54,10 @@ namespace GatewayService.Models
             await ClearCacheByPattern($"{domainName}:{branchId}:dandp");
         }
 
-        public async Task CacheObject<T>(string key, T data)
+        public async Task<bool> CacheObjectAsync<T>(string key, T data)
         {
             var serializedData = JsonSerializer.Serialize(data);
-            await CacheStringAsync(key, serializedData);
+            return await CacheStringAsync(key, serializedData);
         }
 
         public async Task<T?> GetCachedObject<T>(string key)
@@ -78,18 +78,52 @@ namespace GatewayService.Models
             }
         }
 
-        public async Task CacheStringAsync(string key, string data)
+        public async Task<bool> CacheStringAsync(string key, string data)
         {
-            var isSaved = await Db.StringSetAsync(key, data);
-            if(!isSaved)
-            {
-                throw new Exception("Failed to save data to Redis.");
-            }
+            return await Db.StringSetAsync(key, data);
         }
 
         public async Task<string?> GetCachedStringAsync(string key)
         {
-            return await GetStringAsync(key);
+            return await Db.StringGetAsync(key);
+        }
+
+        public async Task<string> PublishForService<T>(T data)
+        {
+            var code = CreateCode();
+            var saved = await CacheObjectAsync($"service:{code}", data);
+            if (!saved)
+            {
+                throw new Exception("Failed to cache data for service communication.");
+            }
+            return code;
+        }
+
+        public async Task<T> GetServiceData<T>(string code)
+        {
+            var result = await GetCachedObject<T>($"service:{code}");
+            return result == null ? throw new Exception("Service data not found.") : result;
+        }
+
+        private const string Alphabet = "abcdefghijklmnopqrstuvwxyz1234567890";
+
+        public static string CreateCode()
+        {
+            Span<char> buffer = stackalloc char[11];
+            FillSegment(buffer[..5]);
+            buffer[5] = '-';
+            FillSegment(buffer[6..]);
+            return new string(buffer);
+        }
+
+        private static void FillSegment(Span<char> target)
+        {
+            Span<byte> bytes = stackalloc byte[target.Length];
+            RandomNumberGenerator.Fill(bytes);
+            for (int i = 0; i < target.Length; i++)
+            {
+                target[i] = Alphabet[bytes[i] % Alphabet.Length];
+            }
         }
     }
 }

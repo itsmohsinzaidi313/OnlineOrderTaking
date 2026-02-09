@@ -9,7 +9,7 @@ using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace DataService
 {
-    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, IRabbitMqPublisher publisher, Db.RestaurantsContext context) : IQueueAction
+    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, IRabbitMqPublisher publisher, Db.RestaurantsContext context, StorageManager storage) : IQueueAction
     {
         public string QueueName() => RabbitMqQueues.DataRequestQueue;
 
@@ -20,11 +20,11 @@ namespace DataService
             try
             {
                 var connectionString = await GetConnectionString(requestPayload.DomainName);
-                if (requestPayload.DataRequestType == "DeliveryAndPickup")
+                if (requestPayload.RequestType == "DeliveryAndPickup")
                 {
                     payload = await GetDeliveryAndPickupItemsAsync(connectionString);
                 }
-                else if (requestPayload.DataRequestType == "Menu")
+                else if (requestPayload.RequestType == "Menu")
                 {
                     var menuItems = new List<Category>();
                     await foreach (var item in GetMenuItemsAsync(connectionString, requestPayload.BranchId))
@@ -33,7 +33,7 @@ namespace DataService
                     }
                     payload = menuItems;
                 }
-                else if(requestPayload.DataRequestType == "Orders")
+                else if (requestPayload.RequestType == "Orders")
                 {
                     var orders = new List<CustomerOrder>();
                     await foreach (var order in impl.GetOrdersAsync(connectionString, requestPayload.BranchId))
@@ -54,9 +54,10 @@ namespace DataService
                     details = ex.ToString()
                 };
             }
+            var code = await storage.PublishForService(payload);
             var response = new DataServicePayload(requestPayload)
             {
-                DataPayload = payload
+                DataCode = code
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.DataResponseQueue, response);
         }
@@ -73,7 +74,7 @@ namespace DataService
             return await impl.GetDataOneAsync(connectionString: connectionString);
         }
 
-        private async IAsyncEnumerable<Category> GetMenuItemsAsync(string connectionString, int branchId)
+        private async IAsyncEnumerable<Category> GetMenuItemsAsync(string connectionString, string branchId)
         {
             logger.LogInformation("📂 Fetching menu items from database...");
 

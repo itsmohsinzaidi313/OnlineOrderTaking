@@ -258,9 +258,9 @@ internal class Implementation()
         return settingsData;
     }
 
-    private static async Task<DbMenuData> GetDbMenuDataAsync(string connectionString, int branchId)
+    private static async Task<DbMenuData> GetDbMenuDataAsync(string connectionString, string branchId)
     {
-        var bid = branchId;
+        var bid = int.Parse(branchId);
         if (bid == 0)
         {
             using var dbContext = GetDbContext(connectionString);
@@ -365,7 +365,7 @@ internal class Implementation()
         return new DbMenuData(dbSizes, dbFlavours, dbProducts, dbProductDetails, dbDepartments, dbDealItemDetails, dbDealDescription, dbItemDiscounts, dbItemDiscountsMapping);
     }
 
-    internal async IAsyncEnumerable<Category> GetMenuAsync(string connectionString, int branchId)
+    internal async IAsyncEnumerable<Category> GetMenuAsync(string connectionString, string branchId)
     {
 
         var package = await GetDbMenuDataAsync(connectionString, branchId);
@@ -484,8 +484,9 @@ internal class Implementation()
         }
     }
 
-    internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int branchId)
+    internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, string branchId)
     {
+        var bid = int.Parse(branchId);
         var dbContext = GetDbContext(connectionString);
         var products = await (from x in dbContext.ProductCategories
                               join y in dbContext.Products on x.CategoryId equals y.ProductCategoryId
@@ -508,7 +509,7 @@ internal class Implementation()
         var flavours = await dbContext.Flavours.ToListAsync();
         var sizes = await dbContext.ProductSizes.ToListAsync();
 
-        foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId).ToListAsync())
+        foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == bid).ToListAsync())
         {
             var order = new CustomerOrder
             {

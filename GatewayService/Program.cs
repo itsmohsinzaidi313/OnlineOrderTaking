@@ -7,6 +7,8 @@ using StackExchange.Redis;
 using GatewayService.Models;
 using System.Text;
 using GatewayService.ServiceResponseListeners;
+using GatewayService.Interfaces;
+using GatewayService.Classes;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -47,6 +49,8 @@ builder.Services
         return ConnectionMultiplexer.Connect(configuration);
     })
     .AddSingleton<Implementation>()
+    .AddSingleton<IStorageManager, StorageManager>()
+    .AddSingleton<IConnectionManager, ConnectionManager>()
     .AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();

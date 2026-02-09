@@ -10,10 +10,7 @@ namespace GatewayService
         {
             payload.CorrelationId = Guid.NewGuid().ToString();
             payload.ConnectionId = context.ConnectionId;
-            payload.UserId = ExtractUserClaims(context);
-            //payload.RestaurantId = int.Parse(ExtractRestaurantIdClaims(context));
-            //payload.BranchId = int.Parse(ExtractBranchIdClaims(context));
-
+            payload.ClientId = ExtractUserClaims(context);
             return payload;
         }
 
@@ -21,16 +18,6 @@ namespace GatewayService
         {
             return context.User?.Claims.FirstOrDefault(c =>
                 string.Equals(c.Type, ClaimTypes.NameIdentifier, StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty;
-        }
-
-        private static string ExtractRestaurantIdClaims(HubCallerContext context)
-        {
-            return context.User?.Claims.FirstOrDefault(x => string.Equals(x.Type, "cid", StringComparison.OrdinalIgnoreCase))?.Value ?? "0";
-        }
-
-        private static string ExtractBranchIdClaims(HubCallerContext context)
-        {
-            return context.User?.Claims.FirstOrDefault(x => string.Equals(x.Type, "bid", StringComparison.OrdinalIgnoreCase))?.Value ?? "0";
         }
     }
 }

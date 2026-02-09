@@ -13,9 +13,9 @@ namespace GatewayService.ServiceResponseListeners
         {
             using var doc = JsonDocument.Parse(svcPayload);
             var root = doc.RootElement;
-            var dataRequestType = root.GetProperty("DataRequestType").GetString() ?? throw new Exception("Unknown request type");
-            var branchId = root.GetProperty("BranchId").GetInt32();
-            var domainName = root.GetProperty("DomainName").GetString() ?? throw new Exception("DomainName not found");
+            var dataRequestType = root.GetProperty(nameof(DataServicePayload.RequestType)).GetString() ?? throw new Exception("Unknown request type");
+            var branchId = root.GetProperty(nameof(DataServicePayload.BranchId)).GetInt32();
+            var domainName = root.GetProperty(nameof(DataServicePayload.DomainName)).GetString() ?? throw new Exception("DomainName not found");
             var rediKey = dataRequestType switch
             {
                 "Menu" => "Menu",
