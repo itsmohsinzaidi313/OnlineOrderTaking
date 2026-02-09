@@ -39,6 +39,9 @@ namespace ImportService.Data
         public DbSet<CustomerAddressDetail> CustomerAddressDetails => Set<CustomerAddressDetail>();
         public DbSet<OrderMaster> OrderMasters => Set<OrderMaster>();
         public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
+        public DbSet<UserLogin> UserLogins => Set<UserLogin>();
+        public DbSet<UserRole> UserRoles => Set<UserRole>();
+        public DbSet<UserBranchMapping> UserBranchMappings => Set<UserBranchMapping>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -223,6 +226,22 @@ namespace ImportService.Data
             modelBuilder.Entity<OrderDetail>()
                 .ToTable("OrderDetail")
                 .HasKey(x => x.OrderDetailId);
+
+            modelBuilder.Entity<UserLogin>()
+                .ToTable("UserLogin")
+                .HasKey(x => x.UserId);
+
+            modelBuilder.Entity<UserRole>()
+                .ToTable("UserRole")
+                .HasKey(x => x.RoleId);
+
+            modelBuilder.Entity<UserBranchMapping>()
+                .ToTable("UserBranchMapping")
+                .HasKey(x => x.UserBranchId);
+
+            modelBuilder.Entity<UserBranchMapping>()
+                .Property(x => x.UserId)
+                .HasColumnName("UserID");
         }
     }
 
@@ -265,6 +284,9 @@ namespace ImportService.Data
         public DbSet<CustomerPhone> CustomerPhones => Set<CustomerPhone>();
         public DbSet<CustomerAddressDetail> CustomerAddressDetails => Set<CustomerAddressDetail>();
         public DbSet<BranchOrderSequence> BranchOrderSequences => Set<BranchOrderSequence>();
+        public DbSet<UserLogin> UserLogins => Set<UserLogin>();
+        public DbSet<UserRole> UserRoles => Set<UserRole>();
+        public DbSet<UserBranchMapping> UserBranchMappings => Set<UserBranchMapping>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -460,6 +482,22 @@ namespace ImportService.Data
             modelBuilder.Entity<OrderDetail>()
                 .ToTable("order_detail")
                 .HasKey(x => x.OrderDetailId);
+
+            modelBuilder.Entity<UserLogin>()
+                .ToTable("user_login")
+                .HasKey(x => x.UserId);
+
+            modelBuilder.Entity<UserRole>()
+                .ToTable("user_role")
+                .HasKey(x => x.RoleId);
+
+            modelBuilder.Entity<UserBranchMapping>()
+                .ToTable("user_branch_mapping")
+                .HasKey(x => x.UserBranchId);
+
+            modelBuilder.Entity<UserBranchMapping>()
+                .Property(x => x.UserId)
+                .HasColumnName("UserID");
         }
 
     }

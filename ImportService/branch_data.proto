@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option csharp_namespace = "ImportService";
+
+service BranchDataGrpc {
+	rpc GetBranchData (BranchDataRequest) returns (BranchDataResponse);
+}
+
+message BranchDataRequest {
+	string username = 1;
+}
+
+message BranchDataResponse {
+	repeated BranchData branches = 1;
+}
+
+message BranchData {
+	string branch_id = 1;
+	string branch_name = 2;
+}
