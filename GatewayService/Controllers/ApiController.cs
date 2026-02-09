@@ -1,16 +1,11 @@
 using GatewayService.Models;
-using Grpc.Net.Client;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using PointofSaleModels.Application;
-using PointofSaleModels.ServicePayloads;
-using PointofSaleModels.Settings;
 using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Text.Json;
 
 namespace GatewayService.Controllers
 {
