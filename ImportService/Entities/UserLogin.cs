@@ -10,8 +10,6 @@
         public int RoleId { get; set; }
         public bool IsEnabled { get; set; }
         public bool IsActive { get; set; }
-        public string Email { get; set; }
-
-        public UserRole UserRole { get; set; }
+        public string EmailAddress { get; set; }
     }
 }

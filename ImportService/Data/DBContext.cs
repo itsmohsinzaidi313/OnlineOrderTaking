@@ -242,6 +242,10 @@ namespace ImportService.Data
             modelBuilder.Entity<UserBranchMapping>()
                 .Property(x => x.UserId)
                 .HasColumnName("UserID");
+
+            modelBuilder.Entity<UserLogin>()
+                .Property(x => x.IsEnabled)
+                .HasColumnName("IsEnable");
         }
     }
 
@@ -486,6 +490,10 @@ namespace ImportService.Data
             modelBuilder.Entity<UserLogin>()
                 .ToTable("user_login")
                 .HasKey(x => x.UserId);
+
+            modelBuilder.Entity<UserLogin>()
+                .Property(x => x.IsEnabled)
+                .HasColumnName("IsEnable");
 
             modelBuilder.Entity<UserRole>()
                 .ToTable("user_role")
