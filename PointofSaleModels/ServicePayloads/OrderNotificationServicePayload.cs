@@ -1,7 +1,4 @@
 ﻿using PointofSaleModels.Application;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace PointofSaleModels.ServicePayloads
 {

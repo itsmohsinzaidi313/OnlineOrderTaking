@@ -1,10 +1,8 @@
 ﻿using GatewayService.Interfaces;
 using Microsoft.AspNetCore.SignalR;
-using PointofSaleModels.Application;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
-using System.Collections.Generic;
 using System.Text.Json;
 
 namespace GatewayService.ServiceResponseListeners

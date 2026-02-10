@@ -1,9 +1,6 @@
 ﻿using GatewayService.Interfaces;
-using PointofSaleModels.Application;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Settings;
-using StackExchange.Redis;
-using System.Text.Json;
 
 namespace GatewayService.ServiceResponseListeners
 {

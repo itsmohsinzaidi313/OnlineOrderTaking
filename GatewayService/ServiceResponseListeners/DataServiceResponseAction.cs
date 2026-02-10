@@ -1,7 +1,5 @@
 ﻿using GatewayService.Interfaces;
-using GatewayService;
 using PointofSaleModels.ServicePayloads;
-using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
 using System.Text.Json;

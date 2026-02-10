@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PointofSaleModels.ServicePayloads
+﻿namespace PointofSaleModels.ServicePayloads
 {
     public class OrderStatusPayload : ServicePayload
     {
