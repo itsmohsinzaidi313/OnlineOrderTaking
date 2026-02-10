@@ -2,11 +2,13 @@
 using Microsoft.AspNetCore.SignalR;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Settings;
+using StackExchange.Redis;
+using System.Collections.Generic;
 using System.Text.Json;
 
 namespace GatewayService.ServiceResponseListeners
 {
-    public class OrderNotificationServiceResponseAction(IHubContext<GatewayHub> hub) : IOrderNotificationResponseAction
+    public class OrderNotificationServiceResponseAction(IHubContext<GatewayHub> hub, IConnectionMultiplexer redis) : IOrderNotificationResponseAction
     {
         public string QueueName() => RabbitMqQueues.OrderNotificationResponseQueue;
         public async Task OnMessage(string svcPayload)
@@ -14,7 +16,14 @@ namespace GatewayService.ServiceResponseListeners
             var payload = JsonSerializer.Deserialize<OrderNotificationServicePayload>(svcPayload);
             if (payload is not null)
             {
-                await hub.Clients.Users(payload.NotificationKeys).SendAsync("NewOrder", payload.CustomerOrder);
+                List<string> clients = [];
+                var db = redis.GetDatabase();
+                var server = redis.GetServer(redis.GetEndPoints().First());
+                foreach (var key in payload.NotificationKeys)
+                {
+                    clients.AddRange(server.Keys(pattern: key).Select(x => x.ToString()));
+                }
+                await hub.Clients.Users(clients).SendAsync("NewOrder", payload.CustomerOrder);
             }
         }
     }
