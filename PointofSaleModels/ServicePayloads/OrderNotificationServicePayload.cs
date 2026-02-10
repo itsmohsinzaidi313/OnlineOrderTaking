@@ -16,6 +16,10 @@ namespace PointofSaleModels.ServicePayloads
         {
         }
 
+        public OrderNotificationServicePayload(ServicePayload payload) : base(payload)
+        {
+        }
+
         public CustomerOrder CustomerOrder { get; set; }
 
         public List<string> NotificationKeys { get; set; } = [];
