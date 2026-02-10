@@ -48,9 +48,9 @@ public class Implementation()
                                                         """).ToListAsync();
 
         var now = DateTime.Now;
-        var datePrefix = now.ToString("ddMMyy");
+        var datePrefix = now.ToString("yyyyMMdd");
         var prefix = $"{datePrefix}/ORD/";
-        var orderNumber = $"{prefix}{id.First():D4}";
+        var orderNumber = $"{prefix}{id.First():D5}";
         return orderNumber;
     }
 
@@ -170,7 +170,7 @@ public class Implementation()
         }
         var companyId = orderMaster.CompanyId;
 
-        var dbCustomerPhone = await SaveCustomerPhoneAsync(dbContext, companyId, order);
+        var dbCustomerPhone = await SaveCustomerPhoneAsync(dbContext, companyId, customer);
         orderMaster.PhoneId = dbCustomerPhone.PhoneId;
 
         var dbCustomer = await dbContext.Customers
@@ -222,10 +222,10 @@ public class Implementation()
         return (cityId, areaId);
     }
 
-    private async Task<Db.CustomerPhone> SaveCustomerPhoneAsync(Db.PgDbContext dbContext, int companyId, CustomerOrder order)
+    private async Task<Db.CustomerPhone> SaveCustomerPhoneAsync(Db.PgDbContext dbContext, int companyId, Customer customer)
     {
         Db.CustomerPhone? dbCustomerPhone;
-        var cust = order.Customer ?? throw new Exception("Customer is required");
+        var cust = customer ?? throw new Exception("Customer is required");
         if (cust.PhoneId == 0)
         {
             dbCustomerPhone = await dbContext.CustomerPhones

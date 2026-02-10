@@ -20,6 +20,7 @@ namespace PointofSaleModels.Settings
         public const string OrderStatusResponseQueue = $"{Services}.{OrderStatusService}.{Response}";
         public const string OrderNotificationRequestQueue = $"{Services}.{OrderNotificationService}.{Request}";
         public const string OrderNotificationResponseQueue = $"{Services}.{OrderNotificationService}.{Response}";
+        public const string OrderNotificationGatewayResponse = $"{Services}.{OrderNotificationService}.{GatewayService}.{Response}";
         public const string GatewayRequestQueue = $"{Services}.{GatewayService}.{Request}";
         public const string GatewayResponseQueue = $"{Services}.{GatewayService}.{Response}";
         public const string ImportResponseQueue = $"{Services}.{ImportService}.{Response}";
