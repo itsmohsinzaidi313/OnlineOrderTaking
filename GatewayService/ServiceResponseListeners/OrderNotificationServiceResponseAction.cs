@@ -10,15 +10,10 @@ namespace GatewayService.ServiceResponseListeners
 {
     public class OrderNotificationServiceResponseAction(IHubContext<GatewayHub> hub, IConnectionMultiplexer redis) : IOrderNotificationResponseAction
     {
-        private static readonly JsonSerializerOptions Options = new()
-        {
-            PropertyNamingPolicy = null,
-            DictionaryKeyPolicy = null,
-        };
         public string QueueName() => RabbitMqQueues.OrderNotificationGatewayResponse;
         public async Task OnMessage(string svcPayload)
         {
-            var payload = JsonSerializer.Deserialize<OrderNotificationServicePayload>(svcPayload, Options);
+            var payload = JsonSerializer.Deserialize<OrderNotificationServicePayload>(svcPayload);
             if (payload is not null)
             {
                 List<string> clients = [];
