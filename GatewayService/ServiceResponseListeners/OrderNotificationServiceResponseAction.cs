@@ -22,7 +22,7 @@ namespace GatewayService.ServiceResponseListeners
                 {
                     clients.AddRange(server.Keys(pattern: key).Select(x => x.ToString().Replace(":connection", "")));
                 }
-                await hub.Clients.Users(clients).SendAsync("NewOrder", payload.CustomerOrder);
+                await hub.Clients.Users(clients).SendAsync("NewOrder", payload);
             }
         }
     }
