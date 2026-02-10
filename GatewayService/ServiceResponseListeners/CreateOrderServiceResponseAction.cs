@@ -15,7 +15,8 @@ namespace GatewayService.ServiceResponseListeners
             using var doc = JsonDocument.Parse(svcPayload);
             var root = doc.RootElement;
             var userId = root.GetProperty("UserId").GetInt32();
-            var success = root.GetProperty("DataPayload").GetProperty("Success").GetBoolean();
+            var dataPayload = root.GetProperty("DataPayload");
+            var success = dataPayload.GetProperty("Success").GetBoolean();
             if (success)
             {
                 var db = redis.GetDatabase();
@@ -30,7 +31,7 @@ namespace GatewayService.ServiceResponseListeners
                         connctionIds.Add(connectionId.ToString());
                     }
                 }
-                var customerOrderProperty = root.GetProperty("Order");
+                var customerOrderProperty = dataPayload.GetProperty("Order");
                 var customerOrder = JsonSerializer.Deserialize<CustomerOrder>(customerOrderProperty.GetRawText())!;
                 await implementation.SendCustomerOrderToBranches(customerOrder, connctionIds);
             }
