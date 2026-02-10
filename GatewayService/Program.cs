@@ -34,11 +34,6 @@ builder.Services.AddCors(options =>
 
 builder.Services
     .AddSignalR()
-    .AddJsonProtocol(options =>
-    {
-        options.PayloadSerializerOptions.PropertyNamingPolicy = null;
-        options.PayloadSerializerOptions.DictionaryKeyPolicy = null;
-    })
     .AddStackExchangeRedis(redisSettings.ConnectionString, opts => opts.Configuration.ChannelPrefix = RedisChannel.Literal("GatewayService"));
 
 builder.Services
