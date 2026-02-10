@@ -3,7 +3,6 @@ using Db = PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using System.Text.Json;
 
 namespace OrderNotificationService
 {
@@ -12,11 +11,6 @@ namespace OrderNotificationService
         IRabbitMqPublisher publisher,
         IDbContextFactory<Db.RestaurantsContext> contextFactory) : IQueueAction
     {
-        private static readonly JsonSerializerOptions SerializerOptions = new()
-        {
-            PropertyNamingPolicy = null,
-            DictionaryKeyPolicy = null,
-        };
         public string QueueName() => RabbitMqQueues.OrderNotificationRequestQueue;
         public async Task OnMessage(string payload)
         {
@@ -32,7 +26,7 @@ namespace OrderNotificationService
                     .ToListAsync();
 
                 requestPayload.NotificationKeys = [.. userIds.Select(x => $"branch:{x}:*:connection")];
-                await publisher.PublishToQueueAsync(RabbitMqQueues.OrderNotificationGatewayResponse, requestPayload, options: SerializerOptions);
+                await publisher.PublishToQueueAsync(RabbitMqQueues.OrderNotificationGatewayResponse, requestPayload);
             }
             catch (Exception ex)
             {

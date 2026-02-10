@@ -10,6 +10,11 @@ namespace GatewayService.ServiceResponseListeners
 {
     public class OrderNotificationServiceResponseAction(IHubContext<GatewayHub> hub, IConnectionMultiplexer redis) : IOrderNotificationResponseAction
     {
+        private static readonly JsonSerializerOptions SerializerOptions = new()
+        {
+            PropertyNamingPolicy = null,
+            DictionaryKeyPolicy = null,
+        };
         public string QueueName() => RabbitMqQueues.OrderNotificationGatewayResponse;
         public async Task OnMessage(string svcPayload)
         {
@@ -23,7 +28,8 @@ namespace GatewayService.ServiceResponseListeners
                 {
                     clients.AddRange(server.Keys(pattern: key).Select(x => x.ToString().Replace(":connection", "")));
                 }
-                await hub.Clients.Users(clients).SendAsync("NewOrder", payload.CustomerOrder);
+                var p = JsonSerializer.Serialize(payload.CustomerOrder, SerializerOptions);
+                await hub.Clients.Users(clients).SendAsync("NewOrder", p);
             }
         }
     }
