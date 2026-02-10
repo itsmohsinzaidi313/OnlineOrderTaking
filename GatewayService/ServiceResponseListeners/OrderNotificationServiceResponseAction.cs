@@ -21,7 +21,7 @@ namespace GatewayService.ServiceResponseListeners
                 var server = redis.GetServer(redis.GetEndPoints().First());
                 foreach (var key in payload.NotificationKeys)
                 {
-                    clients.AddRange(server.Keys(pattern: key).Select(x => x.ToString()));
+                    clients.AddRange(server.Keys(pattern: key).Select(x => x.ToString().Replace(":connection", "")));
                 }
                 await hub.Clients.Users(clients).SendAsync("NewOrder", payload.CustomerOrder);
             }
