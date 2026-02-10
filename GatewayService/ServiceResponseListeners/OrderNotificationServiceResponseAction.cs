@@ -1,5 +1,6 @@
 ﻿using GatewayService.Interfaces;
 using Microsoft.AspNetCore.SignalR;
+using PointofSaleModels.Application;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
@@ -29,7 +30,7 @@ namespace GatewayService.ServiceResponseListeners
                     clients.AddRange(server.Keys(pattern: key).Select(x => x.ToString().Replace(":connection", "")));
                 }
                 var p = JsonSerializer.Serialize(payload.CustomerOrder, SerializerOptions);
-                var pp = JsonSerializer.Deserialize<OrderNotificationServicePayload>(p, SerializerOptions);
+                var pp = JsonSerializer.Deserialize<CustomerOrder>(p, SerializerOptions);
                 await hub.Clients.Users(clients).SendAsync("NewOrder", pp);
             }
         }
