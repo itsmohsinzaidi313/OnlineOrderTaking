@@ -26,7 +26,7 @@ namespace OrderNotificationService
                     .ToListAsync();
 
                 requestPayload.NotificationKeys = [.. userIds.Select(x => $"branch:{x}:*:connection")];
-                await publisher.PublishToQueueAsync(RabbitMqQueues.OrderNotificationResponseQueue, requestPayload);
+                await publisher.PublishToQueueAsync(RabbitMqQueues.OrderNotificationGatewayResponse, requestPayload);
             }
             catch (Exception ex)
             {
