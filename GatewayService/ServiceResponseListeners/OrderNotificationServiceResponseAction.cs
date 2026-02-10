@@ -29,7 +29,8 @@ namespace GatewayService.ServiceResponseListeners
                     clients.AddRange(server.Keys(pattern: key).Select(x => x.ToString().Replace(":connection", "")));
                 }
                 var p = JsonSerializer.Serialize(payload.CustomerOrder, SerializerOptions);
-                await hub.Clients.Users(clients).SendAsync("NewOrder", p);
+                var pp = JsonSerializer.Deserialize<OrderNotificationServicePayload>(p, SerializerOptions);
+                await hub.Clients.Users(clients).SendAsync("NewOrder", pp);
             }
         }
     }
