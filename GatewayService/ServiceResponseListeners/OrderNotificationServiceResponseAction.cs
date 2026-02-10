@@ -13,6 +13,11 @@ namespace GatewayService.ServiceResponseListeners
         public string QueueName() => RabbitMqQueues.OrderNotificationGatewayResponse;
         public async Task OnMessage(string svcPayload)
         {
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                DictionaryKeyPolicy = null,
+            };
             var payload = JsonSerializer.Deserialize<OrderNotificationServicePayload>(svcPayload);
             if (payload is not null)
             {
