@@ -27,8 +27,9 @@ builder.Services.AddDbContextFactory<RestaurantsContext>(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-app.MapGet("/health", ([FromServices] RestaurantsContext context) =>
+app.MapGet("/health", ([FromServices] IDbContextFactory<RestaurantsContext> contextFactory) =>
 {
+    using var context = contextFactory.CreateDbContext();
     if (!context.Database.CanConnect())
     {
         return Results.Problem("Cannot connect to the database.");

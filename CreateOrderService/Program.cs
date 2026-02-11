@@ -1,6 +1,7 @@
 using CreateOrderService;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
@@ -42,8 +43,9 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
-app.MapGet("/health", async ([FromServices] RestaurantsContext restaurantsContext) =>
+app.MapGet("/health", async ([FromServices] IDbContextFactory<RestaurantsContext> contextFactory) =>
 {
+    var restaurantsContext = await contextFactory.CreateDbContextAsync();
     if (!await restaurantsContext.Database.CanConnectAsync())
     {
         return Results.Problem("Cannot connect to restaurants database.");

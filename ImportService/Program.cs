@@ -101,11 +101,18 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Imple
     return response;
 });
 
-app.MapGet("health", ([FromServices] SqlServerDbContext sqlServerDbContext) =>
+app.MapGet("health", ([FromServices] IDbContextFactory<SqlServerDbContext> sqlDbContextFactory, IDbContextFactory<RestaurantsDbContext> restaurantDbContextFactory) =>
 {
+    var sqlServerDbContext = sqlDbContextFactory.CreateDbContext();
     if (sqlServerDbContext.Database.CanConnect() == false)
     {
         return Results.Problem("Sql Database connection failed", statusCode: 503);
+    }
+
+    var restaurantDbContext = restaurantDbContextFactory.CreateDbContext();
+    if (restaurantDbContext.Database.CanConnect() == false)
+    {
+        return Results.Problem("Postgres Database connection failed", statusCode: 503);
     }
     return Results.Ok("Service is healthy");
 });
