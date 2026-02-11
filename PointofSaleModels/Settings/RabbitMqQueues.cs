@@ -4,6 +4,9 @@ namespace PointofSaleModels.Settings
     {
         public const string Services = "services";
         public const string DataService = "data";
+        public const string MenuService = "menu";
+        public const string SettingService = "setting";
+        public const string OrderHistoryService = "orderhistory";
         public const string OrderService = "order";
         public const string GatewayService = "gateway";
         public const string OrderStatusService = "orderstatus";
@@ -25,5 +28,11 @@ namespace PointofSaleModels.Settings
         public const string GatewayResponseQueue = $"{Services}.{GatewayService}.{Response}";
         public const string ImportResponseQueue = $"{Services}.{ImportService}.{Response}";
         public const string ImportRequestQueue = $"{Services}.{ImportService}.{Request}";
+        public const string SettingRequestQueue = $"{Services}.{SettingService}.{Request}";
+        public const string SettingResponseQueue = $"{Services}.{SettingService}.{Response}";
+        public const string MenuRequestQueue = $"{Services}.{MenuService}.{Request}";
+        public const string MenuResponseQueue = $"{Services}.{MenuService}.{Response}";
+        public const string OrderHistoryRequestQueue = $"{Services}.{OrderHistoryService}.{Request}";
+        public const string OrderHistoryResponseQueue = $"{Services}.{OrderHistoryService}.{Response}";
     }
 }
