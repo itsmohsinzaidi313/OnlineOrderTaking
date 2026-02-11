@@ -6,18 +6,18 @@ WORKDIR /src
 
 # Copy only csproj files first to leverage Docker layer caching
 # IMPORTANT: This assumes the build context is the repo root
-COPY DataService/DataService.csproj DataService/
+COPY OrderHistoryService/OrderHistoryService.csproj OrderHistoryService/
 COPY PointofSaleModels/PointofSaleModels.csproj PointofSaleModels/
 
 # Restore dependencies
-RUN dotnet restore DataService/DataService.csproj
+RUN dotnet restore OrderHistoryService/OrderHistoryService.csproj
 
 # Copy the remaining source
-COPY DataService/ DataService/
+COPY OrderHistoryService/ OrderHistoryService/
 COPY PointofSaleModels/ PointofSaleModels/
 
 # Publish the service
-RUN dotnet publish DataService/DataService.csproj -c Release -o /app/out -v minimal
+RUN dotnet publish OrderHistoryService/OrderHistoryService.csproj -c Release -o /app/out -v minimal
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
@@ -34,7 +34,7 @@ RUN chown -R appuser:appuser /app
 
 USER appuser
 
-ENTRYPOINT ["dotnet", "DataService.dll"]
+ENTRYPOINT ["dotnet", "OrderHistoryService.dll"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
