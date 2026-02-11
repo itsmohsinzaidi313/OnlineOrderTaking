@@ -13,12 +13,17 @@ namespace ImportService.Services
                 .Where(d => (d.CompanyId == null || d.CompanyId == companyId) && d.IsActive == true)
                 .AsNoTracking()
                 .ToListAsync(ct);
+            
             await pgDb.SetupMasterDetails.ExecuteDeleteAsync(ct);
-            if(details.Count == 0)
-            {
-                return;
-            }
             await pgDb.SetupMasterDetails.AddRangeAsync(details, ct);
+
+            var statuses = await sqlDb.OrderStatuses
+                .Where(x => x.CompanyId == companyId && x.IsActive == true)
+                .AsNoTracking()
+                .ToListAsync(ct);
+
+            await pgDb.OrderStatuses.ExecuteDeleteAsync(ct);
+            await pgDb.AddRangeAsync(statuses, ct);
         }
     }
 }

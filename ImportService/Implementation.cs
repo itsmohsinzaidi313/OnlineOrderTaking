@@ -21,7 +21,8 @@ namespace ImportService
         ISetupCompanySettingsMigrationService service_setupCompanySettings,
         ICustomerDataImportService service_customerData,
         IGSTMigrationService service_gst,
-        IOrdersImportService service_orders)
+        IOrdersImportService service_orders,
+        IUserLoginMigrationService service_users)
     {
         private const string PostgresHost = "haproxy";
         public async Task<IResult?> Import(int companyId, string dbName, CancellationToken cancellationToken = default)
@@ -67,6 +68,8 @@ namespace ImportService
                 await service_gst.MigrateGSTsAsync(companyId, postgresDbContext, cancellationToken);
 
                 await service_orders.MigrateOrdersAsync(companyId, postgresDbContext, cancellationToken);
+
+                await service_users.MigrateUserLoginAsync(companyId, postgresDbContext, cancellationToken);
 
                 await postgresDbContext.SaveChangesAsync(cancellationToken);
 

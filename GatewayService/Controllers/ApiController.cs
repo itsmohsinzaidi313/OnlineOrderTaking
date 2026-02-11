@@ -11,24 +11,35 @@ namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, Implementation implementation) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
+        private readonly Implementation _implementation = implementation;
+
         [HttpGet("clear")]
         public async Task<IActionResult> ClearCacheAsync([FromQuery] string domain)
         {
             var db = redis.GetDatabase();
             var server = redis.GetServer(redis.GetEndPoints().First());
+            int menuKeys = 0, dAndPKeys = 0, pendingKeys = 0;
             foreach (var key in server.Keys(pattern: $"{domain}:*:Menu"))
             {
                 await db.KeyDeleteAsync(key);
+                menuKeys++;
             }
 
             foreach (var key in server.Keys(pattern: $"{domain}:*:DAndP"))
             {
                 await db.KeyDeleteAsync(key);
+                dAndPKeys++;
             }
-            return Ok();
+
+            foreach (var key in server.Keys(pattern: "*:pending"))
+            {
+                await db.KeyDeleteAsync(key);
+                pendingKeys++;
+            }
+            return Ok(new { Menu = menuKeys, DAndP = dAndPKeys, Pending = pendingKeys });
         }
 
         [HttpGet("health")]

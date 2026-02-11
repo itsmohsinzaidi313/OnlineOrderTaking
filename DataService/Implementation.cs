@@ -36,6 +36,7 @@ internal class Implementation()
                     .Where(x => x.SetupMasterId == setupMasterId)
                     .Distinct()
                     .ToDictionary(x => x.SetupDetailId, x => x.SetupDetailName);
+        var gsts = await dbContext.Gsts.ToListAsync();
 
         foreach (var item in cities)
         {
@@ -45,7 +46,11 @@ internal class Implementation()
                 .Select(x => new JsonObject()
                 {
                     ["AreaId"] = x.AreaId,
-                    ["AreaName"] = x.AreaName
+                    ["AreaName"] = x.AreaName,
+                    ["DeliveryTime"] = branchDetails.Where(bd => bd.AreaId == x.AreaId).Select(bd => bd.DeliveryTime).FirstOrDefault() ?? 0,
+                    ["DeliveryCharges"] = branchDetails.Where(bd => bd.AreaId == x.AreaId).Select(bd => bd.DeliveryCharges).FirstOrDefault() ?? 0.00,
+                    ["DeliveryChargesWaiveOffLimit"] = branchDetails.Where(bd => bd.AreaId == x.AreaId).Select(bd => bd.DeliveryChargesWaiveOffLimit).FirstOrDefault() ?? 0.00,
+                    ["MinimumOrder"] = branchDetails.Where(bd => bd.AreaId == x.AreaId).Select(bd => bd.MinimumOrder).FirstOrDefault() ?? 0.00,
                 }))
             {
                 var areaId = item1["AreaId"]?.GetValue<int>();
@@ -117,9 +122,6 @@ internal class Implementation()
                 var branchDetail = branchDetails.FirstOrDefault(bd => bd.BranchId == branchId);
                 if (branchDetail != null)
                 {
-                    item2["DeliveryCharges"] = branchDetail.DeliveryCharges ?? 0.00;
-                    item2["DeliveryChargesWaiveOffLimit"] = branchDetail.DeliveryChargesWaiveOffLimit ?? 0.00;
-                    item2["DeliveryTime"] = branchDetail.DeliveryTime ?? 0;
                     item2["MinimumOrder"] = branchDetail.MinimumOrder ?? 0.00;
                 }
                 branchesJsonArray.Add(item2);
@@ -128,7 +130,8 @@ internal class Implementation()
             var cityObj2 = new JsonObject
             {
                 ["CityName"] = item.CityName,
-                ["Branches"] = branchesJsonArray
+                ["Branches"] = branchesJsonArray,
+                ["Tax"] = gsts.Where(x => x.CityId == item.CityId).Select(x => x.Gstpercentage).FirstOrDefault() ?? 0.00
             };
             pickup[item.CityId.ToString()] = cityObj2;
         }
@@ -258,7 +261,7 @@ internal class Implementation()
         return settingsData;
     }
 
-    private static async Task<DbMenuData> GetDbMenuDataAsync(string connectionString, int branchId)
+    private async Task<DbMenuData> GetDbMenuDataAsync(string connectionString, int branchId)
     {
         var bid = branchId;
         if (bid == 0)
@@ -282,7 +285,7 @@ internal class Implementation()
         var dbItemDiscountsMapping = new List<Db.DiscountProductDetailMapping>();
         var dbProductDetailBranchMapping = new List<int>();
         {
-            var dbContext = GetDbContext(connectionString);
+            using var dbContext = GetDbContext(connectionString);
             dbProductDetailBranchMapping.AddRange([.. dbContext.ProductDetailBranchMappings.Where(x => x.BranchId == bid).Select(x => x.ProductDetailId ?? 0)]);
         }
 
@@ -484,9 +487,9 @@ internal class Implementation()
         }
     }
 
-    internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int branchId)
+    internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int userId)
     {
-        var dbContext = GetDbContext(connectionString);
+        using var dbContext = GetDbContext(connectionString);
         var products = await (from x in dbContext.ProductCategories
                               join y in dbContext.Products on x.CategoryId equals y.ProductCategoryId
                               select y).ToListAsync();
@@ -505,45 +508,78 @@ internal class Implementation()
                                       join d in dbContext.Products on c.ProductId equals d.ProductId
                                       join e in dbContext.ProductCategories on d.ProductCategoryId equals e.CategoryId
                                       select a).ToListAsync();
-        var flavours = await dbContext.Flavours.ToListAsync();
-        var sizes = await dbContext.ProductSizes.ToListAsync();
+        var flavours = await dbContext.Flavours.ToDictionaryAsync(x => x.FlavourId, x => x);
+        var sizes = await dbContext.ProductSizes.ToDictionaryAsync(x => x.SizeId, x => x);
+        var setupDetail = await dbContext.SetupMasterDetails.ToDictionaryAsync(x => x.SetupDetailId, x => x.SetupDetailName);
+        var statuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
+        var branchDict = await dbContext.BranchMasters.ToDictionaryAsync(x => x.BranchId, x => x.BranchName);
+        var discounts = await dbContext.Discounts.ToDictionaryAsync(x => x.DiscountId, x => x);
 
-        foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId).ToListAsync())
+        foreach (var branchId in await dbContext.UserBranchMappings.Where(x => x.UserId == userId).Select(x => x.BranchId).ToListAsync())
         {
-            var order = new CustomerOrder
+            foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId).ToListAsync())
             {
-                OrderNumber = dbOrder.OrderNumber ?? "N/A",
-                Items = [],
-            };
-
-            var phoneId = dbOrder.PhoneId;
-            var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
-            if (customerPhone != null)
-            {
-                var customer = await dbContext.Customers.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
-                var addressDetails = await dbContext.CustomerAddressDetails.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
-
-                var customerDetail = new CustomerDetail
+                var order = new CustomerOrder
                 {
-                    FullName = customer?.CustomerName ?? "N/A",
-                    MobileNumber = customerPhone.PhoneNumber ?? "N/A",
-                    DeliveryAddress = addressDetails?.CompleteAddress ?? "N/A",
-                    NearestLandmark = addressDetails?.LandMark ?? "N/A",
-                    DeliveryInstructions = addressDetails?.Remarks ?? "N/A"
+                    OrderNumber = dbOrder.OrderNumber ?? "N/A",
+                    BranchId = branchId,
+                    BranchName = branchDict[branchId],
+                    OrderType = setupDetail[dbOrder.OrderModeId!.Value],
+                    Status = statuses[dbOrder.OrderStatusId],
+                    Items = [],
+                    DeliveryCharges = (int?)(dbOrder.DeliveryCharges ?? 0.00),
+                    AmountWithoutGst = dbOrder.TotalAmountWithoutGst ?? 0.00,
+                    AmountWithGst = dbOrder.TotalAmountWithGst ?? 0.00,
                 };
-                order.CustomerDetails = customerDetail;
-            }
-            await foreach (var item in GetOrderItemsAsync(dbContext, dbOrder.OrderMasterId, productDetails, dealItems, products, flavours, sizes, dealDescriptions))
-            {
-                item.Price = item.Variations.Sum(x => x.Price + x.ItemChoices.SelectMany(y => y.ItemOptions).Sum(z => z.Price));
-                order.Items.Add(item);
-            }
+                if (dbOrder.DiscountId.HasValue && dbOrder.DiscountId != 0)
+                {
+                    var disc = discounts[dbOrder.DiscountId.Value];
+                    order.Discount = new Discount
+                    {
+                        Id = disc.DiscountId,
+                        Name = disc.DiscountName ?? "N/A",
+                        MaxCap = decimal.ToDouble(disc.DiscountCapEnd),
+                        MinCap = decimal.ToDouble(disc.DiscountCapStart),
+                        Type = "Percentage",
+                        Value = disc.DiscountPercent,
+                    };
+                }
 
-            yield return order;
+                var phoneId = dbOrder.PhoneId;
+                var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
+                if (customerPhone != null)
+                {
+                    var customer = await dbContext.Customers.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
+                    var addressDetails = await dbContext.CustomerAddressDetails.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
+
+                    var customerDetail = new CustomerDetail
+                    {
+                        FullName = customer?.CustomerName ?? "N/A",
+                        MobileNumber = customerPhone.PhoneNumber ?? "N/A",
+                        DeliveryAddress = addressDetails?.CompleteAddress ?? "N/A",
+                        NearestLandmark = addressDetails?.LandMark ?? "N/A",
+                        DeliveryInstructions = addressDetails?.Remarks ?? "N/A"
+                    };
+                    order.CustomerDetails = customerDetail;
+                }
+                await foreach (var item in GetOrderItemsAsync(dbContext, dbOrder.OrderMasterId, productDetails, dealItems, products, flavours, sizes, dealDescriptions))
+                {
+                    item.Price = item.Variations.Sum(x => x.Price + x.ItemChoices.SelectMany(y => y.ItemOptions).Sum(z => z.Price));
+                    order.Items.Add(item);
+                }
+
+                yield return order;
+            }
         }
     }
 
-    private async IAsyncEnumerable<MenuItem> GetOrderItemsAsync(Db.PgDbContext dbContext, int orderMasterId, List<Db.ProductDetail> productDetails, List<Db.DealItemDetail> dealItems, List<Db.Product> products, List<Db.Flavour> flavours, List<Db.ProductSize> sizes, List<Db.DealDescription> dealDescriptions)
+    internal async Task<Dictionary<int, string>> GetOrderStatusesAsync(string connectionString)
+    {
+        using var dbContext = GetDbContext(connectionString);
+        return await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
+    }
+
+    private async IAsyncEnumerable<MenuItem> GetOrderItemsAsync(Db.PgDbContext dbContext, int orderMasterId, List<Db.ProductDetail> productDetails, List<Db.DealItemDetail> dealItems, List<Db.Product> products, Dictionary<int, Db.Flavour> flavours, Dictionary<int, Db.ProductSize> sizes, List<Db.DealDescription> dealDescriptions)
     {
         var orderDetails = await dbContext.OrderDetails
             .Where(x => x.OrderMasterId == orderMasterId && x.IsActive == true)
@@ -556,8 +592,8 @@ internal class Implementation()
         {
             var productDetail = productDetails.Where(x => x.ProductDetailId == orderDetail.ProductDetailId).First();
             var product = products.Where(x => x.ProductId == productDetail.ProductId).First();
-            var flavour = flavours.Where(x => x.FlavourId == productDetail.FlavourId).First();
-            var size = sizes.Where(x => x.SizeId == productDetail.SizeId).First();
+            var flavour = flavours[productDetail.FlavourId!.Value];
+            var size = sizes[productDetail.SizeId];
             var dealItemIdList = orderDetails
                         .Where(x => x.OrderParentId == orderDetail.ProductDetailId)
                         .Select(x => x.DealItemId)
@@ -605,6 +641,7 @@ internal class Implementation()
                                     Price = (from a in dealDescriptions
                                              where a.ProductDetailId == y.ProductDetailId && a.DealItemId == x.DealItemId
                                              select a.Price).FirstOrDefault() ?? 0.0,
+                                    Quantity = (int?)(y.Quantity ?? 0.00)
                                 })]
                             })],
                         }

@@ -1,5 +1,6 @@
 ﻿using GatewayService.Models;
 using Microsoft.AspNetCore.SignalR;
+using PointofSaleModels.Application;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using StackExchange.Redis;
@@ -9,15 +10,15 @@ namespace GatewayService
 {
     public class Implementation(ILogger<Implementation> logger, IHubContext<GatewayHub> hub, IConnectionMultiplexer redis, IRabbitMqPublisher publisher)
     {
-        private const string PendingKeyPrefix = "pending:";
+        private const string PendingKeySuffix = ":pending";
+        private const string ConnectionKeySuffix = ":connection";
 
         internal async Task SendPendingPayload(string userId)
         {
             var db = redis.GetDatabase();
-            var pendingKey = $"{PendingKeyPrefix}{userId}";
+            var pendingKey = $"{userId}{PendingKeySuffix}";
             var deserializers = new Dictionary<string, Func<string, ServicePayload?>>()
             {
-                { "LoginResponse", json => JsonSerializer.Deserialize<LoginServicePayload>(json) },
                 { "DataResponse", json => JsonSerializer.Deserialize<DataServicePayload>(json) },
                 { "OrderResponse", json => JsonSerializer.Deserialize<OrderServicePayload>(json) }
             };
@@ -30,24 +31,28 @@ namespace GatewayService
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
-                if (!root.TryGetProperty("SignalRMethodName", out var methodProp)) continue;
+                if (!root.TryGetProperty("Payload", out var payloadProp)) continue;
+                var payloadJson = payloadProp.GetRawText();
+
+                if (!payloadProp.TryGetProperty("SignalRMethodName", out var methodProp)) continue;
 
                 var method = methodProp.GetString();
                 if (string.IsNullOrEmpty(method)) continue;
 
-                if (!root.TryGetProperty("Payload", out var payloadProp)) continue;
-                var payloadJson = payloadProp.GetRawText();
-
                 var payload = deserializers[method](payloadJson);
                 if (payload == null) continue;
-                await hub.Clients.User(userId).SendAsync(method, payload);
+
+                if (!payloadProp.TryGetProperty("ResponseKey", out var responseKeyProp)) continue;
+                var responseKey = responseKeyProp.GetString() ?? throw new Exception("ResposneKey not found");
+
+                await hub.Clients.User(userId).SendAsync(responseKey, payload);
             }
         }
 
-        private bool UserOnline(string userId)
+        private bool UserOnline(string clientId)
         {
             var db = redis.GetDatabase();
-            string? connectionId = db.StringGet($"user:{userId}:connection");
+            string? connectionId = db.StringGet($"{clientId}{ConnectionKeySuffix}");
             return connectionId != null;
         }
 
@@ -55,45 +60,49 @@ namespace GatewayService
         {
             using var doc = JsonDocument.Parse(svcPayload);
             var root = doc.RootElement;
-            var userId = root.GetProperty("UserId").GetString() ?? throw new Exception("UserId not found");
+            var clientId = root.GetProperty("UserId").GetString() ?? throw new Exception("UserId not found");
             var responseKey = root.GetProperty("ResponseKey").GetString() ?? throw new Exception("ResponseKey not found");
 
             logger.LogInformation("Gateway: Received {method} message", responseKey);
 
-            if (!UserOnline(userId))
+            if (!UserOnline(clientId))
             {
                 var pendingPayload = new PendingPayload<T>
                 {
-                    SignalRMethodName = responseKey,
                     Payload = JsonSerializer.Deserialize<T>(svcPayload)!
                 };
                 var pendingPayloadJson = JsonSerializer.Serialize(pendingPayload);
-                await PublishForPending(userId, pendingPayloadJson);
+                await PublishForPending(clientId, pendingPayloadJson);
             }
             else
             {
                 var payload = JsonSerializer.Deserialize<T>(svcPayload)!;
-                await hub.Clients.User(userId).SendAsync(responseKey, payload);
+                await hub.Clients.User(clientId).SendAsync(responseKey, payload);
                 return;
             }
         }
 
-        private async Task PublishForPending(string userId, string payload)
-        {
-            var db = redis.GetDatabase();
-            await db.ListRightPushAsync($"{PendingKeyPrefix}{userId}", payload);
+        public async Task SendCustomerOrderToBranches(CustomerOrder svcPayload, List<string> clientIds)
+                    {
+            await hub.Clients.Users(clientIds).SendAsync("NewOrder", svcPayload);
         }
 
-        internal async Task SetUserOnlineAsync(string userId, string connectionId)
+        private async Task PublishForPending(string clientId, string payload)
         {
             var db = redis.GetDatabase();
-            await db.StringSetAsync($"user:{userId}:connection", connectionId);
+            await db.ListRightPushAsync($"{clientId}{PendingKeySuffix}", payload);
         }
 
-        internal async Task SetUserOfflineAsync(string userId)
+        internal async Task SetClientOnlineAsync(string clientId, string connectionId)
         {
             var db = redis.GetDatabase();
-            await db.KeyDeleteAsync($"user:{userId}:connection");
+            await db.StringSetAsync($"{clientId}{ConnectionKeySuffix}", connectionId);
+        }
+
+        internal async Task SetUserOfflineAsync(string clientId)
+        {
+            var db = redis.GetDatabase();
+            await db.KeyDeleteAsync($"{clientId}{ConnectionKeySuffix}");
         }
 
         internal async Task QueueRequestPayload<T>(string queues, T payload)

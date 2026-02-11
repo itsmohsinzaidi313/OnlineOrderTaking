@@ -20,12 +20,15 @@ public class Implementation()
             .Options;
         return new Db.PgDbContext(options);
     }
+
     internal async Task<string> SaveOrderAsync(string connectionString, int branchId, CustomerOrder order)
     {
         var dbContext = GetDbContext(connectionString);
+        order.BranchName = (await dbContext.BranchMasters.FirstOrDefaultAsync(x => x.BranchId == order.BranchId))?.BranchName ?? string.Empty;
         var orderMaster = await GetOrderMasterAsync(dbContext, branchId, order);
         await SetOnlineOrder(dbContext, branchId, orderMaster, order);
-        return await SaveOrderAsync(dbContext, orderMaster);
+        order.OrderNumber = await SaveOrderAsync(dbContext, orderMaster);
+        return order.OrderNumber;
     }
 
     private async Task<string> SaveOrderAsync(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
@@ -42,23 +45,15 @@ public class Implementation()
                                                             VALUES ({branchId}, 1)
                                                             ON CONFLICT ("BranchId")
                                                             DO UPDATE
-                                                                SET "LastValue" = branch_order_sequence."LastValue" + 1
+                                                                SET "LastValue" = branch_order_sequence."LastValue" + 1 WHERE branch_order_sequence."BranchId" = {branchId}
                                                             RETURNING "LastValue"
                                                         """).ToListAsync();
 
         var now = DateTime.Now;
-        var datePrefix = now.ToString("ddMMyy");
+        var datePrefix = now.ToString("yyyyMMdd");
         var prefix = $"{datePrefix}/ORD/";
-        var orderNumber = $"{prefix}{id.First():D4}";
+        var orderNumber = $"{prefix}{id.First():D5}";
         return orderNumber;
-    }
-
-    private async Task<int> GetOrderModeIdAsync(Db.PgDbContext dbContext)
-    {
-        var setupMaster = await dbContext.SetupMasters.Where(x => x.SetupMasterName == "OrderMode").FirstAsync();
-        return (await dbContext.SetupMasterDetails
-                        .Where(x => x.SetupMasterId == setupMaster.SetupMasterId)
-                        .FirstOrDefaultAsync())!.SetupDetailId;
     }
 
     private async Task<Db.OrderMaster> GetOrderMasterAsync(Db.PgDbContext dbContext, int branchId, CustomerOrder order)
@@ -66,26 +61,31 @@ public class Implementation()
         var companyId = await dbContext.SetupCompanies.Select(x => x.CompanyId).FirstAsync();
         var discount = order.Discount;
         var orderNumber = await GenerateOrderNumberAsync(dbContext, branchId);
-        var orderModeId = await GetOrderModeIdAsync(dbContext);
         var subTotal = order.Items.Select(x => x.Variations.Select(x => x.Price).Sum()).Sum();
-        var gst = await GetTaxPercentageAsync(dbContext);
+        var dbPaymentMode = await dbContext.PaymentModes.FirstOrDefaultAsync(x => x.PaymentMode1 == order.PaymentType);
+        var gst = dbPaymentMode != null ? await dbContext.Gsts.FirstOrDefaultAsync(x => x.PaymentModeId == dbPaymentMode.PaymentModeId) : null;
         var tax = gst?.Gstpercentage ?? 0.00;
-        var amountWithTax = subTotal + (subTotal * tax / 100);
         var orderSourceId = await dbContext.SetupMasterDetails.Where(x => x.CompanyId == companyId && x.Flex1 == "WEB").Select(x => x.SetupDetailId).FirstOrDefaultAsync();
-
+        var orderstatus = await dbContext.OrderStatuses.Where(x => x.OrderStatusName == "Pending").FirstOrDefaultAsync();
+        order.Status = OrderStatus.Pending.ToString();
+        var orderType = await dbContext.SetupMasterDetails.FirstOrDefaultAsync(x => x.SetupDetailName == order.OrderType);
+        order.OrderType = orderType.SetupDetailName;
+        var areaId = (await dbContext.BranchDetails.FirstOrDefaultAsync(x => x.BranchId == branchId))?.AreaId;
         var orderMaster = new Db.OrderMaster
         {
             OrderSourceId = orderSourceId,
+            OrderStatusId = orderstatus.OrderStatusId,
             OrderNumber = orderNumber,
             CompanyId = companyId,
             BranchId = branchId,
-            OrderModeId = orderModeId,
+            AreaId = areaId,
+            OrderModeId = orderType.SetupDetailId,
             OrderDate = DateOnly.FromDateTime(DateTime.Now),
             OrderTime = TimeOnly.FromDateTime(DateTime.Now),
             TotalAmountWithoutGst = subTotal,
-            TotalAmountWithGst = amountWithTax,
+            TotalAmountWithGst = subTotal + (subTotal * tax / 100),
             DiscountAmount = discount?.Type == ValueType.Amount.ToString() ? discount.Value : 0.00,
-            DiscountId = discount?.Id,
+            DiscountId = discount?.Id ?? 0,
             DiscountPercent = discount?.Type == ValueType.Percentage.ToString() ? discount.Value : 0.00,
             Gstamount = subTotal * (tax / 100),
             Gstid = gst?.Gstid,
@@ -93,7 +93,11 @@ public class Implementation()
             IsActive = true,
             SpecialInstruction = order.Description,
             OrderDetails = [],
+            AlternateNumber = order.CustomerDetails.AlternateMobileNumber ?? string.Empty,
+            DeliveryCharges = order.DeliveryCharges ?? 0.00,
         };
+        order.AmountWithGst = orderMaster.TotalAmountWithGst ?? 0.0;
+        order.AmountWithoutGst = orderMaster.TotalAmountWithoutGst ?? 0.0;
         foreach (var orderDetail in GetOrderDetails(order.Items, gst))
         {
             orderMaster.OrderDetails.Add(orderDetail);
@@ -129,7 +133,7 @@ public class Implementation()
                             OrderParentId = variation.Id,
                             DealItemId = choice.Id,
                             ProductDetailId = option.Id,
-                            Quantity = choice.Quantity,
+                            Quantity = option.Quantity.HasValue ? option.Quantity : choice.Quantity,
                             IsKot = true,
                             IsActive = true,
                             Gstid = gst?.Gstid,
@@ -155,21 +159,20 @@ public class Implementation()
     {
         var cd = order.CustomerDetails;
         var add = cd.DeliveryAddress ?? string.Empty;
-        order.Customer = new Customer
+        var customer = new Customer
         {
             Contact = cd.MobileNumber ?? string.Empty,
             Addresses = [add],
             Name = cd.FullName ?? string.Empty,
             SelectedAddress = add,
         };
-        var customer = order.Customer ?? throw new Exception("Invalid customer information");
         if (customer.Addresses == null || customer.Addresses.Count == 0)
         {
             throw new Exception("Customer must have at least one address");
         }
         var companyId = orderMaster.CompanyId;
 
-        var dbCustomerPhone = await SaveCustomerPhoneAsync(dbContext, companyId, order);
+        var dbCustomerPhone = await SaveCustomerPhoneAsync(dbContext, companyId, customer);
         orderMaster.PhoneId = dbCustomerPhone.PhoneId;
 
         var dbCustomer = await dbContext.Customers
@@ -196,15 +199,14 @@ public class Implementation()
 
         if (dbCustomerAddress == null)
         {
-
-            var record = await GetCityId_AreaId_ByBranchIdAsync(dbContext, branchId);
+            var cityId = (await dbContext.Areas.FirstAsync(x => x.AreaId == orderMaster.AreaId.Value))?.CityId;
             dbCustomerAddress = new Db.CustomerAddressDetail
             {
                 CustomerPhone = dbCustomerPhone,
                 CompanyId = companyId,
                 CompleteAddress = firstAddress,
-                CityId = record.Item1,
-                AreaId = record.Item2,
+                CityId = cityId.Value,
+                AreaId = orderMaster.AreaId.Value,
             };
             dbContext.CustomerAddressDetails.Add(dbCustomerAddress);
             await dbContext.SaveChangesAsync();
@@ -214,17 +216,10 @@ public class Implementation()
         // orderMaster.DeliveryCharges = order.DeliveryCharges?.Value;
     }
 
-    internal async Task<(int, int)> GetCityId_AreaId_ByBranchIdAsync(Db.PgDbContext dbContext, int branchId)
-    {
-        int areaId = await dbContext.BranchDetails.Where(x => x.BranchId.Equals(branchId)).Select(x => x.AreaId).FirstOrDefaultAsync();
-        int cityId = await dbContext.Areas.Where(x => x.AreaId.Equals(areaId)).Select(x => x.CityId).FirstOrDefaultAsync() ?? 0;
-        return (cityId, areaId);
-    }
-
-    private async Task<Db.CustomerPhone> SaveCustomerPhoneAsync(Db.PgDbContext dbContext, int companyId, CustomerOrder order)
+    private async Task<Db.CustomerPhone> SaveCustomerPhoneAsync(Db.PgDbContext dbContext, int companyId, Customer customer)
     {
         Db.CustomerPhone? dbCustomerPhone;
-        var cust = order.Customer ?? throw new Exception("Customer is required");
+        var cust = customer ?? throw new Exception("Customer is required");
         if (cust.PhoneId == 0)
         {
             dbCustomerPhone = await dbContext.CustomerPhones
@@ -253,11 +248,5 @@ public class Implementation()
             throw new Exception("Customer phone record could not be resolved");
         }
         return dbCustomerPhone;
-    }
-
-    private async Task<Db.Gst?> GetTaxPercentageAsync(Db.PgDbContext dbContext)
-    {
-        return await dbContext.Gsts
-            .FirstOrDefaultAsync();
     }
 }

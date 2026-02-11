@@ -18,6 +18,7 @@ var sqlServerConnectionString =
     ?? throw new InvalidOperationException("SqlServer connection string is not configured.");
 const string PostgressConnectionString = "Host=haproxy;Port=5433;Database=restaurants;Username=postgres;Password=postgrespass";
 // Services
+
 builder.Services
     .AddDbContextFactory<SqlServerDbContext>(options =>
         options.UseSqlServer(
@@ -53,6 +54,7 @@ builder.Services
     .AddScoped<ISetupCompanySettingsMigrationService, SetupCompanySettingsMigrationService>()
     .AddScoped<ICustomerDataImportService, CustomerDataImportService>()
     .AddScoped<IOrdersImportService, OrdersImportService>()
+    .AddScoped<IUserLoginMigrationService, UserLoginMigrationService>()
     .AddScoped<Implementation>();
 
 var app = builder.Build();
@@ -99,14 +101,20 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Imple
     return response;
 });
 
-app.MapGet("health", ([FromServices] SqlServerDbContext sqlServerDbContext) =>
+app.MapGet("health", ([FromServices] IDbContextFactory<SqlServerDbContext> sqlDbContextFactory, IDbContextFactory<RestaurantsDbContext> restaurantDbContextFactory) =>
 {
+    var sqlServerDbContext = sqlDbContextFactory.CreateDbContext();
     if (sqlServerDbContext.Database.CanConnect() == false)
     {
         return Results.Problem("Sql Database connection failed", statusCode: 503);
     }
+
+    var restaurantDbContext = restaurantDbContextFactory.CreateDbContext();
+    if (restaurantDbContext.Database.CanConnect() == false)
+    {
+        return Results.Problem("Postgres Database connection failed", statusCode: 503);
+    }
     return Results.Ok("Service is healthy");
 });
-
 
 await app.RunAsync();

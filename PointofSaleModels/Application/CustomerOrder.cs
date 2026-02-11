@@ -4,12 +4,15 @@
     {
         public string Domain { get; set; }
         public int BranchId { get; set; }
+        public string BranchName { get; set; }
         public CustomerDetail CustomerDetails { get; set; }
         public string OrderNumber { get; set; } = string.Empty;
-        public OrderType? OrderType { get; set; }
-        public PaymentType? PaymentType { get; set; }
+        public string? OrderType { get; set; }
+        public string? PaymentType { get; set; }
         public PaymentStatus? PaymentStatus { get; set; }
-        public OrderStatus? Status { get; set; }
+        public string? Status { get; set; }
+        public double AmountWithGst { get; set; }
+        public double AmountWithoutGst { get; set; }
         public List<MenuItem> Items { get; set; } = [];
         public CustomerOrder() : base()
         {

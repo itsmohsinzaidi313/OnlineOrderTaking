@@ -9,7 +9,7 @@ using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace DataService
 {
-    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, IRabbitMqPublisher publisher, Db.RestaurantsContext context) : IQueueAction
+    internal class RequestQueueAction(ILogger<RequestQueueAction> logger, Implementation impl, IRabbitMqPublisher publisher, IDbContextFactory<Db.RestaurantsContext> contextFactory) : IQueueAction
     {
         public string QueueName() => RabbitMqQueues.DataRequestQueue;
 
@@ -17,12 +17,14 @@ namespace DataService
         {
             var requestPayload = System.Text.Json.JsonSerializer.Deserialize<DataServicePayload>(transport);
             object payload = null;
+            var success = false;
             try
             {
                 var connectionString = await GetConnectionString(requestPayload.DomainName);
                 if (requestPayload.DataRequestType == "DeliveryAndPickup")
                 {
                     payload = await GetDeliveryAndPickupItemsAsync(connectionString);
+                    success = true;
                 }
                 else if (requestPayload.DataRequestType == "Menu")
                 {
@@ -32,30 +34,36 @@ namespace DataService
                         menuItems.Add(item);
                     }
                     payload = menuItems;
+                    success = true;
                 }
-                else if(requestPayload.DataRequestType == "Orders")
+                else if (requestPayload.DataRequestType == "Orders")
                 {
+                    if (!requestPayload.OrderUserId.HasValue) throw new Exception("UserId missing for userwise orders list");
+
                     var orders = new List<CustomerOrder>();
-                    await foreach (var order in impl.GetOrdersAsync(connectionString, requestPayload.BranchId))
+                    await foreach (var order in impl.GetOrdersAsync(connectionString, requestPayload.OrderUserId.Value))
                     {
                         orders.Add(order);
                     }
-                    payload = orders;
+
+                    var orderStatuses = await impl.GetOrderStatusesAsync(connectionString);
+                    payload = new { Orders = orders, OrderStatuses = orderStatuses };
+                    success = true;
                 }
             }
             catch (Exception ex)
             {
-                // Log full exception (stack trace and inner exceptions) to help diagnose stream/connection issues
-                logger.LogError(ex, "Failed to fetch menu items.");
+                logger.LogError(ex, "Failed to fetch data.");
+                success = false;
                 payload = new
                 {
-                    error = true,
-                    message = "Failed to fetch menu items.",
-                    details = ex.ToString()
+                    Success = false,
+                    Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message
                 };
             }
             var response = new DataServicePayload(requestPayload)
             {
+                Success = success,
                 DataPayload = payload
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.DataResponseQueue, response);
@@ -63,6 +71,7 @@ namespace DataService
 
         private async Task<string> GetConnectionString(string domainName)
         {
+            using var context = contextFactory.CreateDbContext();
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
             return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
         }

@@ -5,7 +5,10 @@ namespace PointofSaleModels.ServicePayloads
     public class OrderServicePayload : ServicePayload
     {
         public OrderServicePayload() { }
-        public OrderServicePayload(ServicePayload payload) : base(payload) { }
+        public OrderServicePayload(OrderServicePayload payload) : base(payload)
+        {
+        }
         public CustomerOrder? Order { get; set; }
+        public object? DataPayload { get; set; }
     }
 }

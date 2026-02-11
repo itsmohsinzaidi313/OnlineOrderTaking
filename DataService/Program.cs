@@ -1,41 +1,55 @@
-﻿using DataService;
+using DataService;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 
-var host = Host.CreateDefaultBuilder(args)
-    .ConfigureAppConfiguration((context, config) =>
-    {
-        config.AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
-        config.AddEnvironmentVariables();
-    })
-    .ConfigureServices((context, services) =>
-    {
-        var dbConnectionString = context.Configuration.GetConnectionString("Postgres")
-            ?? throw new InvalidOperationException("Postgres connection string is not configured.");
+var builder = WebApplication.CreateBuilder(args);
 
-        services
-        .AddDbContextFactory<RestaurantsContext>(
-            options => options.UseNpgsql(
-                dbConnectionString,
-                    npgsqlOptions =>
-                    {
-                        npgsqlOptions.EnableRetryOnFailure(
-                            maxRetryCount: 5,
-                            maxRetryDelay: TimeSpan.FromSeconds(5),
-                            errorCodesToAdd: null);
-                    }))
-        .Configure<RabbitMqSettings>(context.Configuration.GetSection("RABBITMQ"))
-        .AddSingleton<RabbitMqConnection>()
-        .AddSingleton<Implementation>()
-        .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
-        .AddSingleton<IQueueAction, RequestQueueAction>()
-        .AddHostedService<RequestQueueListener>();
-    })
-    .Build();
+// Add services to the container.
+// Configuration
+builder.Configuration
+    .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
 
-await host.RunAsync();
+// Connection strings
+var dbConnectionString =
+    builder.Configuration.GetConnectionString("Postgres")
+    ?? throw new InvalidOperationException("Postgres connection string is not configured.");
+
+var rabbitMqSection = builder.Configuration.GetSection("RABBITMQ");
+
+builder.Services
+    .AddDbContextFactory<RestaurantsContext>(
+        options => options.UseNpgsql(
+            dbConnectionString,
+            npgsqlOptions =>
+            {
+                npgsqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(5),
+                    errorCodesToAdd: null);
+            }))
+    .Configure<RabbitMqSettings>(rabbitMqSection)
+    .AddSingleton<RabbitMqConnection>()
+    .AddSingleton<Implementation>()
+    .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
+    .AddSingleton<IQueueAction, RequestQueueAction>()
+    .AddHostedService<RequestQueueListener>();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+
+app.MapGet("/health", async ([FromServices] IDbContextFactory<RestaurantsContext> contextFactory) =>
+{
+    var restaurantsContext = await contextFactory.CreateDbContextAsync();
+    if (!await restaurantsContext.Database.CanConnectAsync())
+    {
+        return Results.Problem("Cannot connect to restaurants database.");
+    }
+    return Results.Ok();
+});
+
+app.Run();
