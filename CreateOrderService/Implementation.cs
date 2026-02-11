@@ -133,7 +133,7 @@ public class Implementation()
                             OrderParentId = variation.Id,
                             DealItemId = choice.Id,
                             ProductDetailId = option.Id,
-                            Quantity = choice.Quantity,
+                            Quantity = option.Quantity.HasValue ? option.Quantity : choice.Quantity,
                             IsKot = true,
                             IsActive = true,
                             Gstid = gst?.Gstid,

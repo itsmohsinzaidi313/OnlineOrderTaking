@@ -635,6 +635,7 @@ internal class Implementation()
                                     Price = (from a in dealDescriptions
                                              where a.ProductDetailId == y.ProductDetailId && a.DealItemId == x.DealItemId
                                              select a.Price).FirstOrDefault() ?? 0.0,
+                                    Quantity = (int?)(y.Quantity ?? 0.00)
                                 })]
                             })],
                         }
