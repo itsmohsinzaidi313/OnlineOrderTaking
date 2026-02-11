@@ -94,7 +94,10 @@ public class Implementation()
             SpecialInstruction = order.Description,
             OrderDetails = [],
             AlternateNumber = order.CustomerDetails.AlternateMobileNumber ?? string.Empty,
+            DeliveryCharges = order.DeliveryCharges ?? 0.00,
         };
+        order.AmountWithGst = orderMaster.TotalAmountWithGst ?? 0.0;
+        order.AmountWithoutGst = orderMaster.TotalAmountWithoutGst ?? 0.0;
         foreach (var orderDetail in GetOrderDetails(order.Items, gst))
         {
             orderMaster.OrderDetails.Add(orderDetail);

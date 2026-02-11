@@ -528,6 +528,8 @@ internal class Implementation()
                     Status = statuses[dbOrder.OrderStatusId],
                     Items = [],
                     DeliveryCharges = (int?)(dbOrder.DeliveryCharges ?? 0.00),
+                    AmountWithoutGst = dbOrder.TotalAmountWithoutGst ?? 0.00,
+                    AmountWithGst = dbOrder.TotalAmountWithGst ?? 0.00,
                 };
                 if (dbOrder.DiscountId.HasValue && dbOrder.DiscountId != 0)
                 {

@@ -11,6 +11,8 @@
         public string? PaymentType { get; set; }
         public PaymentStatus? PaymentStatus { get; set; }
         public string? Status { get; set; }
+        public double AmountWithGst { get; set; }
+        public double AmountWithoutGst { get; set; }
         public List<MenuItem> Items { get; set; } = [];
         public CustomerOrder() : base()
         {
