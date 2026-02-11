@@ -45,7 +45,9 @@ namespace DataService
                     {
                         orders.Add(order);
                     }
-                    payload = orders;
+
+                    var orderStatuses = await impl.GetOrderStatusesAsync(connectionString);
+                    payload = new { Orders = orders, OrderStatuses = orderStatuses };
                     success = true;
                 }
             }
