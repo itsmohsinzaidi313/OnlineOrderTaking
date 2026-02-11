@@ -106,6 +106,12 @@ internal class Implementation()
         }
     }
 
+    internal async Task<Dictionary<int, string>> GetOrderStatusesAsync(string connectionString)
+    {
+        using var dbContext = GetDbContext(connectionString);
+        return await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
+    }
+
     private async IAsyncEnumerable<MenuItem> GetOrderItemsAsync(Db.PgDbContext dbContext, int orderMasterId, List<Db.ProductDetail> productDetails, List<Db.DealItemDetail> dealItems, List<Db.Product> products, Dictionary<int, Db.Flavour> flavours, Dictionary<int, Db.ProductSize> sizes, List<Db.DealDescription> dealDescriptions)
     {
         var orderDetails = await dbContext.OrderDetails
