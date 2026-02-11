@@ -237,6 +237,7 @@ services:
       context: .
       dockerfile: ./OrderStatusService/Dockerfile
     environment:
+      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
