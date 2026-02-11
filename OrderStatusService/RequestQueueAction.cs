@@ -37,11 +37,15 @@ namespace OrderStatusService
                         Message = "Order updated successfully"
                     };
                 }
-                payload = new
+                else
                 {
-                    Success = false,
-                    Message = "No order found"
-                };
+                    payload = new
+                    {
+                        Success = false,
+                        Message = "No order found"
+                    };
+                }
+                
             }
             catch (Exception ex)
             {

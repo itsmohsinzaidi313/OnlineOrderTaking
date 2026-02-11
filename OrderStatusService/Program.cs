@@ -6,18 +6,31 @@ using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
-const string PostgressConnectionString = "Host=haproxy;Port=5433;Database=restaurants;Username=postgres;Password=postgrespass";
-var rabbitMqSection = builder.Configuration.GetSection("RABBITMQ");
+
 // Add services to the container.
-builder.Services.AddDbContextFactory<RestaurantsContext>(options =>
-    options.UseNpgsql(PostgressConnectionString,
-                    npgsqlOptions =>
-                    {
-                        npgsqlOptions.EnableRetryOnFailure(
-                            maxRetryCount: 5,
-                            maxRetryDelay: TimeSpan.FromSeconds(5),
-                            errorCodesToAdd: null);
-                    }))
+// Configuration
+builder.Configuration
+    .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
+
+// Connection strings
+var dbConnectionString =
+    builder.Configuration.GetConnectionString("Postgres")
+    ?? throw new InvalidOperationException("Postgres connection string is not configured.");
+
+var rabbitMqSection = builder.Configuration.GetSection("RABBITMQ");
+
+builder.Services
+    .AddDbContextFactory<RestaurantsContext>(
+        options => options.UseNpgsql(
+            dbConnectionString,
+            npgsqlOptions =>
+            {
+                npgsqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(5),
+                    errorCodesToAdd: null);
+            }))
     .Configure<RabbitMqSettings>(rabbitMqSection)
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
@@ -27,12 +40,13 @@ builder.Services.AddDbContextFactory<RestaurantsContext>(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-app.MapGet("/health", ([FromServices] IDbContextFactory<RestaurantsContext> contextFactory) =>
+
+app.MapGet("/health", async ([FromServices] IDbContextFactory<RestaurantsContext> contextFactory) =>
 {
-    using var context = contextFactory.CreateDbContext();
-    if (!context.Database.CanConnect())
+    var restaurantsContext = await contextFactory.CreateDbContextAsync();
+    if (!await restaurantsContext.Database.CanConnectAsync())
     {
-        return Results.Problem("Cannot connect to the database.");
+        return Results.Problem("Cannot connect to restaurants database.");
     }
     return Results.Ok();
 });
