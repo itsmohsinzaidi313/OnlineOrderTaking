@@ -92,6 +92,8 @@ public partial class PgDbContext : DbContext
 
     public virtual DbSet<UserRole> UserRoles { get; set; }
 
+    public virtual DbSet<OrderStatus> OrderStatuses { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Area>(entity =>
@@ -363,6 +365,15 @@ public partial class PgDbContext : DbContext
         {
             entity.HasKey(e => e.RoleId);
             entity.ToTable("user_role");
+        });
+
+        modelBuilder.Entity<OrderStatus>(entity =>
+        {
+            entity.ToTable("order_status");
+            entity.HasKey(x => x.OrderStatusId);
+            entity
+                .Property(x => x.OrderStatusName)
+                .HasColumnName("OrderStatus");
         });
 
         OnModelCreatingPartial(modelBuilder);
