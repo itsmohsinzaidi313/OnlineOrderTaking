@@ -73,17 +73,16 @@ namespace GatewayService
             await QueuePayload(RabbitMqQueues.SettingRequestQueue, obj);
         }
 
-        public async Task OrderHistoryRequest(string domainName, int branchId, string responseKey)
+        public async Task OrderHistoryRequest(string domainName, int userId, string responseKey)
         {
             var obj = new DataServicePayload
             {
                 DomainName = domainName,
                 DataRequestType = "Orders",
-                BranchId = branchId,
                 ResponseKey = responseKey,
                 SignalRMethodName = "OrderHistoryRequest"
             }.FillContext(Context);
-            obj.OrderUserId = int.Parse(ExtractUserIdFromClaims());
+            obj.OrderUserId = userId;
             await QueuePayload(RabbitMqQueues.OrderHistoryRequestQueue, obj);
         }
 
