@@ -35,7 +35,6 @@ builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<Implementation>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
-    .AddSingleton<IQueueAction, RequestQueueAction>()
     .AddHostedService<RequestQueueListener>();
 
 var app = builder.Build();
