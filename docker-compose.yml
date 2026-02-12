@@ -125,8 +125,8 @@ services:
       dockerfile: Dockerfile
     container_name: haproxy
     ports:
-      - "${HAPROXY_PORT_PRIMARY}:${HAPROXY_PORT_PRIMARY}"   # PostgreSQL (host port primary -> container primary)
-      - "${HAPROXY_PORT_REPLICA}:${HAPROXY_PORT_REPLICA}"   # PostgreSQL read-only frontend (host replica -> container replica)
+      - "${HAPROXY_PORT_PRIMARY}"   # PostgreSQL (host port primary -> container primary)
+      - "${HAPROXY_PORT_REPLICA}"   # PostgreSQL read-only frontend (host replica -> container replica)
       - "${HAPROXY_STATS_PORT}:${HAPROXY_STATS_PORT}"   # HAProxy stats
     volumes:
       - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
@@ -313,7 +313,7 @@ services:
     container_name: redis
     command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
     ports:
-      - "6379:6379"
+      - "6379"
     volumes:
       - redis_data:/data
     networks:
@@ -328,7 +328,7 @@ services:
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
       - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST}
     ports:
-      - "5672:5672"   # AMQP
+      - "5672"   # AMQP
       - "15672:15672" # Management UI
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
