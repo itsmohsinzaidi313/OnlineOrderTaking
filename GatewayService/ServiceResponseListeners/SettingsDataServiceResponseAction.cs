@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace GatewayService.ServiceResponseListeners
 {
-    public class SettingsDataServiceResponseAction(Implementation implementation, IConnectionMultiplexer redis) : IDataServiceResponseAction
+    public class SettingsDataServiceResponseAction(Implementation implementation, IConnectionMultiplexer redis) : ISettingsDataResponseAction
     {
         public string QueueName() => RabbitMqQueues.SettingResponseQueue;
         public async Task OnMessage(string svcPayload)

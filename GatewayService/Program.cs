@@ -50,6 +50,15 @@ builder.Services
     .AddHostedService<OrderStatusServiceResponseListener>()
     .AddSingleton<OrderNotificationServiceResponseAction>()
     .AddSingleton<IOrderNotificationResponseAction>(context => context.GetRequiredService<OrderNotificationServiceResponseAction>())
+    .AddSingleton<SettingsDataServiceResponseAction>()
+    .AddSingleton<ISettingsDataResponseAction>(context => context.GetRequiredService<SettingsDataServiceResponseAction>())
+    .AddHostedService<SettingsDataServiceResponseListener>()
+    .AddSingleton<MenuServiceResponseAction>()
+    .AddSingleton<IMenuResponseAction>(context => context.GetRequiredService<MenuServiceResponseAction>())
+    .AddHostedService<MenuServiceResponseListener>()
+    .AddSingleton<OrderHistoryServiceResponseAction>()
+    .AddSingleton<IOrderHistoryResponseAction>(context => context.GetRequiredService<OrderHistoryServiceResponseAction>())
+    .AddHostedService<OrderHistoryServiceResponseListener>()
     .AddHostedService<OrderNotificationServiceResponseListener>()
     .AddSingleton<IConnectionMultiplexer>(context =>
     {
