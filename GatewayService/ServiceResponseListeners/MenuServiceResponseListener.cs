@@ -2,7 +2,7 @@
 
 namespace GatewayService.ServiceResponseListeners
 {
-    public class DataServiceResponseListener(ILogger<DataServiceResponseListener> logger, RabbitMqConnection rabbitConnection, DataServiceResponseAction listener) : RabbitMqConsumerService<DataServiceResponseListener>(logger, rabbitConnection, listener)
+    public class MenuServiceResponseListener(ILogger<MenuServiceResponseListener> logger, RabbitMqConnection rabbitConnection, MenuServiceResponseAction listener) : RabbitMqConsumerService<MenuServiceResponseListener>(logger, rabbitConnection, listener)
     {
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
