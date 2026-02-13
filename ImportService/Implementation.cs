@@ -91,11 +91,12 @@ namespace ImportService
             var restaurant = await pgDb.Restaurants.FirstOrDefaultAsync(x => x.DomainName == domain, cancellationToken);
             if (restaurant == null)
             {
+                var dbname = domain.Split(".")[0];
                 restaurant = new Entities.Restaurants
                 {
                     DomainName = domain,
-                    ConnectionString = $"Host=haproxy;Port=5434;Database={domain};Username=postgres;Password=postgrespass",
-                    Name = domain.Split(".")[0]
+                    ConnectionString = $"Host=haproxy;Port=5434;Database={dbname};Username=postgres;Password=postgrespass",
+                    Name = dbname
                 };
                 await pgDb.Restaurants.AddAsync(restaurant, cancellationToken);
                 await pgDb.SaveChangesAsync(cancellationToken);
