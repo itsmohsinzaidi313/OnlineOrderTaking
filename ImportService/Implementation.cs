@@ -95,7 +95,7 @@ namespace ImportService
                 {
                     DomainName = domain,
                     ConnectionString = $"Host=haproxy;Port=5434;Database={domain};Username=postgres;Password=postgrespass",
-                    Name = domain
+                    Name = domain.Split(".")[0]
                 };
                 await pgDb.Restaurants.AddAsync(restaurant, cancellationToken);
                 await pgDb.SaveChangesAsync(cancellationToken);
