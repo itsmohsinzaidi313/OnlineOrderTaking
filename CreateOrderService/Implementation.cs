@@ -183,6 +183,7 @@ public class Implementation()
         {
             dbCustomer = new Db.Customer
             {
+                Title = cd.Title,
                 CustomerName = customer.Name,
                 CompanyId = companyId,
                 CustomerPhone = dbCustomerPhone,
@@ -235,6 +236,7 @@ public class Implementation()
                 };
 
                 await dbContext.CustomerPhones.AddAsync(dbCustomerPhone);
+                await dbContext.SaveChangesAsync();
             }
         }
         else
