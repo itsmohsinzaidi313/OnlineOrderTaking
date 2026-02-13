@@ -125,9 +125,9 @@ services:
       dockerfile: Dockerfile
     container_name: haproxy
     ports:
-      - "${HAPROXY_PORT_PRIMARY}:${HAPROXY_PORT_PRIMARY}"   # PostgreSQL (host port primary -> container primary)
-      - "${HAPROXY_PORT_REPLICA}:${HAPROXY_PORT_REPLICA}"   # PostgreSQL read-only frontend (host replica -> container replica)
-      - "${HAPROXY_STATS_PORT}:${HAPROXY_STATS_PORT}"   # HAProxy stats
+      - "127.0.0.1:${HAPROXY_PORT_PRIMARY}:${HAPROXY_PORT_PRIMARY}"   # PostgreSQL (host port primary -> container primary)
+      - "127.0.0.1:${HAPROXY_PORT_REPLICA}:${HAPROXY_PORT_REPLICA}"   # PostgreSQL read-only frontend (host replica -> container replica)
+      - "127.0.0.1:${HAPROXY_STATS_PORT}:${HAPROXY_STATS_PORT}"   # HAProxy stats
     volumes:
       - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     networks:
