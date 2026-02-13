@@ -125,9 +125,9 @@ services:
       dockerfile: Dockerfile
     container_name: haproxy
     ports:
-      - "127.0.0.1:${HAPROXY_PORT_PRIMARY}:${HAPROXY_PORT_PRIMARY}"   # PostgreSQL (host port primary -> container primary)
-      - "127.0.0.1:${HAPROXY_PORT_REPLICA}:${HAPROXY_PORT_REPLICA}"   # PostgreSQL read-only frontend (host replica -> container replica)
-      - "127.0.0.1:${HAPROXY_STATS_PORT}:${HAPROXY_STATS_PORT}"   # HAProxy stats
+      - "${HAPROXY_PORT_PRIMARY}:${HAPROXY_PORT_PRIMARY}"   # PostgreSQL (host port primary -> container primary)
+      - "${HAPROXY_PORT_REPLICA}:${HAPROXY_PORT_REPLICA}"   # PostgreSQL read-only frontend (host replica -> container replica)
+      - "${HAPROXY_STATS_PORT}:${HAPROXY_STATS_PORT}"   # HAProxy stats
     volumes:
       - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     networks:
@@ -255,7 +255,7 @@ services:
       context: .
       dockerfile: ./ImportService/Dockerfile
     environment:
-      - ConnectionStrings__SqlServer=${SQLSERVER_CONNECTION}
+      - ConnectionStrings__SqlServer=Server=163.61.91.143;Database=WebOrdering;User Id=sa;Password=Zid2801ealyk;TrustServerCertificate=True;
     networks:
       - patroni-net
     depends_on:
@@ -288,7 +288,7 @@ services:
       context: .
       dockerfile: ./GatewayService/Dockerfile
     ports:
-      - "127.0.0.1:8090:8080"
+      - "8090:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=${GATEWAY_ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=${GATEWAY_ASPNETCORE_URLS}
@@ -313,7 +313,7 @@ services:
     container_name: redis
     command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
     ports:
-      - "127.0.0.1:6379:6379"
+      - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -328,8 +328,8 @@ services:
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
       - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST}
     ports:
-      - "127.0.0.1:5672:5672"   # AMQP
-      - "127.0.0.1:15672:15672" # Management UI
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
       interval: 10s
