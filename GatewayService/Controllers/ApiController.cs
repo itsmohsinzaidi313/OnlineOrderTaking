@@ -28,7 +28,19 @@ namespace GatewayService.Controllers
                 menuKeys++;
             }
 
+            foreach (var key in server.Keys(pattern: $"{domain}:*:menu"))
+            {
+                await db.KeyDeleteAsync(key);
+                menuKeys++;
+            }
+
             foreach (var key in server.Keys(pattern: $"{domain}:*:DAndP"))
+            {
+                await db.KeyDeleteAsync(key);
+                dAndPKeys++;
+            }
+
+            foreach (var key in server.Keys(pattern: $"{domain}:*:dandp"))
             {
                 await db.KeyDeleteAsync(key);
                 dAndPKeys++;
