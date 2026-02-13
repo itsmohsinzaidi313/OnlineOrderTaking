@@ -49,7 +49,7 @@ namespace GatewayService.Controllers
         }
 
         [HttpGet("import/{companyId:int}")]
-        public async Task<IActionResult> Import(int companyId)
+        public async Task<IActionResult> Import(int companyId, [FromQuery] bool checkhealth = true)
         {
             var httpClient = new HttpClient
             {
@@ -57,13 +57,16 @@ namespace GatewayService.Controllers
                 BaseAddress = new Uri("http://importservice:8080")
             };
 
-            var response = await httpClient.GetAsync("health");
-            if (!response.IsSuccessStatusCode)
+            if (checkhealth)
             {
-                return StatusCode((int)response.StatusCode, "Import service is not healthy.");
+                var healthResponse = await httpClient.GetAsync("health");
+                if (!healthResponse.IsSuccessStatusCode)
+                {
+                    return StatusCode((int)healthResponse.StatusCode, "Import service is not healthy.");
+                }
             }
 
-            response = await httpClient.GetAsync($"import/{companyId}");
+            var response = await httpClient.GetAsync($"import/{companyId}");
 
             if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
             {
