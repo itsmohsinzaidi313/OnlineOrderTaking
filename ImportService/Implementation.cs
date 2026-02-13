@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ImportService
 {
     public class Implementation(
-        RestaurantsDbContext pgDb,
+        IDbContextFactory<RestaurantsDbContext> pgDbFactory,
         ILogger<Implementation> logger,
         ISetupCompanyMigrationService service_setupCompany,
         IBranchMasterMigrationService service_branchMaster,
@@ -25,12 +25,13 @@ namespace ImportService
         IUserLoginMigrationService service_users)
     {
         private const string PostgresHost = "haproxy";
-        public async Task<IResult?> Import(int companyId, string dbName, CancellationToken cancellationToken = default)
+        public async Task<IResult?> Import(int companyId, string domainName, CancellationToken cancellationToken = default)
         {
             try
             {
-                var isNewRestaurant = await RestaurantCreated(dbName, cancellationToken);
-                var postgresDbContext = GetPgDbContext($"Host={PostgresHost};Port=5433;Database={dbName};Username=postgres;Password=postgrespass");
+                var isNewRestaurant = await RestaurantCreated(domainName, cancellationToken);
+                var dbname= domainName.Split(".")[0];
+                using var postgresDbContext = GetPgDbContext($"Host={PostgresHost};Port=5433;Database={dbname};Username=postgres;Password=postgrespass");
 
                 var dbCreated = await postgresDbContext.Database.EnsureCreatedAsync(cancellationToken);
                 if (!dbCreated)
@@ -73,7 +74,7 @@ namespace ImportService
 
                 await postgresDbContext.SaveChangesAsync(cancellationToken);
 
-                logger.LogInformation("Data import completed successfully for database: {DbName}", dbName);
+                logger.LogInformation("Data import completed successfully for database: {DbName}", dbname);
                 return Results.Ok("Import completed successfully");
             }
             catch (Exception ex)
@@ -83,16 +84,18 @@ namespace ImportService
             }
         }
 
-        private async Task<bool> RestaurantCreated(string dbName, CancellationToken cancellationToken)
+        private async Task<bool> RestaurantCreated(string domain, CancellationToken cancellationToken)
         {
-            var restaurant = await pgDb.Restaurants.FirstOrDefaultAsync(x => x.DomainName.Contains(dbName), cancellationToken);
+            using var pgDb = pgDbFactory.CreateDbContext();
+            await pgDb.Database.EnsureCreatedAsync(cancellationToken);
+            var restaurant = await pgDb.Restaurants.FirstOrDefaultAsync(x => x.DomainName == domain, cancellationToken);
             if (restaurant == null)
             {
                 restaurant = new Entities.Restaurants
                 {
-                    DomainName = dbName,
-                    ConnectionString = $"Host=haproxy;Port=5434;Database={dbName};Username=postgres;Password=postgrespass",
-                    Name = dbName
+                    DomainName = domain,
+                    ConnectionString = $"Host=haproxy;Port=5434;Database={domain};Username=postgres;Password=postgrespass",
+                    Name = domain
                 };
                 await pgDb.Restaurants.AddAsync(restaurant, cancellationToken);
                 await pgDb.SaveChangesAsync(cancellationToken);
