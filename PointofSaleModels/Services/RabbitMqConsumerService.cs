@@ -6,9 +6,10 @@ using RabbitMQ.Client;
 
 namespace PointofSaleModels.Services
 {
-    public abstract class RabbitMqConsumerService<T>(ILogger<T> logger, RabbitMqConnection rabbitConnection, IQueueAction exec) : BackgroundService
+    public abstract class RabbitMqConsumerService<T>(ILogger<T> logger, RabbitMqConnection rabbitConnection) : BackgroundService
     {
-        private readonly string QueueName = exec.QueueName();
+        public abstract string QueueName();
+        public abstract Task OnMessage(string payload);
         public async Task Build(CancellationToken stoppingToken)
         {
             await rabbitConnection.InitializeAsync();
@@ -29,7 +30,7 @@ namespace PointofSaleModels.Services
                        await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: false);
                        return;
                    }
-                   await exec.OnMessage(message);
+                   await OnMessage(message);
                    await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
                }
                catch (OperationCanceledException)
@@ -42,10 +43,11 @@ namespace PointofSaleModels.Services
                    await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: false);
                }
            };
-            await rabbitConnection.EnsureQueueExistsAsync(QueueName);
+            var queueName = QueueName();
+            await rabbitConnection.EnsureQueueExistsAsync(queueName);
 
             await channel.BasicConsumeAsync(
-                queue: QueueName,
+                queue: queueName,
                 autoAck: false,
                 consumerTag: string.Empty,
                 noLocal: false,

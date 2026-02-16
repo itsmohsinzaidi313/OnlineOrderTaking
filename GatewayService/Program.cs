@@ -7,7 +7,6 @@ using StackExchange.Redis;
 using GatewayService.Models;
 using System.Text;
 using GatewayService.ServiceResponseListeners;
-using GatewayService.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -39,25 +38,11 @@ builder.Services
 builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
-    .AddSingleton<DataServiceResponseAction>()
-    .AddSingleton<IDataServiceResponseAction>(context => context.GetRequiredService<DataServiceResponseAction>())
     .AddHostedService<DataServiceResponseListener>()
-    .AddSingleton<CreateOrderServiceResponseAction>()
-    .AddSingleton<ICreateOrderResponseAction>(context => context.GetRequiredService<CreateOrderServiceResponseAction>())
     .AddHostedService<CreateOrderServiceResponseListener>()
-    .AddSingleton<OrderStatusServiceResponseAction>()
-    .AddSingleton<IOrderStatusResponseAction>(context => context.GetRequiredService<OrderStatusServiceResponseAction>())
     .AddHostedService<OrderStatusServiceResponseListener>()
-    .AddSingleton<OrderNotificationServiceResponseAction>()
-    .AddSingleton<IOrderNotificationResponseAction>(context => context.GetRequiredService<OrderNotificationServiceResponseAction>())
-    .AddSingleton<SettingsDataServiceResponseAction>()
-    .AddSingleton<ISettingsDataResponseAction>(context => context.GetRequiredService<SettingsDataServiceResponseAction>())
     .AddHostedService<SettingsDataServiceResponseListener>()
-    .AddSingleton<MenuServiceResponseAction>()
-    .AddSingleton<IMenuResponseAction>(context => context.GetRequiredService<MenuServiceResponseAction>())
     .AddHostedService<MenuServiceResponseListener>()
-    .AddSingleton<OrderHistoryServiceResponseAction>()
-    .AddSingleton<IOrderHistoryResponseAction>(context => context.GetRequiredService<OrderHistoryServiceResponseAction>())
     .AddHostedService<OrderHistoryServiceResponseListener>()
     .AddHostedService<OrderNotificationServiceResponseListener>()
     .AddSingleton<IConnectionMultiplexer>(context =>
