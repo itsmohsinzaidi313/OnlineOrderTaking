@@ -21,7 +21,6 @@ namespace ImportService
         ISetupCompanySettingsMigrationService service_setupCompanySettings,
         ICustomerDataImportService service_customerData,
         IGSTMigrationService service_gst,
-        IOrdersImportService service_orders,
         IUserLoginMigrationService service_users)
     {
         private const string PostgresHost = "haproxy";
@@ -67,8 +66,6 @@ namespace ImportService
                 await service_customerData.MigrateCustomerDataAsync(companyId, postgresDbContext, cancellationToken);
 
                 await service_gst.MigrateGSTsAsync(companyId, postgresDbContext, cancellationToken);
-
-                await service_orders.MigrateOrdersAsync(companyId, postgresDbContext, cancellationToken);
 
                 await service_users.MigrateUserLoginAsync(companyId, postgresDbContext, cancellationToken);
 
