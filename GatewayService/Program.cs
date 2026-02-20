@@ -90,7 +90,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddGrpcClient<PushNotificationServiceClient>(o => o.Address = new Uri("http://pushnotificationservice:5000"));
+builder.Services.AddGrpcClient<PushNotificationServiceClient>(o => o.Address = new Uri("http://pushnotificationservice:5005"));
 
 var app = builder.Build();
 app.UseRouting();
