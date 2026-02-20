@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+option csharp_namespace = "PointofSaleModels.Protos";
+
+
+service PushNotificationService {
+	rpc Subscribe(PushNotificationSubscriptionRequest) returns (PushNotificationSubscriptionResponse);
+
+	rpc Notify(PushNotificationNotifyRequest) returns (PushNotificationNotifyResponse);
+
+	rpc Unsubscribe(PushNotificationUnsubscribeRequest) returns (PushNotificationUnsubscribeResponse);
+}
+
+message PushNotificationSubscriptionRequest {
+	string clientId = 1;
+	string endpoint = 2;
+	string p256dh = 3;
+	string auth = 4;
+}
+
+message PushNotificationSubscriptionResponse {
+	bool success = 1;
+	string message = 2;
+}
+
+message PushNotificationNotifyRequest {
+	string clientId = 1;
+	string title = 2;
+	string message = 3;
+}
+
+message PushNotificationNotifyResponse {
+	bool success = 1;
+	string message = 2;
+}
+
+message PushNotificationUnsubscribeRequest {
+	string clientId = 1;
+}
+
+message PushNotificationUnsubscribeResponse {
+	bool success = 1;
+	string message = 2;
+}

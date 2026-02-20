@@ -7,6 +7,7 @@ using StackExchange.Redis;
 using GatewayService.Models;
 using System.Text;
 using GatewayService.ServiceResponseListeners;
+using static PointofSaleModels.Protos.PushNotificationService;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -89,6 +90,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddGrpcClient<PushNotificationServiceClient>(o => o.Address = new Uri("http://pushnotificationservice:8080"));
 
 var app = builder.Build();
 app.UseRouting();
