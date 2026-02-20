@@ -20,7 +20,8 @@ namespace GatewayService.ServiceResponseListeners
             var payload = JsonSerializer.Deserialize<OrderStatusPayload>(svcPayload);
             foreach (var key in server.Keys(pattern: $"order:{orderNumber}:*"))
             {
-                var clientId = key.ToString().Split(':')[2];
+                var arr = key.ToString().Split(':');
+                var clientId = $"{arr[2]}:{arr[3]}:{arr[4]}";
                 if (string.IsNullOrEmpty(clientId))
                 {
                     continue;
