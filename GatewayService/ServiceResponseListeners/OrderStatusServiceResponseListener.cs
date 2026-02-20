@@ -17,13 +17,13 @@ namespace GatewayService.ServiceResponseListeners
             foreach (var key in server.Keys(pattern: $"branch:*:*:connection"))
             {
                 var arr = key.ToString().Split(':');
-                var clientId = $"{arr[0]}:{arr[2]}:{arr[2]}";
+                var clientId = $"{arr[0]}:{arr[1]}:{arr[2]}";
                 if (string.IsNullOrEmpty(clientId))
                 {
                     continue;
                 }
                 var responseKey = payload?.ResponseKey ?? throw new Exception("ResponseKey not found");
-                await implementation.SendToUser<OrderStatusPayload>(responseKey, clientId, payload);
+                await implementation.SendToUser(clientId, responseKey, payload);
             }
 
             var orderNumber = payload?.OrderNumber ?? throw new Exception("OrderNumber not found");
@@ -35,7 +35,7 @@ namespace GatewayService.ServiceResponseListeners
                 {
                     continue;
                 }
-                await implementation.SendToUser<OrderStatusPayload>("OrderStatusUpdate", clientId, payload);
+                await implementation.SendToUser(clientId, "OrderStatusUpdate", payload);
             }
         }
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
