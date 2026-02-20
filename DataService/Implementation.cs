@@ -258,6 +258,8 @@ internal class Implementation()
         settingsData["HAMBURGER_MENU"] = false;
         settingsData["ABOUT_US"] = false;
 
+        var orderStatuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
+        settingsData["OrderStatuses"] = JsonValue.Create(orderStatuses);
         return settingsData;
     }
 
