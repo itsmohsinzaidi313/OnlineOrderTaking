@@ -11,13 +11,22 @@ namespace GatewayService.ServiceResponseListeners
         public override string QueueName() => RabbitMqQueues.OrderStatusResponseQueue;
         public override async Task OnMessage(string svcPayload)
         {
-            await implementation.SendToUser<OrderStatusPayload>(svcPayload);
-            using var doc = JsonDocument.Parse(svcPayload);
-            var root = doc.RootElement;
-            var orderNumber = root.GetProperty("OrderNumber").GetString() ?? throw new Exception("OrderNumber not found");
-            var db = redis.GetDatabase();
-            var server = redis.GetServer(redis.GetEndPoints().First());
             var payload = JsonSerializer.Deserialize<OrderStatusPayload>(svcPayload);
+            var server = redis.GetServer(redis.GetEndPoints().First());
+
+            foreach (var key in server.Keys(pattern: $"branch:*:*:connection"))
+            {
+                var arr = key.ToString().Split(':');
+                var clientId = $"{arr[0]}:{arr[2]}:{arr[2]}";
+                if (string.IsNullOrEmpty(clientId))
+                {
+                    continue;
+                }
+                var responseKey = payload?.ResponseKey ?? throw new Exception("ResponseKey not found");
+                await implementation.SendToUser<OrderStatusPayload>(responseKey, clientId, payload);
+            }
+
+            var orderNumber = payload?.OrderNumber ?? throw new Exception("OrderNumber not found");
             foreach (var key in server.Keys(pattern: $"order:{orderNumber}:*"))
             {
                 var arr = key.ToString().Split(':');
