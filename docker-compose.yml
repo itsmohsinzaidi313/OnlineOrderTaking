@@ -146,6 +146,8 @@ services:
     build:
       context: .
       dockerfile: ./PushNotificationService/Dockerfile
+    ports:
+    - "internal:8080"
     environment:
       - REDIS__CONNECTIONSTRING=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
       - VAPID__SUBJECT=${VAPID_SUBJECT}
