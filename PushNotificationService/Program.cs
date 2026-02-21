@@ -22,7 +22,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(context =>
 builder.Services.AddGrpc();
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenLocalhost(5005, o =>
+    options.ListenLocalhost(5080, o =>
     {
         o.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
     });
