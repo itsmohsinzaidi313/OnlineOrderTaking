@@ -90,7 +90,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddGrpcClient<PushNotificationServiceClient>(o => o.Address = new Uri("http://pushnotificationservice:5080"));
+
+// Point the gRPC client at the container port the pushnotificationservice listens on (8080)
+builder.Services.AddGrpcClient<PushNotificationServiceClient>(o => o.Address = new Uri("http://pushnotificationservice:8080"));
 
 var app = builder.Build();
 app.UseRouting();
