@@ -13,8 +13,8 @@ namespace PushNotificationService
         private readonly IDatabase _db = multiplexer.GetDatabase();
         public override async Task<PushNotificationNotifyResponse> Notify(PushNotificationNotifyRequest request, ServerCallContext context)
         {
-            var subscriptionJson = _db.StringGet($"subscription:{request.ClientId}").ToString();
-            if(string.IsNullOrEmpty(subscriptionJson))
+            var redisValue = await _db.StringGetAsync($"subscription:{request.ClientId}");
+            if (!redisValue.HasValue)
             {
                 logger.LogInformation("Subscription not found for client {ClientId}", request.ClientId);
                 return new PushNotificationNotifyResponse
@@ -23,7 +23,7 @@ namespace PushNotificationService
                     Message = "Subscription not found for the client"
                 };
             }
-            var subscription = JsonSerializer.Deserialize<PushSubscriptionDto>(subscriptionJson);
+            var subscription = JsonSerializer.Deserialize<PushSubscriptionDto>(redisValue.ToString());
             if (subscription == null)
             {
                 logger.LogError("Failed to deserialize subscription for client {ClientId}", request.ClientId);
@@ -70,6 +70,15 @@ namespace PushNotificationService
             };
             var json = System.Text.Json.JsonSerializer.Serialize(pushSubscribtion);
             await _db.StringSetAsync($"subscription:{clientId}", json);
+            var redisValue = await _db.StringGetAsync($"subscription:{clientId}");
+            if(redisValue.HasValue)
+            {
+                logger.LogInformation("Subscription stored in Redis for client {ClientId}", clientId);
+            }
+            else
+            {
+                logger.LogError("Failed to store subscription in Redis for client {ClientId}", clientId);
+            }
             logger.LogInformation("Client {ClientId} subscribed successfully", clientId);
             var response = new PushNotificationSubscriptionResponse
             {
