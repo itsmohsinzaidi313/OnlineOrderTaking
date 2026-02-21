@@ -8,7 +8,7 @@ using static PointofSaleModels.Protos.PushNotificationService;
 
 namespace PushNotificationService
 {
-    public class PushNotificationServiceImpl(ILogger<PushNotificationServiceImpl> logger, WebPushService service, IConnectionMultiplexer multiplexer) : PushNotificationServiceBase
+    public class PushNotificationServiceImpl(WebPushService service, IConnectionMultiplexer multiplexer) : PushNotificationServiceBase
     {
         private readonly IDatabase _db = multiplexer.GetDatabase();
         public override async Task<PushNotificationNotifyResponse> Notify(PushNotificationNotifyRequest request, ServerCallContext context)
@@ -16,7 +16,6 @@ namespace PushNotificationService
             var redisValue = await _db.StringGetAsync($"subscription:{request.ClientId}");
             if (!redisValue.HasValue)
             {
-                logger.LogInformation("Subscription not found for client {ClientId}", request.ClientId);
                 return new PushNotificationNotifyResponse
                 {
                     Success = false,
@@ -26,7 +25,6 @@ namespace PushNotificationService
             var subscription = JsonSerializer.Deserialize<PushSubscriptionDto>(redisValue.ToString());
             if (subscription == null)
             {
-                logger.LogError("Failed to deserialize subscription for client {ClientId}", request.ClientId);
                 return new PushNotificationNotifyResponse
                 {
                     Success = false,
@@ -49,7 +47,6 @@ namespace PushNotificationService
             });
             var pushMessage = new PushMessage(content);
             await service.SendAsync(pushSubscribtion, pushMessage);
-            logger.LogInformation("Notification sent successfully to client {ClientId}", request.ClientId);
             var response = new PushNotificationNotifyResponse
             {
                 Success = true,
@@ -71,15 +68,6 @@ namespace PushNotificationService
             var json = System.Text.Json.JsonSerializer.Serialize(pushSubscribtion);
             await _db.StringSetAsync($"subscription:{clientId}", json);
             var redisValue = await _db.StringGetAsync($"subscription:{clientId}");
-            if(redisValue.HasValue)
-            {
-                logger.LogInformation("Subscription stored in Redis for client {ClientId}", clientId);
-            }
-            else
-            {
-                logger.LogError("Failed to store subscription in Redis for client {ClientId}", clientId);
-            }
-            logger.LogInformation("Client {ClientId} subscribed successfully", clientId);
             var response = new PushNotificationSubscriptionResponse
             {
                 Success = true,
@@ -92,7 +80,6 @@ namespace PushNotificationService
         {
             var clientId = request.ClientId;
             await _db.KeyDeleteAsync($"subscription:{clientId}");
-            logger.LogInformation("Client {ClientId} unsubscribed successfully", clientId);
             var response = new PushNotificationUnsubscribeResponse
             {
                 Success = true,
