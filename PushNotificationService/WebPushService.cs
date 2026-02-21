@@ -9,20 +9,6 @@ namespace PushNotificationService
     {
         private readonly PushServiceClient _client;
 
-        public WebPushService(VapidSettings config)
-        {
-            _client = new PushServiceClient
-            {
-                DefaultAuthentication = new VapidAuthentication(
-                    config.PublicKey,
-                    config.PrivateKey)
-                {
-                    Subject = config.Subject
-                }
-            };
-
-        }
-
         public WebPushService(IOptions<VapidSettings> config)
         {
             _client = new PushServiceClient

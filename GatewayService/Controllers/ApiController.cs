@@ -53,13 +53,13 @@ namespace GatewayService.Controllers
         }
 
         [HttpPost("notify")]
-        public async Task<IActionResult> NotifyAsync([FromBody] string clientId)
+        public async Task<IActionResult> NotifyAsync([FromBody] string clientId, [FromBody] string title, [FromBody] string message)
         {
             var request = new PushNotificationNotifyRequest
             {
                 ClientId = clientId,
-                Title = "My Title",
-                Message = "My Message"
+                Title = title,
+                Message = message
             };
             var response = await pushNotificationClient.NotifyAsync(request);
             if (response.Success)
