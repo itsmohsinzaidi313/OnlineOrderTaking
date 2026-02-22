@@ -8,8 +8,11 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
 
 // Add services to the container.
-builder.Services.Configure<VapidSettings>(builder.Configuration.GetSection("VAPID"));
-builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("REDIS"));
+builder.Services
+    .Configure<VapidSettings>(builder.Configuration.GetSection("VAPID"))
+    .Configure<RedisSettings>(builder.Configuration.GetSection("REDIS"))
+    .Configure<RabbitMqSettings>(builder.Configuration.GetSection("RABBITMQ"));
+
 builder.Services.AddScoped<WebPushService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(context =>
  {
