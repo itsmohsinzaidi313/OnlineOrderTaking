@@ -142,6 +142,29 @@ services:
       timeout: 5s
       retries: 3
 
+  pushnotificationservice:
+    build:
+      context: .
+      dockerfile: ./PushNotificationService/Dockerfile
+    ports:
+    - "8080"
+    environment:
+      - REDIS__CONNECTIONSTRING=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
+      - VAPID__SUBJECT=${VAPID_SUBJECT}
+      - VAPID__PUBLICKEY=${VAPID_PUBLIC_KEY}
+      - VAPID__PRIVATEKEY=${VAPID_PRIVATE_KEY}
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - patroni-net
+    depends_on:
+      haproxy:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
   dataservice:
     build:
       context: .
