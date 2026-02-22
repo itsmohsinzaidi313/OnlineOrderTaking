@@ -53,13 +53,13 @@ namespace GatewayService.Controllers
         }
 
         [HttpPost("notify")]
-        public async Task<IActionResult> NotifyAsync(NotifyRequest request)
+        public async Task<IActionResult> NotifyAsync(INotifyRequest request)
         {
             var obj = new PushNotificationNotifyRequest
             {
-                ClientId = request.clientId,
-                Title = request.title,
-                Message = request.message
+                ClientId = request.ClientId,
+                Title = request.Title,
+                Message = request.Message
             };
             var response = await pushNotificationClient.NotifyAsync(obj);
             if (response.Success)
@@ -248,6 +248,11 @@ namespace GatewayService.Controllers
 
         public record TokenRequest(string? Token);
         public record LoginRequest(string Username, string Password, string UserId);
-        public record NotifyRequest(string clientId, string title, string message);
+        public interface INotifyRequest
+        {
+            public string ClientId { get; set; }
+            public string Title { get; set; }
+            public string Message { get; set; }
+        }
     }
 }
