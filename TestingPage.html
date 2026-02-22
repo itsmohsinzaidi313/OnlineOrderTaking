@@ -93,7 +93,7 @@
         part2 += chars[Math.floor(Math.random() * chars.length)];
       }
 
-      return part1 + "-" + part2;
+      return "user:" + "247:" + part1 + "-" + part2;
     }
 
 
@@ -548,6 +548,172 @@
 
     // Kick off
     start().catch((err) => log("Connect error: " + err.toString()));
+    function payload() {
+      return {
+        "customerDetails": {
+          "title": "mrs",
+          "fullName": "safd",
+          "mobileNumber": "03219785415",
+          "alternateMobileNumber": "",
+          "deliveryAddress": "asdfasdfasdfasdfasdf",
+          "nearestLandmark": "",
+          "emailAddress": "",
+          "deliveryInstructions": "",
+          "paymentMethod": "cash",
+          "isGift": false,
+          "recipientName": "",
+          "recipientNumber": "",
+          "giftingMessage": ""
+        },
+        "items": [
+          {
+            "Id": 12987,
+            "CategoryId": "3993",
+            "Code": "",
+            "Name": "Discounted Item",
+            "DepartmentName": "420",
+            "Price": 1500,
+            "TaxAmount": 0,
+            "Quantity": 1,
+            "Image": "N/A",
+            "Comment": "",
+            "IsKot": false,
+            "ItemFOC": false,
+            "Description": "",
+            "Variations": [
+              {
+                "Id": 17696,
+                "Size": {
+                  "Id": 870,
+                  "Name": "Large"
+                },
+                "Flavour": {
+                  "Id": 597,
+                  "Name": "-"
+                },
+                "Price": 1350,
+                "Discount": {
+                  "Id": 1163,
+                  "Type": "Percentage",
+                  "Name": "Web Discount 10 %",
+                  "Value": 10,
+                  "MaxCap": 0,
+                  "MinCap": 0
+                },
+                "ItemChoices": [
+                  {
+                    "Id": 5962,
+                    "Name": "Extras",
+                    "Quantity": 0,
+                    "MaxChoice": 0,
+                    "ItemOptions": [
+                      {
+                        "Id": 12276,
+                        "Name": "Cheese Fries",
+                        "Price": 250
+                      },
+                      {
+                        "Id": 12277,
+                        "Name": "Garlic Mayo Fries",
+                        "Price": 250
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "Discount": {
+              "Id": 1163,
+              "Type": "Percentage",
+              "Name": "Web Discount 10 %",
+              "Value": 10,
+              "MaxCap": 0,
+              "MinCap": 0
+            }
+          },
+          {
+            "Id": 12988,
+            "CategoryId": "3993",
+            "Code": "",
+            "Name": "Discounted Deal",
+            "DepartmentName": "420",
+            "Price": 2000,
+            "TaxAmount": 0,
+            "Quantity": 1,
+            "Image": "N/A",
+            "Comment": "",
+            "IsKot": false,
+            "ItemFOC": false,
+            "Description": "",
+            "Variations": [
+              {
+                "Id": 17697,
+                "Size": {
+                  "Id": 870,
+                  "Name": "Large"
+                },
+                "Flavour": {
+                  "Id": 597,
+                  "Name": "-"
+                },
+                "Price": 1860,
+                "Discount": {
+                  "Id": 1191,
+                  "Type": "Percentage",
+                  "Name": "Disc 7%",
+                  "Value": 7,
+                  "MaxCap": 0,
+                  "MinCap": 0
+                },
+                "ItemChoices": [
+                  {
+                    "Id": 5960,
+                    "Name": "Option 1",
+                    "Quantity": 1,
+                    "MaxChoice": 1,
+                    "ItemOptions": [
+                      {
+                        "Id": 12264,
+                        "Name": "Chicken Behari Tikka",
+                        "Price": 0
+                      }
+                    ]
+                  },
+                  {
+                    "Id": 5961,
+                    "Name": "Option 2",
+                    "Quantity": 2,
+                    "MaxChoice": 2,
+                    "ItemOptions": [
+                      {
+                        "Id": 12286,
+                        "Name": "Crispy Broast",
+                        "Price": 0
+                      },
+                      {
+                        "Id": 12285,
+                        "Name": "Crispy Broast",
+                        "Price": 0
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "Discount": {
+              "Id": 1191,
+              "Type": "Percentage",
+              "Name": "Disc 7%",
+              "Value": 7,
+              "MaxCap": 0,
+              "MinCap": 0
+            }
+          }
+        ],
+        "branchId": 247,
+        "domain": "rollinnbbq.pk"
+      };
+    }
   </script>
 </body>
 

@@ -18,6 +18,7 @@ var sqlServerConnectionString =
     ?? throw new InvalidOperationException("SqlServer connection string is not configured.");
 const string PostgressConnectionString = "Host=haproxy;Port=5433;Database=restaurants;Username=postgres;Password=postgrespass";
 // Services
+
 builder.Services
     .AddDbContextFactory<SqlServerDbContext>(options =>
         options.UseSqlServer(
@@ -53,13 +54,15 @@ builder.Services
     .AddScoped<ISetupCompanySettingsMigrationService, SetupCompanySettingsMigrationService>()
     .AddScoped<ICustomerDataImportService, CustomerDataImportService>()
     .AddScoped<IOrdersImportService, OrdersImportService>()
+    .AddScoped<IUserLoginMigrationService, UserLoginMigrationService>()
     .AddScoped<Implementation>();
 
 var app = builder.Build();
 
 // Optional: minimal endpoint (useful for health checks)
-app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Implementation impl, [FromServices] SqlServerDbContext sqlServerDbContext, HttpContext httpContext) =>
+app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Implementation impl, [FromServices] IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory, HttpContext httpContext) =>
 {
+    using var sqlServerDbContext = sqlServerDbContextFactory.CreateDbContext();
     var company = await sqlServerDbContext.SetupCompanies.FirstOrDefaultAsync(x => x.CompanyId == companyId, httpContext.RequestAborted);
     if (company == null)
     {
@@ -76,8 +79,7 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Imple
                 .Replace("https://", "")
                 .Replace("www.", "")
                 .Split('/')[0];
-    var dbName = domain.Split('.')[0];
-    var response = await impl.Import(companyId, dbName, httpContext.RequestAborted);
+    var response = await impl.Import(companyId, domain, httpContext.RequestAborted);
     try
     {
         var httpClient = new HttpClient
@@ -99,14 +101,20 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Imple
     return response;
 });
 
-app.MapGet("health", ([FromServices] SqlServerDbContext sqlServerDbContext) =>
+app.MapGet("health", ([FromServices] IDbContextFactory<SqlServerDbContext> sqlDbContextFactory, IDbContextFactory<RestaurantsDbContext> restaurantDbContextFactory) =>
 {
+    using var sqlServerDbContext = sqlDbContextFactory.CreateDbContext();
     if (sqlServerDbContext.Database.CanConnect() == false)
     {
         return Results.Problem("Sql Database connection failed", statusCode: 503);
     }
+
+    using var restaurantDbContext = restaurantDbContextFactory.CreateDbContext();
+    if (restaurantDbContext.Database.CanConnect() == false)
+    {
+        return Results.Problem("Postgres Database connection failed", statusCode: 503);
+    }
     return Results.Ok("Service is healthy");
 });
-
 
 await app.RunAsync();

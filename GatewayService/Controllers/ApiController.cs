@@ -1,7 +1,11 @@
 using GatewayService.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using PointofSaleModels.Protos;
+using static PointofSaleModels.Protos.PushNotificationService;
+using PointofSaleModels.ServicePayloads;
 using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -11,24 +15,95 @@ namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
+        [AllowAnonymous]
+        [HttpPost("subscribe")]
+        public async Task<IActionResult> SubscribeAsync([FromBody] PushSubscriptionDto dto)
+        {
+            var request = new PushNotificationSubscriptionRequest
+            {
+                ClientId = dto.ClientId,
+                Endpoint = dto.Endpoint,
+                P256Dh = dto.P256DH,
+                Auth = dto.Auth
+            };
+            var response = await pushNotificationClient.SubscribeAsync(request);
+
+            if (response.Success)
+                return Ok();
+            else
+                return BadRequest(response.Message);
+        }
+
+        [HttpPost("unsubscribe")]
+        public async Task<IActionResult> UnsubscribeAsync([FromBody] PushSubscriptionDto dto)
+        {
+            var request = new PushNotificationUnsubscribeRequest
+            {
+                ClientId = dto.ClientId
+            };
+            var response = await pushNotificationClient.UnsubscribeAsync(request);
+
+            if (response.Success)
+                return Ok();
+            else
+                return BadRequest(response.Message);
+        }
+
+        [HttpPost("notify")]
+        public async Task<IActionResult> NotifyAsync(NotifyRequest request)
+        {
+            var obj = new PushNotificationNotifyRequest
+            {
+                ClientId = request.ClientId,
+                Title = request.Title,
+                Message = request.Message
+            };
+            var response = await pushNotificationClient.NotifyAsync(obj);
+            if (response.Success)
+                return Ok();
+            else
+                return BadRequest(response.Message);
+        }
+
         [HttpGet("clear")]
         public async Task<IActionResult> ClearCacheAsync([FromQuery] string domain)
         {
             var db = redis.GetDatabase();
             var server = redis.GetServer(redis.GetEndPoints().First());
+            int menuKeys = 0, dAndPKeys = 0, pendingKeys = 0;
             foreach (var key in server.Keys(pattern: $"{domain}:*:Menu"))
             {
                 await db.KeyDeleteAsync(key);
+                menuKeys++;
+            }
+
+            foreach (var key in server.Keys(pattern: $"{domain}:*:menu"))
+            {
+                await db.KeyDeleteAsync(key);
+                menuKeys++;
             }
 
             foreach (var key in server.Keys(pattern: $"{domain}:*:DAndP"))
             {
                 await db.KeyDeleteAsync(key);
+                dAndPKeys++;
             }
-            return Ok();
+
+            foreach (var key in server.Keys(pattern: $"{domain}:*:dandp"))
+            {
+                await db.KeyDeleteAsync(key);
+                dAndPKeys++;
+            }
+
+            foreach (var key in server.Keys(pattern: "*:pending"))
+            {
+                await db.KeyDeleteAsync(key);
+                pendingKeys++;
+            }
+            return Ok(new { Menu = menuKeys, DAndP = dAndPKeys, Pending = pendingKeys });
         }
 
         [HttpGet("health")]
@@ -38,7 +113,7 @@ namespace GatewayService.Controllers
         }
 
         [HttpGet("import/{companyId:int}")]
-        public async Task<IActionResult> Import(int companyId)
+        public async Task<IActionResult> Import(int companyId, [FromQuery] bool checkhealth = true)
         {
             var httpClient = new HttpClient
             {
@@ -46,13 +121,16 @@ namespace GatewayService.Controllers
                 BaseAddress = new Uri("http://importservice:8080")
             };
 
-            var response = await httpClient.GetAsync("health");
-            if (!response.IsSuccessStatusCode)
+            if (checkhealth)
             {
-                return StatusCode((int)response.StatusCode, "Import service is not healthy.");
+                var healthResponse = await httpClient.GetAsync("health");
+                if (!healthResponse.IsSuccessStatusCode)
+                {
+                    return StatusCode((int)healthResponse.StatusCode, "Import service is not healthy.");
+                }
             }
 
-            response = await httpClient.GetAsync($"import/{companyId}");
+            var response = await httpClient.GetAsync($"import/{companyId}");
 
             if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
             {
@@ -170,5 +248,11 @@ namespace GatewayService.Controllers
 
         public record TokenRequest(string? Token);
         public record LoginRequest(string Username, string Password, string UserId);
+        public class NotifyRequest
+        {
+            public string ClientId { get; set; }
+            public string Title { get; set; }
+            public string Message { get; set; }
+        }
     }
 }

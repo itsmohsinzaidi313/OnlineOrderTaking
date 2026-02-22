@@ -3,25 +3,38 @@ namespace PointofSaleModels.Settings
     public static class RabbitMqQueues
     {
         public const string Services = "services";
-        public const string JwtService = "jwt";
         public const string DataService = "data";
+        public const string MenuService = "menu";
+        public const string SettingService = "setting";
+        public const string OrderHistoryService = "orderhistory";
         public const string OrderService = "order";
         public const string GatewayService = "gateway";
-        public const string LoginService = "login";
+        public const string OrderStatusService = "orderstatus";
+        public const string OrderNotificationService = "ordernotification";
+        public const string PushNotificationService = "pushnotification";
         public const string ImportService = "import";
         public const string Request = "request";
         public const string Response = "response";
 
-        public const string JwtRequestQueue = $"{Services}.{JwtService}.{Request}";
-        public const string JwtResponseQueue = $"{Services}.{JwtService}.{Response}";
         public const string DataRequestQueue = $"{Services}.{DataService}.{Request}";
         public const string DataResponseQueue = $"{Services}.{DataService}.{Response}";
         public const string OrderRequestQueue = $"{Services}.{OrderService}.{Request}";
         public const string OrderResponseQueue = $"{Services}.{OrderService}.{Response}";
-        public const string LoginRequestQueue = $"{Services}.{LoginService}.{Request}";
-        public const string LoginResponseQueue = $"{Services}.{LoginService}.{Response}";
-        public const string ImportRequestQueue = $"{Services}.{ImportService}.{Request}";
+        public const string OrderStatusRequestQueue = $"{Services}.{OrderStatusService}.{Request}";
+        public const string OrderStatusResponseQueue = $"{Services}.{OrderStatusService}.{Response}";
+        public const string OrderNotificationRequestQueue = $"{Services}.{OrderNotificationService}.{Request}";
+        public const string OrderNotificationResponseQueue = $"{Services}.{OrderNotificationService}.{Response}";
+        public const string OrderNotificationGatewayResponse = $"{Services}.{OrderNotificationService}.{GatewayService}.{Response}";
+        public const string GatewayRequestQueue = $"{Services}.{GatewayService}.{Request}";
+        public const string GatewayResponseQueue = $"{Services}.{GatewayService}.{Response}";
         public const string ImportResponseQueue = $"{Services}.{ImportService}.{Response}";
-        public const string JwtDecryptQueue = $"{GatewayService}.{JwtService}.{Request}.decrypt";
+        public const string ImportRequestQueue = $"{Services}.{ImportService}.{Request}";
+        public const string SettingRequestQueue = $"{Services}.{SettingService}.{Request}";
+        public const string SettingResponseQueue = $"{Services}.{SettingService}.{Response}";
+        public const string MenuRequestQueue = $"{Services}.{MenuService}.{Request}";
+        public const string MenuResponseQueue = $"{Services}.{MenuService}.{Response}";
+        public const string OrderHistoryRequestQueue = $"{Services}.{OrderHistoryService}.{Request}";
+        public const string OrderHistoryResponseQueue = $"{Services}.{OrderHistoryService}.{Response}";
+        public const string PushNotificationRequestQueue = $"{Services}.{PushNotificationService}.{Request}";
     }
 }

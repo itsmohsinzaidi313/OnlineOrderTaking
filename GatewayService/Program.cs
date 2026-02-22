@@ -7,8 +7,7 @@ using StackExchange.Redis;
 using GatewayService.Models;
 using System.Text;
 using GatewayService.ServiceResponseListeners;
-using GatewayService.Interfaces;
-using GatewayService.Classes;
+using static PointofSaleModels.Protos.PushNotificationService;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -40,9 +39,13 @@ builder.Services
 builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
-    .AddSingleton<DataServiceResponseAction>()
-    .AddSingleton<IQueueAction>(context => context.GetRequiredService<DataServiceResponseAction>())
     .AddHostedService<DataServiceResponseListener>()
+    .AddHostedService<CreateOrderServiceResponseListener>()
+    .AddHostedService<OrderStatusServiceResponseListener>()
+    .AddHostedService<SettingsDataServiceResponseListener>()
+    .AddHostedService<MenuServiceResponseListener>()
+    .AddHostedService<OrderHistoryServiceResponseListener>()
+    .AddHostedService<OrderNotificationServiceResponseListener>()
     .AddSingleton<IConnectionMultiplexer>(context =>
     {
         var configuration = ConfigurationOptions.Parse(redisSettings.ConnectionString, true);
@@ -89,6 +92,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+// Point the gRPC client at the container port the pushnotificationservice listens on (8080)
+builder.Services.AddGrpcClient<PushNotificationServiceClient>(o => o.Address = new Uri("http://pushnotificationservice:8080"));
 
 var app = builder.Build();
 app.UseRouting();

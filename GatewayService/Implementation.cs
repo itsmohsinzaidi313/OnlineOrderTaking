@@ -2,6 +2,7 @@
 using GatewayService.Interfaces;
 using GatewayService.Models;
 using Microsoft.AspNetCore.SignalR;
+using PointofSaleModels.Application;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using StackExchange.Redis;
@@ -15,7 +16,6 @@ namespace GatewayService
         {
             var deserializers = new Dictionary<string, Func<string, ServicePayload?>>()
             {
-                { "LoginResponse", json => JsonSerializer.Deserialize<LoginServicePayload>(json) },
                 { "DataResponse", json => JsonSerializer.Deserialize<DataServicePayload>(json) },
                 { "OrderResponse", json => JsonSerializer.Deserialize<OrderServicePayload>(json) }
             };
@@ -27,17 +27,21 @@ namespace GatewayService
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
-                if (!root.TryGetProperty("SignalRMethodName", out var methodProp)) continue;
+                if (!root.TryGetProperty("Payload", out var payloadProp)) continue;
+                var payloadJson = payloadProp.GetRawText();
+
+                if (!payloadProp.TryGetProperty("SignalRMethodName", out var methodProp)) continue;
 
                 var method = methodProp.GetString();
                 if (string.IsNullOrEmpty(method)) continue;
 
-                if (!root.TryGetProperty("Payload", out var payloadProp)) continue;
-                var payloadJson = payloadProp.GetRawText();
-
                 var payload = deserializers[method](payloadJson);
                 if (payload == null) continue;
-                await hub.Clients.User(userId).SendAsync(method, payload);
+
+                if (!payloadProp.TryGetProperty("ResponseKey", out var responseKeyProp)) continue;
+                var responseKey = responseKeyProp.GetString() ?? throw new Exception("ResposneKey not found");
+
+                await hub.Clients.User(userId).SendAsync(responseKey, payload);
             }
         }
 
@@ -45,7 +49,7 @@ namespace GatewayService
         {
             using var doc = JsonDocument.Parse(svcPayload);
             var root = doc.RootElement;
-            var userId = root.GetProperty("UserId").GetString() ?? throw new Exception("UserId not found");
+            var clientId = root.GetProperty("UserId").GetString() ?? throw new Exception("UserId not found");
             var responseKey = root.GetProperty("ResponseKey").GetString() ?? throw new Exception("ResponseKey not found");
 
             logger.LogInformation("Gateway: Received {method} message", responseKey);
@@ -54,7 +58,6 @@ namespace GatewayService
             {
                 var pendingPayload = new PendingPayload<T>
                 {
-                    SignalRMethodName = responseKey,
                     Payload = JsonSerializer.Deserialize<T>(svcPayload)!
                 };
                 var pendingPayloadJson = JsonSerializer.Serialize(pendingPayload);
@@ -63,7 +66,7 @@ namespace GatewayService
             else
             {
                 var payload = JsonSerializer.Deserialize<T>(svcPayload)!;
-                await hub.Clients.User(userId).SendAsync(responseKey, payload);
+                await hub.Clients.User(clientId).SendAsync(responseKey, payload);
                 return;
             }
         }

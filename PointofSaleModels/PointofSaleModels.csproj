@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" Version="2.76.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.2">
       <PrivateAssets>all</PrivateAssets>
@@ -20,5 +21,9 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageReference Include="RabbitMQ.Client" Version="7.2.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.10.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Protos\protobuf.proto" GrpcServices="Both" Namespace="PointofSaleModels.Protos" />
   </ItemGroup>
 </Project>

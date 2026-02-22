@@ -30,6 +30,64 @@ namespace GatewayService
             await base.OnDisconnectedAsync(ex);
         }
 
+        public async Task MenuRequest(string domainName, int branchId, string responseKey)
+        {
+            var db = redis.GetDatabase();
+            var response = await db.StringGetAsync($"{domainName}:{branchId}:menu");
+            if (!response.IsNull)
+            {
+                var payload = JsonSerializer.Deserialize<DataServicePayload>(response.ToString());
+                await Clients.Caller.SendAsync("Ack", new { status = "cached" });
+                await Clients.Caller.SendAsync(responseKey, payload);
+                return;
+            }
+            var obj = new DataServicePayload
+            {
+                DomainName = domainName,
+                DataRequestType = string.Empty,
+                BranchId = branchId,
+                ResponseKey = responseKey,
+                SignalRMethodName = "MenuRequest"
+            }.FillContext(Context);
+
+            await QueuePayload(RabbitMqQueues.MenuRequestQueue, obj);
+        }
+
+        public async Task DeliveryAndPickupRequest(string domainName, int branchId, string responseKey)
+        {
+            var db = redis.GetDatabase();
+            var response = await db.StringGetAsync($"{domainName}:{branchId}:dandp");
+            if (!response.IsNull)
+            {
+                var payload = JsonSerializer.Deserialize<DataServicePayload>(response.ToString());
+                await Clients.Caller.SendAsync("Ack", new { status = "cached" });
+                await Clients.Caller.SendAsync(responseKey, payload);
+                return;
+            }
+            var obj = new DataServicePayload
+            {
+                DomainName = domainName,
+                DataRequestType = string.Empty,
+                BranchId = branchId,
+                ResponseKey = responseKey,
+                SignalRMethodName = "DeliveryAndPickupRequest"
+            }.FillContext(Context);
+            await QueuePayload(RabbitMqQueues.SettingRequestQueue, obj);
+        }
+
+        public async Task OrderHistoryRequest(string domainName, int userId, string responseKey)
+        {
+            var obj = new DataServicePayload
+            {
+                DomainName = domainName,
+                DataRequestType = "Orders",
+                ResponseKey = responseKey,
+                SignalRMethodName = "OrderHistoryRequest"
+            }.FillContext(Context);
+            obj.OrderUserId = userId;
+            await QueuePayload(RabbitMqQueues.OrderHistoryRequestQueue, obj);
+        }
+
         public async Task DataRequest(string domainName, string requestType, int branchId, string responseKey)
         {
             var redisKey = requestType switch
@@ -59,8 +117,20 @@ namespace GatewayService
                     return;
                 }
             }
+            var obj = new DataServicePayload
+            {
+                DomainName = domainName,
+                DataRequestType = requestType,
+                BranchId = branchId,
+                ResponseKey = responseKey,
+                SignalRMethodName = "DataResponse"
+            }.FillContext(Context);
 
-            await QueuePayload(RabbitMqQueues.DataRequestQueue, servicePayload);
+            if (requestType == "Orders")
+            {
+                obj.OrderUserId = branchId;
+            }
+            await QueuePayload(RabbitMqQueues.DataRequestQueue, obj);
         }
 
         public async Task PlaceOrder(CustomerOrder order, string responseKey)
@@ -69,9 +139,26 @@ namespace GatewayService
             {
                 Order = order,
                 BranchId = order.BranchId,
-                DomainName = order.Domain
+                DomainName = order.Domain,
+                ResponseKey = responseKey,
+                SignalRMethodName = "PlaceOrder"
             }.FillContext(Context);
             await QueuePayload(RabbitMqQueues.OrderRequestQueue, obj);
+        }
+
+        public async Task OrderStatus(string domainName, int branchId, string orderNumber, int? orderStatusId, int? branchTransferId, string responseKey)
+        {
+            var obj = new OrderStatusPayload
+            {
+                DomainName = domainName,
+                BranchId = branchId,
+                OrderNumber = orderNumber,
+                ResponseKey = responseKey,
+                BranchTransferId = branchTransferId,
+                OrderStatusId = orderStatusId,
+                SignalRMethodName = "OrderStatus"
+            }.FillContext(Context);
+            await QueuePayload(RabbitMqQueues.OrderStatusRequestQueue, obj);
         }
 
         private async Task QueuePayload<T>(string queues, T payload)

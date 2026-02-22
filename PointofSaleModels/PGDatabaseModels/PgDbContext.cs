@@ -86,6 +86,14 @@ public partial class PgDbContext : DbContext
 
     public virtual DbSet<BranchOrderSequence> OrderNumberSequences { get; set; }
 
+    public virtual DbSet<UserLogin> UserLogins { get; set; }
+
+    public virtual DbSet<UserBranchMapping> UserBranchMappings { get; set; }
+
+    public virtual DbSet<UserRole> UserRoles { get; set; }
+
+    public virtual DbSet<OrderStatus> OrderStatuses { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Area>(entity =>
@@ -337,6 +345,35 @@ public partial class PgDbContext : DbContext
         {
             entity.HasKey(e => e.BranchId);
             entity.ToTable("branch_order_sequence");
+        });
+
+        modelBuilder.Entity<UserLogin>(entity =>
+        {
+            entity.HasKey(e => e.UserId);
+            entity.ToTable("user_login");
+        });
+
+        modelBuilder.Entity<UserBranchMapping>(entity =>
+        {
+            entity.HasKey(e => e.UserBranchId);
+            entity.ToTable("user_branch_mapping");
+            entity.Property(x => x.UserId)
+            .HasColumnName("UserID");
+        });
+
+        modelBuilder.Entity<UserRole>(entity =>
+        {
+            entity.HasKey(e => e.RoleId);
+            entity.ToTable("user_role");
+        });
+
+        modelBuilder.Entity<OrderStatus>(entity =>
+        {
+            entity.ToTable("order_status");
+            entity.HasKey(x => x.OrderStatusId);
+            entity
+                .Property(x => x.OrderStatusName)
+                .HasColumnName("OrderStatus");
         });
 
         OnModelCreatingPartial(modelBuilder);
