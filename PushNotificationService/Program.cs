@@ -1,3 +1,4 @@
+using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using PushNotificationService;
 using StackExchange.Redis;
@@ -22,7 +23,9 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(context =>
      return ConnectionMultiplexer.Connect(configuration);
  });
 
-builder.Services.AddHostedService<RequestQueueListener>();
+builder.Services
+    .AddSingleton<RabbitMqConnection>()
+    .AddHostedService<RequestQueueListener>();
 builder.Services.AddGrpc();
 builder.WebHost.ConfigureKestrel(options =>
 {
