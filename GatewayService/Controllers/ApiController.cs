@@ -53,7 +53,7 @@ namespace GatewayService.Controllers
         }
 
         [HttpPost("notify")]
-        public async Task<IActionResult> NotifyAsync(INotifyRequest request)
+        public async Task<IActionResult> NotifyAsync(NotifyRequest request)
         {
             var obj = new PushNotificationNotifyRequest
             {
@@ -248,7 +248,7 @@ namespace GatewayService.Controllers
 
         public record TokenRequest(string? Token);
         public record LoginRequest(string Username, string Password, string UserId);
-        public interface INotifyRequest
+        public class NotifyRequest
         {
             public string ClientId { get; set; }
             public string Title { get; set; }
