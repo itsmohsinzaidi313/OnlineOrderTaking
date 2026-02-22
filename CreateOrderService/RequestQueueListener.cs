@@ -35,10 +35,11 @@ namespace CreateOrderService
                 DataPayload = response
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.OrderResponseQueue, response);
-            await publisher.PublishToQueueAsync(RabbitMqQueues.OrderNotificationRequestQueue, new OrderNotificationServicePayload(requestPayload)
-            {
-                CustomerOrder = requestPayload.Order!,
-            });
+            await publisher.PublishToQueueAsync(RabbitMqQueues.OrderNotificationRequestQueue,
+                new OrderNotificationServicePayload(requestPayload)
+                {
+                    CustomerOrder = requestPayload.Order!,
+                });
         }
 
         private async Task<string> GetConnectionString(string domainName)

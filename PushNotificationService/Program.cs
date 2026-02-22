@@ -19,6 +19,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(context =>
      return ConnectionMultiplexer.Connect(configuration);
  });
 
+builder.Services.AddHostedService<RequestQueueListener>();
 builder.Services.AddGrpc();
 builder.WebHost.ConfigureKestrel(options =>
 {
