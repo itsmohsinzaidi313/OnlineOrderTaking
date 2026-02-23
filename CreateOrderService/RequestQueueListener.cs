@@ -24,6 +24,21 @@ namespace CreateOrderService
                 connectionString = connectionString.Replace("5434", "5433");
                 var orderNumber = await impl.SaveOrderAsync(connectionString, requestPayload.BranchId, requestPayload.Order!);
                 response = new { Success = true, Message = "Order processed successfully", OrderNumber = orderNumber, requestPayload.Order };
+                await foreach (var userId in impl.GetBranchUsersIdsAsync(connectionString, requestPayload.BranchId))
+                {
+                    await publisher.PublishToQueueAsync(RabbitMqQueues.PushNotificationRequestQueue, new PushNotificationServicePayload
+                    {
+                        ClientId = $"branch:{userId}:*",
+                        Title = "New Order Received",
+                        Message = $"{orderNumber}",
+                    });
+
+                }
+                await publisher.PublishToQueueAsync(RabbitMqQueues.OrderNotificationRequestQueue,
+                    new OrderNotificationServicePayload(requestPayload)
+                    {
+                        CustomerOrder = requestPayload.Order!,
+                    });
             }
             catch (Exception ex)
             {
@@ -35,11 +50,6 @@ namespace CreateOrderService
                 DataPayload = response
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.OrderResponseQueue, response);
-            await publisher.PublishToQueueAsync(RabbitMqQueues.OrderNotificationRequestQueue,
-                new OrderNotificationServicePayload(requestPayload)
-                {
-                    CustomerOrder = requestPayload.Order!,
-                });
         }
 
         private async Task<string> GetConnectionString(string domainName)

@@ -19,35 +19,40 @@ namespace PushNotificationService
             var request = JsonSerializer.Deserialize<PushNotificationServicePayload>(payload);
             try
             {
-                var redisValue = await _db.StringGetAsync($"subscription:{request.ClientId}");
-                if (!redisValue.HasValue)
+                foreach (var clientId in multiplexer.GetServer(multiplexer.GetEndPoints().First()).Keys(pattern: $"subscribtion:{request.ClientId}"))
                 {
-                    logger.LogWarning("No subscription found for client {ClientId}", request.ClientId);
-                    return;
+                    var cid = clientId.ToString();
+                    var redisValue = await _db.StringGetAsync(cid);
+                    if (!redisValue.HasValue)
+                    {
+                        logger.LogWarning("No subscription found for client {ClientId}", cid);
+                        return;
+                    }
+                    var subscription = JsonSerializer.Deserialize<PushSubscriptionDto>(redisValue.ToString());
+                    if (subscription == null)
+                    {
+                        logger.LogError("Subscription data is corrupted for client {ClientId}", cid);
+                        return;
+                    }
+                    var pushSubscribtion = new PushSubscription
+                    {
+                        Endpoint = subscription.Endpoint,
+                        Keys = new Dictionary<string, string>
+                        {
+                            { "p256dh", subscription.P256DH },
+                            { "auth", subscription.Auth }
+                        }
+                    };
+                    var content = JsonSerializer.Serialize(new
+                    {
+                        title = request.Title,
+                        message = request.Message
+                    });
+                    var pushMessage = new PushMessage(content);
+                    await pushService.SendAsync(pushSubscribtion, pushMessage);
+                    logger.LogInformation("Successfully processed push notification request for client {ClientId}", cid);
+
                 }
-                var subscription = JsonSerializer.Deserialize<PushSubscriptionDto>(redisValue.ToString());
-                if (subscription == null)
-                {
-                    logger.LogError("Subscription data is corrupted for client {ClientId}", request.ClientId);
-                    return;
-                }
-                var pushSubscribtion = new PushSubscription
-                {
-                    Endpoint = subscription.Endpoint,
-                    Keys = new Dictionary<string, string>
-                {
-                    { "p256dh", subscription.P256DH },
-                    { "auth", subscription.Auth }
-                }
-                };
-                var content = JsonSerializer.Serialize(new
-                {
-                    title = request.Title,
-                    message = request.Message
-                });
-                var pushMessage = new PushMessage(content);
-                await pushService.SendAsync(pushSubscribtion, pushMessage);
-                logger.LogInformation("Successfully processed push notification request for client {ClientId}", request.ClientId);
             }
             catch (Exception ex)
             {
