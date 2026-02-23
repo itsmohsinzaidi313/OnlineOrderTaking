@@ -8,6 +8,9 @@
 
         public OrderStatusPayload(OrderStatusPayload payload) : base(payload)
         {
+            OrderNumber = payload.OrderNumber;
+            OrderStatusId = payload.OrderStatusId;
+            BranchTransferId = payload.BranchTransferId;
         }
         public string OrderNumber { get; set; }
         public int? OrderStatusId { get; set; }

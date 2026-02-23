@@ -258,6 +258,8 @@ internal class Implementation()
         settingsData["HAMBURGER_MENU"] = false;
         settingsData["ABOUT_US"] = false;
 
+        var orderStatuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
+        settingsData["OrderStatuses"] = JsonValue.Create(orderStatuses);
         return settingsData;
     }
 
@@ -517,8 +519,11 @@ internal class Implementation()
 
         foreach (var branchId in await dbContext.UserBranchMappings.Where(x => x.UserId == userId).Select(x => x.BranchId).ToListAsync())
         {
-            foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId).ToListAsync())
+            foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId && x.OrderDate > DateOnly.FromDateTime(DateTime.Now.AddDays(-3))).ToListAsync())
             {
+                var orderTime = dbOrder.OrderTime;
+                var orderDate = dbOrder.OrderDate;
+                DateTime? orderDateTime = orderDate?.ToDateTime(orderTime);
                 var order = new CustomerOrder
                 {
                     OrderNumber = dbOrder.OrderNumber ?? "N/A",
@@ -530,6 +535,7 @@ internal class Implementation()
                     DeliveryCharges = (int?)(dbOrder.DeliveryCharges ?? 0.00),
                     AmountWithoutGst = dbOrder.TotalAmountWithoutGst ?? 0.00,
                     AmountWithGst = dbOrder.TotalAmountWithGst ?? 0.00,
+                    OrderTime = orderDateTime ?? DateTime.MinValue,
                 };
                 if (dbOrder.DiscountId.HasValue && dbOrder.DiscountId != 0)
                 {

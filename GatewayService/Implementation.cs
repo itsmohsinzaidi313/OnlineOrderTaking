@@ -64,26 +64,30 @@ namespace GatewayService
             var responseKey = root.GetProperty("ResponseKey").GetString() ?? throw new Exception("ResponseKey not found");
 
             logger.LogInformation("Gateway: Received {method} message", responseKey);
+            var payload = JsonSerializer.Deserialize<T>(svcPayload)!;
 
             if (!UserOnline(clientId))
             {
                 var pendingPayload = new PendingPayload<T>
                 {
-                    Payload = JsonSerializer.Deserialize<T>(svcPayload)!
+                    Payload = payload!
                 };
                 var pendingPayloadJson = JsonSerializer.Serialize(pendingPayload);
                 await PublishForPending(clientId, pendingPayloadJson);
             }
             else
             {
-                var payload = JsonSerializer.Deserialize<T>(svcPayload)!;
-                await hub.Clients.User(clientId).SendAsync(responseKey, payload);
-                return;
+                await SendToUser(clientId, responseKey, payload);
             }
         }
 
+        public async Task SendToUser<T>(string clientId, string method, T payload) where T : ServicePayload
+        {
+            await hub.Clients.User(clientId).SendAsync(method, payload);
+        }
+
         public async Task SendCustomerOrderToBranches(CustomerOrder svcPayload, List<string> clientIds)
-                    {
+        {
             await hub.Clients.Users(clientIds).SendAsync("NewOrder", svcPayload);
         }
 

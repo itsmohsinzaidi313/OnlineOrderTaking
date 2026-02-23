@@ -278,7 +278,8 @@ services:
       context: .
       dockerfile: ./ImportService/Dockerfile
     environment:
-      - ConnectionStrings__SqlServer=Server=163.61.91.143;Database=WebOrdering;User Id=sa;Password=Zid2801ealyk;TrustServerCertificate=True;
+      - ConnectionStrings__SqlServer=${MSSQLCONNECTION}
+      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
     networks:
       - patroni-net
     depends_on:

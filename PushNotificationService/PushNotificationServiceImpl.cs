@@ -8,7 +8,7 @@ using static PointofSaleModels.Protos.PushNotificationService;
 
 namespace PushNotificationService
 {
-    public class PushNotificationServiceImpl(WebPushService service, IConnectionMultiplexer multiplexer) : PushNotificationServiceBase
+    public class PushNotificationServiceImpl(ILogger<PushNotificationServiceImpl> logger, WebPushService service, IConnectionMultiplexer multiplexer) : PushNotificationServiceBase
     {
         private readonly IDatabase _db = multiplexer.GetDatabase();
         public override async Task<PushNotificationNotifyResponse> Notify(PushNotificationNotifyRequest request, ServerCallContext context)
@@ -68,6 +68,7 @@ namespace PushNotificationService
             var json = System.Text.Json.JsonSerializer.Serialize(pushSubscribtion);
             await _db.StringSetAsync($"subscription:{clientId}", json);
             var redisValue = await _db.StringGetAsync($"subscription:{clientId}");
+            logger.LogInformation("Stored subscription for client {ClientId} ({HasValue})", clientId, redisValue.HasValue);
             var response = new PushNotificationSubscriptionResponse
             {
                 Success = true,
