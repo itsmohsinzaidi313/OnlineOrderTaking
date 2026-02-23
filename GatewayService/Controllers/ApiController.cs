@@ -1,7 +1,11 @@
 using GatewayService.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using PointofSaleModels.Protos;
+using static PointofSaleModels.Protos.PushNotificationService;
+using PointofSaleModels.ServicePayloads;
 using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -11,10 +15,58 @@ namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, Implementation implementation) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
-        private readonly Implementation _implementation = implementation;
+        [AllowAnonymous]
+        [HttpPost("subscribe")]
+        public async Task<IActionResult> SubscribeAsync([FromBody] PushSubscriptionDto dto)
+        {
+            var request = new PushNotificationSubscriptionRequest
+            {
+                ClientId = dto.ClientId,
+                Endpoint = dto.Endpoint,
+                P256Dh = dto.P256DH,
+                Auth = dto.Auth
+            };
+            var response = await pushNotificationClient.SubscribeAsync(request);
+
+            if (response.Success)
+                return Ok();
+            else
+                return BadRequest(response.Message);
+        }
+
+        [HttpPost("unsubscribe")]
+        public async Task<IActionResult> UnsubscribeAsync([FromBody] PushSubscriptionDto dto)
+        {
+            var request = new PushNotificationUnsubscribeRequest
+            {
+                ClientId = dto.ClientId
+            };
+            var response = await pushNotificationClient.UnsubscribeAsync(request);
+
+            if (response.Success)
+                return Ok();
+            else
+                return BadRequest(response.Message);
+        }
+
+        [HttpPost("notify")]
+        public async Task<IActionResult> NotifyAsync(NotifyRequest request)
+        {
+            var obj = new PushNotificationNotifyRequest
+            {
+                ClientId = request.ClientId,
+                Title = request.Title,
+                Message = request.Message
+            };
+            var response = await pushNotificationClient.NotifyAsync(obj);
+            if (response.Success)
+                return Ok();
+            else
+                return BadRequest(response.Message);
+        }
 
         [HttpGet("clear")]
         public async Task<IActionResult> ClearCacheAsync([FromQuery] string domain)
@@ -196,5 +248,11 @@ namespace GatewayService.Controllers
 
         public record TokenRequest(string? Token);
         public record LoginRequest(string Username, string Password, string UserId);
+        public class NotifyRequest
+        {
+            public string ClientId { get; set; }
+            public string Title { get; set; }
+            public string Message { get; set; }
+        }
     }
 }
