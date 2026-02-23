@@ -73,7 +73,7 @@ namespace GatewayService.Controllers
         {
             var db = redis.GetDatabase();
             var server = redis.GetServer(redis.GetEndPoints().First());
-            int menuKeys = 0, dAndPKeys = 0, pendingKeys = 0;
+            int menuKeys = 0, dAndPKeys = 0, pendingKeys = 0, subscriptions = 0;
             foreach (var key in server.Keys(pattern: $"{domain}:*:Menu"))
             {
                 await db.KeyDeleteAsync(key);
@@ -102,6 +102,11 @@ namespace GatewayService.Controllers
             {
                 await db.KeyDeleteAsync(key);
                 pendingKeys++;
+            }
+            foreach (var key in server.Keys(pattern: "subscription:*"))
+            {
+                await db.KeyDeleteAsync(key);
+                subscriptions++;
             }
             return Ok(new { Menu = menuKeys, DAndP = dAndPKeys, Pending = pendingKeys });
         }
