@@ -19,7 +19,12 @@ namespace PushNotificationService
             var request = JsonSerializer.Deserialize<PushNotificationServicePayload>(payload);
             try
             {
-                foreach (var clientId in multiplexer.GetServer(multiplexer.GetEndPoints().First()).Keys(pattern: $"subscribtion:{request.ClientId}"))
+                var endpoint = multiplexer.GetEndPoints().First();
+                var server = multiplexer.GetServer(endpoint);
+                var keys = server.Keys(pattern: $"subscribtion:{request.ClientId}");
+                logger.LogInformation("Processing push notification request for pattern {ClientId} Total {Count}", request?.ClientId, keys.Count());
+
+                foreach (var clientId in keys)
                 {
                     var cid = clientId.ToString();
                     var redisValue = await _db.StringGetAsync(cid);
