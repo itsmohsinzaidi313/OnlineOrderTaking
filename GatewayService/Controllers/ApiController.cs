@@ -38,11 +38,11 @@ namespace GatewayService.Controllers
         }
 
         [HttpPost("unsubscribe")]
-        public async Task<IActionResult> UnsubscribeAsync([FromBody] PushSubscriptionDto dto)
+        public async Task<IActionResult> UnsubscribeAsync([FromBody] string clientId)
         {
             var request = new PushNotificationUnsubscribeRequest
             {
-                ClientId = dto.ClientId
+                ClientId = clientId
             };
             var response = await pushNotificationClient.UnsubscribeAsync(request);
 
