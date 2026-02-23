@@ -32,8 +32,14 @@ namespace GatewayService
 
         public async Task MenuRequest(string domainName, int branchId, string responseKey)
         {
-            var db = redis.GetDatabase();
-            var response = await db.StringGetAsync($"{domainName}:{branchId}:menu");
+            var code = await storage.PublishForService(new DataServicePayload
+            {
+                DomainName = domainName,
+                BranchId = branchId.ToString(),
+                ResponseKey = responseKey,
+                SignalRMethod = "MenuRequest"
+            }.FillContext(Context));
+
             if (!response.IsNull)
             {
                 var payload = JsonSerializer.Deserialize<DataServicePayload>(response.ToString());

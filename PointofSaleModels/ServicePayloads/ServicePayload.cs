@@ -24,6 +24,5 @@
         public string ResponseKey { get; set; } = string.Empty;
         public string BranchId { get; set; } = string.Empty;
         public string SignalRMethod { get; set; } = string.Empty;
-        public string? DataCode { get; set; }
     }
 }
