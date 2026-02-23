@@ -108,7 +108,7 @@ namespace GatewayService.Controllers
                 await db.KeyDeleteAsync(key);
                 subscriptions++;
             }
-            return Ok(new { Menu = menuKeys, DAndP = dAndPKeys, Pending = pendingKeys });
+            return Ok(new { Menu = menuKeys, DAndP = dAndPKeys, Pending = pendingKeys, Subscriptions = subscriptions });
         }
 
         [HttpGet("health")]
