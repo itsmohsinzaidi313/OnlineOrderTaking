@@ -521,6 +521,9 @@ internal class Implementation()
         {
             foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId).ToListAsync())
             {
+                var orderTime = dbOrder.OrderTime;
+                var orderDate = dbOrder.OrderDate;
+                DateTime? orderDateTime = orderDate?.ToDateTime(orderTime);
                 var order = new CustomerOrder
                 {
                     OrderNumber = dbOrder.OrderNumber ?? "N/A",
@@ -532,6 +535,7 @@ internal class Implementation()
                     DeliveryCharges = (int?)(dbOrder.DeliveryCharges ?? 0.00),
                     AmountWithoutGst = dbOrder.TotalAmountWithoutGst ?? 0.00,
                     AmountWithGst = dbOrder.TotalAmountWithGst ?? 0.00,
+                    OrderTime = orderDateTime ?? DateTime.MinValue,
                 };
                 if (dbOrder.DiscountId.HasValue && dbOrder.DiscountId != 0)
                 {
