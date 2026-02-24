@@ -22,14 +22,40 @@ namespace OrderStatusService
                 {
                     if (requestPayload.BranchTransferId != null)
                     {
-                        orderMaster.BranchId = requestPayload.BranchTransferId.Value;
-                        await dbContext.SaveChangesAsync();
+                        await dbContext.OrderMasters
+                            .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
+                            .ExecuteUpdateAsync(x => x.SetProperty(x => x.BranchId, requestPayload.BranchTransferId.Value));
                     }
 
                     if (requestPayload.OrderStatusId != null)
                     {
                         orderMaster.OrderStatusId = requestPayload.OrderStatusId.Value;
-                        await dbContext.SaveChangesAsync();
+                        await dbContext.OrderMasters
+                            .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
+                            .ExecuteUpdateAsync(x => x.SetProperty(x => x.OrderStatusId, requestPayload.OrderStatusId));
+
+                        var previousOrderStatusLog = await dbContext.OrderStatusLogs
+                            .Where(x => x.OrderMasterId == orderMaster.OrderMasterId && x.OrderStatusId == requestPayload.OrderStatusId)
+                            .FirstOrDefaultAsync();
+                        if (previousOrderStatusLog == null)
+                        {
+                            dbContext.OrderStatusLogs.Add(new Db.OrderStatusLog
+                            {
+                                OrderMasterId = orderMaster.OrderMasterId,
+                                OrderStatusId = requestPayload.OrderStatusId.Value,
+                                CompanyId = orderMaster.CompanyId,
+                                Description = string.Empty,
+                                CreatedDateTime = DateTime.UtcNow,
+                            });
+                            await dbContext.SaveChangesAsync();
+                        }
+                    }
+
+                    if (requestPayload.RiderId != null)
+                    {
+                        await dbContext.OrderMasters
+                            .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
+                            .ExecuteUpdateAsync(x => x.SetProperty(x => x.RiderId, requestPayload.RiderId));
                     }
                     payload = new
                     {

@@ -15,6 +15,7 @@
         public string OrderNumber { get; set; }
         public int? OrderStatusId { get; set; }
         public int? BranchTransferId { get; set; }
+        public int? RiderId { get; set; }
         public object? DataPayload { get; set; }
     }
 }

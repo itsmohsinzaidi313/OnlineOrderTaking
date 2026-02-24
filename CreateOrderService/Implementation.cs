@@ -35,6 +35,14 @@ public class Implementation()
     {
         await dbContext.OrderMasters.AddAsync(orderMaster);
         await dbContext.SaveChangesAsync();
+        dbContext.OrderStatusLogs.Add(new Db.OrderStatusLog
+        {
+            CompanyId = orderMaster.CompanyId,
+            OrderMasterId = orderMaster.OrderMasterId,
+            OrderStatusId = orderMaster.OrderStatusId,
+            CreatedDateTime = DateTime.Now,
+            Description = string.Empty,
+        });
         return orderMaster.OrderNumber;
     }
 

@@ -524,6 +524,7 @@ internal class Implementation()
                 var orderTime = dbOrder.OrderTime;
                 var orderDate = dbOrder.OrderDate;
                 DateTime? orderDateTime = orderDate?.ToDateTime(orderTime);
+                var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == dbOrder.OrderMasterId).ToListAsync();
                 var order = new CustomerOrder
                 {
                     OrderNumber = dbOrder.OrderNumber ?? "N/A",
@@ -536,6 +537,11 @@ internal class Implementation()
                     AmountWithoutGst = dbOrder.TotalAmountWithoutGst ?? 0.00,
                     AmountWithGst = dbOrder.TotalAmountWithGst ?? 0.00,
                     OrderTime = orderDateTime ?? DateTime.MinValue,
+                    OrderStatusLogs = orderStatusLogs.Select(x => new
+                    {
+                        Id = dbOrder.OrderStatusId,
+                        CreatedAt = x.CreatedDateTime,
+                    }).ToList()
                 };
                 if (dbOrder.DiscountId.HasValue && dbOrder.DiscountId != 0)
                 {
