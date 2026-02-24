@@ -551,7 +551,7 @@ internal class Implementation()
                             karachiTz
                         ),
                     }).ToList(),
-                    Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName, Contact = x.Contact1 }).FirstOrDefault(x => x.Id == dbOrder.RiderId)
+                    Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName ?? string.Empty, Contact = x.Contact1 ?? string.Empty }).FirstOrDefault(x => x.Id == dbOrder.RiderId)
                 };
                 if (dbOrder.DiscountId.HasValue && dbOrder.DiscountId != 0)
                 {
@@ -678,10 +678,11 @@ internal class Implementation()
         var list = await dbContext.Riders
             .Join(dbContext.UserBranchMappings, a => a.BranchId, b => b.BranchId, (a, b) => new { Riders = a, b.UserId })
             .Where(x => x.UserId == userId)
-            .Select(x => new
+            .Select(x => new Rider
             {
                 Id = x.Riders.RiderId,
-                Name = x.Riders.RiderName
+                Name = x.Riders.RiderName,
+                Contact = x.Riders.Contact1
             })
             .ToListAsync();
         return list;
