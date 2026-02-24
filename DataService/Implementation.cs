@@ -656,5 +656,20 @@ internal class Implementation()
         }
     }
 
+    internal async Task<object> GetRidersAsync(int userId, string connectionString)
+    {
+        using var dbContext = GetDbContext(connectionString);
+        var list = await dbContext.Riders
+            .Join(dbContext.UserBranchMappings, a => a.BranchId, b => b.BranchId, (a, b) => new { Riders = a, b.UserId })
+            .Where(x => x.UserId == userId)
+            .Select(x => new
+            {
+                Id = x.Riders.RiderId,
+                Name = x.Riders.RiderName
+            })
+            .ToListAsync();
+        return list;
+    }
+
     private record DbMenuData(List<Db.ProductSize> ProductSizes, List<Db.Flavour> Flavours, List<Db.Product> Products, List<Db.ProductDetail> ProductDetails, Dictionary<int, string> Departments, List<Db.DealItemDetail> DealItemDetails, List<Db.DealDescription> DealDescriptions, List<Db.Discount> ItemDiscounts, List<Db.DiscountProductDetailMapping> DiscountMappings);
 }

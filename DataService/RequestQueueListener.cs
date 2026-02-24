@@ -46,7 +46,8 @@ namespace DataService
                     }
 
                     var orderStatuses = await impl.GetOrderStatusesAsync(connectionString);
-                    payload = new { Orders = orders, OrderStatuses = orderStatuses };
+                    var riders = await impl.GetRidersAsync(requestPayload.OrderUserId.Value, connectionString);
+                    payload = new { Orders = orders, OrderStatuses = orderStatuses, Riders = riders };
                     success = true;
                 }
             }
