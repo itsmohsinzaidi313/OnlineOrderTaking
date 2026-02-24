@@ -2,8 +2,7 @@ using ImportService.Data;
 
 namespace ImportService.Interfaces
 {
-    public interface IDiscountMigrationService
+    public interface IDiscountMigrationService : IMigrationService
     {
-        Task MigrateDiscountsAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default);
     }
 }

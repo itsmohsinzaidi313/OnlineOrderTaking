@@ -2,9 +2,8 @@ using ImportService.Data;
 
 namespace ImportService.Interfaces
 {
-    public interface IFlavourMigrationService
+    public interface IFlavourMigrationService : IMigrationService
     {
-        Task MigrateFlavoursAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default);
     }
 }
 

@@ -2,8 +2,7 @@
 
 namespace ImportService.Interfaces
 {
-    public interface ICustomerDataImportService
+    public interface ICustomerDataImportService : IMigrationService
     {
-        Task MigrateCustomerDataAsync(int companyId, PostgresDbContext PgDb, CancellationToken ct = default);
     }
 }

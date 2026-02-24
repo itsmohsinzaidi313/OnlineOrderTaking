@@ -6,7 +6,7 @@ namespace ImportService.Services
 {
     public class GSTMigrationService(SqlServerDbContext sqlDb) : IGSTMigrationService
     {
-        public async Task MigrateGSTsAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default)
+        public async Task MigrateAsync(PostgresDbContext pgDb, int companyId = 0, CancellationToken ct = default)
         {
             var source = await sqlDb.GSTs
                 .Where(x => x.IsActive == true && x.CompanyId == companyId)

@@ -44,7 +44,8 @@ namespace ImportService.Data
         public DbSet<UserRole> UserRoles => Set<UserRole>();
         public DbSet<UserBranchMapping> UserBranchMappings => Set<UserBranchMapping>();
         public DbSet<OrderStatus> OrderStatuses => Set<OrderStatus>();
-        public DbSet<OrderStatusLog> OrderStatusLogs { get; set; }
+        public DbSet<OrderStatusLog> OrderStatusLogs => Set<OrderStatusLog>();
+        public DbSet<Rider> Riders => Set<Rider>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -272,6 +273,10 @@ namespace ImportService.Data
             modelBuilder.Entity<OrderStatusLog>()
             .ToTable("order_status_log")
             .HasKey(x => x.OrderStatusLogId);
+
+            modelBuilder.Entity<Rider>()
+                .ToTable("rider")
+                .HasKey(x => x.RiderId);
         }
 
     }

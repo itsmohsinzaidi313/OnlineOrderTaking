@@ -6,7 +6,7 @@ namespace ImportService.Services
 {
     public class OrderModeCompanyMappingMigrationService(SqlServerDbContext sqlDb) : IOrderModeCompanyMappingMigrationService
     {
-        public async Task MigrateOrderModeCompanyMappingsAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default)
+        public async Task MigrateAsync( PostgresDbContext pgDb, int companyId = 0, CancellationToken ct = default)
         {
             var source = await sqlDb.OrderModeCompanyMappings
                 .Where(x => x.CompanyId == companyId && x.IsActive == true)

@@ -2,8 +2,7 @@
 
 namespace ImportService.Interfaces
 {
-    public interface ISetupMasterDetailMigrationService
+    public interface ISetupMasterDetailMigrationService : IMigrationService
     {
-        Task MigrateSetupMasterDetailAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default);
     }
 }

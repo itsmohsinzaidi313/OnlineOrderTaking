@@ -2,9 +2,8 @@ using ImportService.Data;
 
 namespace ImportService.Interfaces
 {
-    public interface ICityMigrationService
+    public interface ICityMigrationService : IMigrationService
     {
-        Task MigrateCitiesAsync(PostgresDbContext pgDb, CancellationToken ct = default);
     }
 }
 

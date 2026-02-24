@@ -2,8 +2,7 @@
 
 namespace ImportService.Interfaces
 {
-    public interface ISetupCompanyMigrationService
+    public interface ISetupCompanyMigrationService : IMigrationService
     {
-        Task MigrateSetupCompanyAsync(int companyId,  PostgresDbContext pgDb, CancellationToken ct = default);
     }
 }

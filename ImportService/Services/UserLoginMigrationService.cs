@@ -6,7 +6,7 @@ namespace ImportService.Services
 {
     public class UserLoginMigrationService(SqlServerDbContext sqlServerDbContext) : IUserLoginMigrationService
     {
-        public async Task MigrateUserLoginAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default)
+        public async Task MigrateAsync(PostgresDbContext pgDb, int companyId = 0, CancellationToken ct = default)
         {
             var userLogins = await sqlServerDbContext.UserLogins
                                                      .AsNoTracking()

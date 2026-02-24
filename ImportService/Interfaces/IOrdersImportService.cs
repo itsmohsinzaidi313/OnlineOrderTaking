@@ -2,8 +2,7 @@
 
 namespace ImportService.Interfaces
 {
-    public interface IOrdersImportService
+    public interface IOrdersImportService : IMigrationService
     {
-        Task MigrateOrdersAsync(int companyId, PostgresDbContext postgresDbContext, CancellationToken cancellationToken);
     }
 }
