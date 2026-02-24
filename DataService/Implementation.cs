@@ -516,6 +516,7 @@ internal class Implementation()
         var statuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
         var branchDict = await dbContext.BranchMasters.ToDictionaryAsync(x => x.BranchId, x => x.BranchName);
         var discounts = await dbContext.Discounts.ToDictionaryAsync(x => x.DiscountId, x => x);
+        var riders = await dbContext.Riders.ToListAsync();
 
         foreach (var branchId in await dbContext.UserBranchMappings.Where(x => x.UserId == userId).Select(x => x.BranchId).ToListAsync())
         {
@@ -549,7 +550,8 @@ internal class Implementation()
                             DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc),
                             karachiTz
                         ),
-                    }).ToList()
+                    }).ToList(),
+                    Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName, Contact = x.Contact1 }).FirstOrDefault(x => x.Id == dbOrder.RiderId)
                 };
                 if (dbOrder.DiscountId.HasValue && dbOrder.DiscountId != 0)
                 {
@@ -696,7 +698,7 @@ internal class Implementation()
                 Name = x.BranchName
             })
             .ToListAsync();
-            return list;
+        return list;
     }
 
     private record DbMenuData(List<Db.ProductSize> ProductSizes, List<Db.Flavour> Flavours, List<Db.Product> Products, List<Db.ProductDetail> ProductDetails, Dictionary<int, string> Departments, List<Db.DealItemDetail> DealItemDetails, List<Db.DealDescription> DealDescriptions, List<Db.Discount> ItemDiscounts, List<Db.DiscountProductDetailMapping> DiscountMappings);

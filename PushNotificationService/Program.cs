@@ -29,7 +29,6 @@ builder.Services
 builder.Services.AddGrpc();
 builder.WebHost.ConfigureKestrel(options =>
 {
-    // Listen on all network interfaces inside the container and on the container port 8080 (matches docker-compose)
     options.ListenAnyIP(8080, o =>
     {
         o.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
