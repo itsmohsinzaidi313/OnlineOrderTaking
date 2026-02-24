@@ -29,7 +29,6 @@ namespace OrderStatusService
 
                     if (requestPayload.OrderStatusId != null)
                     {
-                        orderMaster.OrderStatusId = requestPayload.OrderStatusId.Value;
                         await dbContext.OrderMasters
                             .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
                             .ExecuteUpdateAsync(x => x.SetProperty(x => x.OrderStatusId, requestPayload.OrderStatusId));

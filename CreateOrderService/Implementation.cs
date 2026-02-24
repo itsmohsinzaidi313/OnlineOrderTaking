@@ -272,4 +272,20 @@ public class Implementation()
         foreach (var userId in await dbContext.UserBranchMappings.Where(x => x.BranchId == branchId).Select(x => x.UserId).ToListAsync())
             yield return userId;
     }
+
+    internal async Task<object> OrderStatusLogs(string connectionString, string orderNumber)
+    {
+        var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+        var dbContext = GetDbContext(connectionString);
+        var orderMasterId = await dbContext.OrderMasters.Where(x => x.OrderNumber == orderNumber).Select(x => x.OrderMasterId).FirstOrDefaultAsync();
+        var logs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == orderMasterId).ToListAsync();
+        return logs.Select(x => new
+        {
+            Id = x.OrderStatusId,
+            CreatedAt = TimeZoneInfo.ConvertTimeFromUtc(
+                            DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc),
+                            karachiTz
+                        ),
+        });
+    }
 }

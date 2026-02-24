@@ -517,6 +517,7 @@ internal class Implementation()
         var branchDict = await dbContext.BranchMasters.ToDictionaryAsync(x => x.BranchId, x => x.BranchName);
         var discounts = await dbContext.Discounts.ToDictionaryAsync(x => x.DiscountId, x => x);
         var riders = await dbContext.Riders.ToListAsync();
+        var orderStatusLogs = await dbContext.OrderStatusLogs.ToListAsync();
 
         foreach (var branchId in await dbContext.UserBranchMappings.Where(x => x.UserId == userId).Select(x => x.BranchId).ToListAsync())
         {
@@ -525,7 +526,6 @@ internal class Implementation()
                 var orderTime = dbOrder.OrderTime;
                 var orderDate = dbOrder.OrderDate;
                 DateTime? orderDateTime = orderDate?.ToDateTime(orderTime);
-                var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == dbOrder.OrderMasterId).ToListAsync();
 
                 // Find Asia/Karachi timezone once per order
                 var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
@@ -542,7 +542,7 @@ internal class Implementation()
                     AmountWithoutGst = dbOrder.TotalAmountWithoutGst ?? 0.00,
                     AmountWithGst = dbOrder.TotalAmountWithGst ?? 0.00,
                     OrderTime = orderDateTime ?? DateTime.MinValue,
-                    OrderStatusLogs = orderStatusLogs.Select(x => new
+                    OrderStatusLogs = orderStatusLogs.Where(x => x.OrderMasterId == dbOrder.OrderMasterId).Select(x => new
                     {
                         Id = dbOrder.OrderStatusId,
                         // Treat stored CreatedDateTime as UTC and convert to Asia/Karachi
