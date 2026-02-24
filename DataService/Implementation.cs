@@ -525,6 +525,10 @@ internal class Implementation()
                 var orderDate = dbOrder.OrderDate;
                 DateTime? orderDateTime = orderDate?.ToDateTime(orderTime);
                 var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == dbOrder.OrderMasterId).ToListAsync();
+
+                // Find Asia/Karachi timezone once per order
+                var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+
                 var order = new CustomerOrder
                 {
                     OrderNumber = dbOrder.OrderNumber ?? "N/A",
@@ -540,7 +544,11 @@ internal class Implementation()
                     OrderStatusLogs = orderStatusLogs.Select(x => new
                     {
                         Id = dbOrder.OrderStatusId,
-                        CreatedAt = x.CreatedDateTime.ToLocalTime(),
+                        // Treat stored CreatedDateTime as UTC and convert to Asia/Karachi
+                        CreatedAt = TimeZoneInfo.ConvertTimeFromUtc(
+                            DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc),
+                            karachiTz
+                        ),
                     }).ToList()
                 };
                 if (dbOrder.DiscountId.HasValue && dbOrder.DiscountId != 0)
