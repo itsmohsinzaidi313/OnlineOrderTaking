@@ -35,6 +35,12 @@ public class Implementation()
     {
         await dbContext.OrderMasters.AddAsync(orderMaster);
         await dbContext.SaveChangesAsync();
+        await AddOrderStatusLog(dbContext, orderMaster);
+        return orderMaster.OrderNumber;
+    }
+
+    private async Task AddOrderStatusLog(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
+    {
         dbContext.OrderStatusLogs.Add(new Db.OrderStatusLog
         {
             CompanyId = orderMaster.CompanyId,
@@ -43,7 +49,7 @@ public class Implementation()
             CreatedDateTime = DateTime.Now,
             Description = string.Empty,
         });
-        return orderMaster.OrderNumber;
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task<string> GenerateOrderNumberAsync(Db.PgDbContext dbContext, int branchId)
