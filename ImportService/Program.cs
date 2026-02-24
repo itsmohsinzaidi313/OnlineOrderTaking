@@ -56,6 +56,7 @@ builder.Services
     .AddScoped<ISetupCompanySettingsMigrationService, SetupCompanySettingsMigrationService>()
     .AddScoped<ICustomerDataImportService, CustomerDataImportService>()
     .AddScoped<IUserLoginMigrationService, UserLoginMigrationService>()
+    .AddScoped<IRidersMigrationService, RidersMigrationService>()
     .AddScoped<Implementation>();
 
 var app = builder.Build();
