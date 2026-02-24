@@ -9,7 +9,7 @@ namespace ImportService.Services
         public async Task MigrateAsync(PostgresDbContext pgDb, int companyId = 0, CancellationToken ct = default)
         {
             var riders = await pgDb.Riders
-                .Join(sqlDb.BranchMasters, a => a.BranchId, b => b.BranchId, (a, b) => new { Rider = a, Branch = b })
+                .Join(pgDb.BranchMasters, a => a.BranchId, b => b.BranchId, (a, b) => new { Rider = a, Branch = b })
                 .Where(x => x.Branch.CompanyId == companyId)
                 .Select(x => x.Rider)
                 .ToListAsync(ct);
