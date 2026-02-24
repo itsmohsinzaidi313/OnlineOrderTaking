@@ -685,5 +685,19 @@ internal class Implementation()
         return list;
     }
 
+    internal async Task<object> GetBranchesAsync(string connectionString)
+    {
+        using var dbContext = GetDbContext(connectionString);
+        var list = await dbContext.BranchMasters
+            .Where(x => x.IsActive)
+            .Select(x => new
+            {
+                Id = x.BranchId,
+                Name = x.BranchName
+            })
+            .ToListAsync();
+            return list;
+    }
+
     private record DbMenuData(List<Db.ProductSize> ProductSizes, List<Db.Flavour> Flavours, List<Db.Product> Products, List<Db.ProductDetail> ProductDetails, Dictionary<int, string> Departments, List<Db.DealItemDetail> DealItemDetails, List<Db.DealDescription> DealDescriptions, List<Db.Discount> ItemDiscounts, List<Db.DiscountProductDetailMapping> DiscountMappings);
 }
