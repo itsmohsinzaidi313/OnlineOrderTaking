@@ -46,7 +46,7 @@ public class Implementation()
             CompanyId = orderMaster.CompanyId,
             OrderMasterId = orderMaster.OrderMasterId,
             OrderStatusId = orderMaster.OrderStatusId,
-            CreatedDateTime = DateTime.Now,
+            CreatedDateTime = DateTime.UtcNow,
             Description = string.Empty,
         });
         await dbContext.SaveChangesAsync();
@@ -94,8 +94,8 @@ public class Implementation()
             BranchId = branchId,
             AreaId = areaId,
             OrderModeId = orderType.SetupDetailId,
-            OrderDate = DateOnly.FromDateTime(DateTime.UtcNow),
-            OrderTime = TimeOnly.FromDateTime(DateTime.UtcNow),
+            OrderDate = DateOnly.FromDateTime(DateTime.Now.ToLocalTime()),
+            OrderTime = TimeOnly.FromDateTime(DateTime.Now.ToLocalTime()),
             TotalAmountWithoutGst = subTotal,
             TotalAmountWithGst = subTotal + (subTotal * tax / 100),
             DiscountAmount = discount?.Type == ValueType.Amount.ToString() ? discount.Value : 0.00,

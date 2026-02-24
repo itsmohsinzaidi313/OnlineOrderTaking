@@ -523,7 +523,7 @@ internal class Implementation()
             {
                 var orderTime = dbOrder.OrderTime;
                 var orderDate = dbOrder.OrderDate;
-                DateTime? orderDateTime = orderDate?.ToDateTime(orderTime).ToLocalTime();
+                DateTime? orderDateTime = orderDate?.ToDateTime(orderTime);
                 var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == dbOrder.OrderMasterId).ToListAsync();
                 var order = new CustomerOrder
                 {
@@ -540,7 +540,7 @@ internal class Implementation()
                     OrderStatusLogs = orderStatusLogs.Select(x => new
                     {
                         Id = dbOrder.OrderStatusId,
-                        CreatedAt = x.CreatedDateTime,
+                        CreatedAt = x.CreatedDateTime.ToLocalTime(),
                     }).ToList()
                 };
                 if (dbOrder.DiscountId.HasValue && dbOrder.DiscountId != 0)
