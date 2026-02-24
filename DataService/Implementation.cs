@@ -523,7 +523,7 @@ internal class Implementation()
             {
                 var orderTime = dbOrder.OrderTime;
                 var orderDate = dbOrder.OrderDate;
-                DateTime? orderDateTime = orderDate?.ToDateTime(orderTime);
+                DateTime? orderDateTime = orderDate?.ToDateTime(orderTime).ToLocalTime();
                 var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == dbOrder.OrderMasterId).ToListAsync();
                 var order = new CustomerOrder
                 {
