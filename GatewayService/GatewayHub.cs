@@ -137,7 +137,7 @@ namespace GatewayService
 
         public async Task OrderStatus(string domainName, int branchId, string orderNumber, int? orderStatusId, int? branchTransferId, int? riderId, string responseKey)
         {
-            var obj = new OrderStatusPayload
+            var obj = new OrderUpdatePayload
             {
                 DomainName = domainName,
                 BranchId = branchId,
@@ -145,10 +145,11 @@ namespace GatewayService
                 ResponseKey = responseKey,
                 BranchTransferId = branchTransferId,
                 OrderStatusId = orderStatusId,
+                DeliveryTime = null,
                 RiderId = riderId,
                 SignalRMethodName = "OrderStatus"
             }.FillContext(Context);
-            await QueuePayload(RabbitMqQueues.OrderStatusRequestQueue, obj);
+            await QueuePayload(RabbitMqQueues.OrderUpdateRequestQueue, obj);
         }
 
         private async Task QueuePayload<T>(string queues, T payload)

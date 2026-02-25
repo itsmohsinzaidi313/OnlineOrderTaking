@@ -255,10 +255,10 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  orderstatusservice:
+  orderupdateservice:
     build:
       context: .
-      dockerfile: ./OrderStatusService/Dockerfile
+      dockerfile: ./OrderUpdateService/Dockerfile
     environment:
       - ConnectionStrings__Postgres=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
