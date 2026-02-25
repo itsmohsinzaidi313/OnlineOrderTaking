@@ -6,7 +6,7 @@ namespace ImportService.Services
 {
     public class OrdersImportService(SqlServerDbContext sqlServerDb) : IOrdersImportService
     {
-        public async Task MigrateOrdersAsync(int companyId, PostgresDbContext postgresDbContext, CancellationToken cancellationToken)
+        public async Task MigrateAsync(PostgresDbContext postgresDbContext, int companyId = 0, CancellationToken ct = default)
         {
 
             var orderMasterList = await sqlServerDb.OrderMasters
@@ -15,11 +15,11 @@ namespace ImportService.Services
                 .OrderByDescending(om => om.OrderMasterId)
                 .Take(10)
                 .AsNoTracking()
-                .ToListAsync(cancellationToken);
+                .ToListAsync(ct);
             await postgresDbContext.OrderMasters
                 .Include(x => x.OrderDetails)
-                .ExecuteDeleteAsync(cancellationToken);
-            await postgresDbContext.OrderMasters.AddRangeAsync(orderMasterList, cancellationToken);
+                .ExecuteDeleteAsync(ct);
+            await postgresDbContext.OrderMasters.AddRangeAsync(orderMasterList, ct);
         }
     }
 }

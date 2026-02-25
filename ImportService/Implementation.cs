@@ -7,67 +7,70 @@ namespace ImportService
     public class Implementation(
         IDbContextFactory<RestaurantsDbContext> pgDbFactory,
         ILogger<Implementation> logger,
-        ISetupCompanyMigrationService service_setupCompany,
-        IBranchMasterMigrationService service_branchMaster,
-        IMenuMigrationService service_menu,
-        ISetupMasterMigrationService service_setupMaster,
-        ISetupMasterDetailMigrationService service_setupMasterDetail,
-        IPaymentModeMigrationService service_paymentMode,
-        IDiscountMigrationService service_discount,
-        IProductSizeMigrationService service_productSize,
-        IFlavourMigrationService service_flavour,
-        ICityMigrationService service_city,
-        IAreaMigrationService service_area,
-        ISetupCompanySettingsMigrationService service_setupCompanySettings,
-        ICustomerDataImportService service_customerData,
-        IGSTMigrationService service_gst,
-        IUserLoginMigrationService service_users)
+        ISetupCompanyMigrationService setupCompany,
+        IBranchMasterMigrationService branchMaster,
+        IMenuMigrationService menu,
+        ISetupMasterMigrationService setupMaster,
+        ISetupMasterDetailMigrationService setupMasterDetail,
+        IPaymentModeMigrationService paymentMode,
+        IDiscountMigrationService discount,
+        IProductSizeMigrationService productSize,
+        IFlavourMigrationService flavour,
+        ICityMigrationService city,
+        IAreaMigrationService area,
+        ISetupCompanySettingsMigrationService setupCompanySettings,
+        ICustomerDataImportService customerData,
+        IGSTMigrationService gst,
+        IUserLoginMigrationService userLogin,
+        IRidersMigrationService riders)
     {
         private const string PostgresHost = "haproxy";
-        public async Task<IResult?> Import(int companyId, string domainName, CancellationToken cancellationToken = default)
+        public async Task<IResult?> Import(int companyId, string domainName, bool checkOrders, CancellationToken cancellationToken = default)
         {
             try
             {
                 var isNewRestaurant = await RestaurantCreated(domainName, cancellationToken);
-                var dbname= domainName.Split(".")[0];
+                var dbname = domainName.Split(".")[0];
                 using var postgresDbContext = GetPgDbContext($"Host={PostgresHost};Port=5433;Database={dbname};Username=postgres;Password=postgrespass");
 
                 var dbCreated = await postgresDbContext.Database.EnsureCreatedAsync(cancellationToken);
-                if (!dbCreated)
+                if (!dbCreated && checkOrders)
                 {
                     var orderMaster = await postgresDbContext.OrderMasters.FirstOrDefaultAsync(cancellationToken);
                     if (orderMaster != null) return Results.BadRequest("Order master has data");
                 }
 
-                await service_setupCompany.MigrateSetupCompanyAsync(companyId, postgresDbContext, cancellationToken);
+                await setupCompany.MigrateAsync(postgresDbContext, companyId, cancellationToken);
 
-                await service_setupMaster.MigrateSetupMasterAsync(postgresDbContext, cancellationToken);
+                await setupMaster.MigrateAsync(postgresDbContext, ct: cancellationToken);
 
-                await service_setupMasterDetail.MigrateSetupMasterDetailAsync(companyId, postgresDbContext, cancellationToken);
+                await setupMasterDetail.MigrateAsync(postgresDbContext, companyId, cancellationToken);
 
-                await service_city.MigrateCitiesAsync(postgresDbContext, cancellationToken);
+                await city.MigrateAsync(postgresDbContext, ct: cancellationToken);
 
-                await service_area.MigrateAreasAsync(companyId, postgresDbContext, cancellationToken);
+                await area.MigrateAsync(postgresDbContext, companyId, cancellationToken);
 
-                await service_branchMaster.MigrateBranchMasterAsync(companyId, postgresDbContext, cancellationToken);
+                await branchMaster.MigrateAsync(postgresDbContext, companyId, cancellationToken);
 
-                await service_productSize.MigrateProductSizesAsync(companyId, postgresDbContext, cancellationToken);
+                await productSize.MigrateAsync(postgresDbContext, companyId, cancellationToken);
 
-                await service_flavour.MigrateFlavoursAsync(companyId, postgresDbContext, cancellationToken);
+                await flavour.MigrateAsync(postgresDbContext, companyId, cancellationToken);
 
-                await service_menu.MigrateMenuAsync(companyId, postgresDbContext, cancellationToken);
+                await menu.MigrateAsync(postgresDbContext, companyId, cancellationToken);
 
-                await service_paymentMode.MigratePaymentModesAsync(companyId, postgresDbContext, cancellationToken);
+                await paymentMode.MigrateAsync(postgresDbContext, companyId, cancellationToken);
 
-                await service_setupCompanySettings.MigrateSetupCompanySettingsAsync(companyId, postgresDbContext, cancellationToken);
+                await setupCompanySettings.MigrateAsync(postgresDbContext, companyId, cancellationToken);
 
-                await service_discount.MigrateDiscountsAsync(companyId, postgresDbContext, cancellationToken);
+                await discount.MigrateAsync(postgresDbContext, companyId, cancellationToken);
 
-                await service_customerData.MigrateCustomerDataAsync(companyId, postgresDbContext, cancellationToken);
+                await customerData.MigrateAsync(postgresDbContext, companyId, cancellationToken);
 
-                await service_gst.MigrateGSTsAsync(companyId, postgresDbContext, cancellationToken);
+                await gst.MigrateAsync(postgresDbContext, companyId, cancellationToken);
 
-                await service_users.MigrateUserLoginAsync(companyId, postgresDbContext, cancellationToken);
+                await userLogin.MigrateAsync(postgresDbContext, companyId, cancellationToken);
+
+                await riders.MigrateAsync(postgresDbContext, companyId, cancellationToken);
 
                 await postgresDbContext.SaveChangesAsync(cancellationToken);
 

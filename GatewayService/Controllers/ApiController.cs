@@ -118,12 +118,12 @@ namespace GatewayService.Controllers
         }
 
         [HttpGet("import/{companyId:int}")]
-        public async Task<IActionResult> Import(int companyId, [FromQuery] bool checkhealth = true)
+        public async Task<IActionResult> Import(int companyId, [FromQuery] bool checkhealth = true, [FromQuery] bool checkOrders = true)
         {
             var httpClient = new HttpClient
             {
                 Timeout = TimeSpan.FromMinutes(5),
-                BaseAddress = new Uri("http://importservice:8080")
+                BaseAddress = new Uri("http://importservice:8080"),
             };
 
             if (checkhealth)
@@ -135,7 +135,7 @@ namespace GatewayService.Controllers
                 }
             }
 
-            var response = await httpClient.GetAsync($"import/{companyId}");
+            var response = await httpClient.GetAsync($"import/{companyId}?checkOrders={checkOrders}");
 
             if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
             {

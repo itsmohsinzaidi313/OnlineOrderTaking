@@ -7,7 +7,7 @@ namespace ImportService.Services
     public class CustomerDataImportService(
         SqlServerDbContext SqlDb) : ICustomerDataImportService
     {
-        public async Task MigrateCustomerDataAsync(int companyId, PostgresDbContext PgDb, CancellationToken ct = default)
+        public async Task MigrateAsync(PostgresDbContext PgDb, int companyId = 0, CancellationToken ct = default)
         {
             var customerPhonesQuery = SqlDb.CustomerPhones
                 .Where(x => x.IsActive == true && x.CompanyId == companyId)

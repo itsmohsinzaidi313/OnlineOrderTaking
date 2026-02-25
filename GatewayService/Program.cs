@@ -41,12 +41,12 @@ builder.Services
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
     .AddHostedService<DataServiceResponseListener>()
     .AddHostedService<CreateOrderServiceResponseListener>()
-    .AddHostedService<OrderStatusServiceResponseListener>()
+    .AddHostedService<OrderUpdateServiceResponseListener>()
     .AddHostedService<SettingsDataServiceResponseListener>()
     .AddHostedService<MenuServiceResponseListener>()
     .AddHostedService<OrderHistoryServiceResponseListener>()
     .AddHostedService<OrderNotificationServiceResponseListener>()
-    .AddHostedService<OrderStatusServiceResponseListener>()
+    .AddHostedService<OrderUpdateServiceResponseListener>()
     .AddSingleton<IConnectionMultiplexer>(context =>
     {
         var configuration = ConfigurationOptions.Parse(redisSettings.ConnectionString, true);

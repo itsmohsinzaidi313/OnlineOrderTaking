@@ -2,8 +2,7 @@
 
 namespace ImportService.Interfaces
 {
-    public interface IUserLoginMigrationService
+    public interface IUserLoginMigrationService : IMigrationService
     {
-        Task MigrateUserLoginAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default);
     }
 }

@@ -4,15 +4,15 @@ using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using Db = PointofSaleModels.PGDatabaseModels;
 
-namespace OrderStatusService
+namespace OrderUpdateService
 {
     public class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, IRabbitMqPublisher publisher, IDbContextFactory<Db.RestaurantsContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
     {
-        public override string QueueName() => RabbitMqQueues.OrderStatusRequestQueue;
+        public override string QueueName() => RabbitMqQueues.OrderUpdateRequestQueue;
 
         public override async Task OnMessage(string transport)
         {
-            var requestPayload = System.Text.Json.JsonSerializer.Deserialize<OrderStatusPayload>(transport);
+            var requestPayload = System.Text.Json.JsonSerializer.Deserialize<OrderUpdatePayload>(transport);
             object? payload = null;
             try
             {
@@ -22,14 +22,46 @@ namespace OrderStatusService
                 {
                     if (requestPayload.BranchTransferId != null)
                     {
-                        orderMaster.BranchId = requestPayload.BranchTransferId.Value;
-                        await dbContext.SaveChangesAsync();
+                        await dbContext.OrderMasters
+                            .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
+                            .ExecuteUpdateAsync(x => x.SetProperty(x => x.BranchId, requestPayload.BranchTransferId.Value));
                     }
 
                     if (requestPayload.OrderStatusId != null)
                     {
-                        orderMaster.OrderStatusId = requestPayload.OrderStatusId.Value;
-                        await dbContext.SaveChangesAsync();
+                        await dbContext.OrderMasters
+                            .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
+                            .ExecuteUpdateAsync(x => x.SetProperty(x => x.OrderStatusId, requestPayload.OrderStatusId));
+
+                        var previousOrderStatusLog = await dbContext.OrderStatusLogs
+                            .Where(x => x.OrderMasterId == orderMaster.OrderMasterId && x.OrderStatusId == requestPayload.OrderStatusId)
+                            .FirstOrDefaultAsync();
+                        if (previousOrderStatusLog == null)
+                        {
+                            dbContext.OrderStatusLogs.Add(new Db.OrderStatusLog
+                            {
+                                OrderMasterId = orderMaster.OrderMasterId,
+                                OrderStatusId = requestPayload.OrderStatusId.Value,
+                                CompanyId = orderMaster.CompanyId,
+                                Description = string.Empty,
+                                CreatedDateTime = DateTime.UtcNow,
+                            });
+                            await dbContext.SaveChangesAsync();
+                        }
+                    }
+
+                    if (requestPayload.RiderId != null)
+                    {
+                        await dbContext.OrderMasters
+                            .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
+                            .ExecuteUpdateAsync(x => x.SetProperty(x => x.RiderId, requestPayload.RiderId));
+                    }
+
+                    if (requestPayload.DeliveryTime != null)
+                    {
+                        await dbContext.OrderMasters
+                            .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
+                            .ExecuteUpdateAsync(x => x.SetProperty(x => x.DeliveryTime, requestPayload.DeliveryTime));
                     }
                     payload = new
                     {
@@ -57,11 +89,11 @@ namespace OrderStatusService
                     message,
                 };
             }
-            var response = new OrderStatusPayload(requestPayload)
+            var response = new OrderUpdatePayload(requestPayload)
             {
                 DataPayload = payload,
             };
-            await publisher.PublishToQueueAsync(RabbitMqQueues.OrderStatusResponseQueue, response);
+            await publisher.PublishToQueueAsync(RabbitMqQueues.OrderUpdateResponseQueue, response);
         }
         private async Task<Db.PgDbContext> GetDbContextAsync(string domainName)
         {

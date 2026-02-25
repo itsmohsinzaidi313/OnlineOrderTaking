@@ -35,7 +35,21 @@ public class Implementation()
     {
         await dbContext.OrderMasters.AddAsync(orderMaster);
         await dbContext.SaveChangesAsync();
+        await AddOrderStatusLog(dbContext, orderMaster);
         return orderMaster.OrderNumber;
+    }
+
+    private async Task AddOrderStatusLog(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
+    {
+        dbContext.OrderStatusLogs.Add(new Db.OrderStatusLog
+        {
+            CompanyId = orderMaster.CompanyId,
+            OrderMasterId = orderMaster.OrderMasterId,
+            OrderStatusId = orderMaster.OrderStatusId,
+            CreatedDateTime = DateTime.UtcNow,
+            Description = string.Empty,
+        });
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task<string> GenerateOrderNumberAsync(Db.PgDbContext dbContext, int branchId)
@@ -80,8 +94,8 @@ public class Implementation()
             BranchId = branchId,
             AreaId = areaId,
             OrderModeId = orderType.SetupDetailId,
-            OrderDate = DateOnly.FromDateTime(DateTime.Now),
-            OrderTime = TimeOnly.FromDateTime(DateTime.Now),
+            OrderDate = DateOnly.FromDateTime(DateTime.Now.ToLocalTime()),
+            OrderTime = TimeOnly.FromDateTime(DateTime.Now.ToLocalTime()),
             TotalAmountWithoutGst = subTotal,
             TotalAmountWithGst = subTotal + (subTotal * tax / 100),
             DiscountAmount = discount?.Type == ValueType.Amount.ToString() ? discount.Value : 0.00,
@@ -257,5 +271,21 @@ public class Implementation()
         using var dbContext = GetDbContext(connectionString);
         foreach (var userId in await dbContext.UserBranchMappings.Where(x => x.BranchId == branchId).Select(x => x.UserId).ToListAsync())
             yield return userId;
+    }
+
+    internal async Task<object> OrderStatusLogs(string connectionString, string orderNumber)
+    {
+        var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+        var dbContext = GetDbContext(connectionString);
+        var orderMasterId = await dbContext.OrderMasters.Where(x => x.OrderNumber == orderNumber).Select(x => x.OrderMasterId).FirstOrDefaultAsync();
+        var logs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == orderMasterId).ToListAsync();
+        return logs.Select(x => new
+        {
+            Id = x.OrderStatusId,
+            CreatedAt = TimeZoneInfo.ConvertTimeFromUtc(
+                            DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc),
+                            karachiTz
+                        ),
+        });
     }
 }

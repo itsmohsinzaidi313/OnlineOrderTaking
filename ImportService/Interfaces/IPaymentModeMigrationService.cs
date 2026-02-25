@@ -2,9 +2,8 @@ using ImportService.Data;
 
 namespace ImportService.Interfaces
 {
-    public interface IPaymentModeMigrationService
+    public interface IPaymentModeMigrationService : IMigrationService
     {
-        Task MigratePaymentModesAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default);
     }
 }
 

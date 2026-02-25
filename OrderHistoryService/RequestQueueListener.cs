@@ -27,7 +27,9 @@ namespace OrderHistoryService
                     orders.Add(order);
                 }
                 var orderStatuses = await impl.GetOrderStatusesAsync(connectionString);
-                payload = new { Orders = orders, OrderStatuses = orderStatuses };
+                var riders = await impl.GetRidersAsync(requestPayload.OrderUserId.Value, connectionString);
+                var branches = await impl.GetBranchesAsync(connectionString);
+                payload = new { Orders = orders, OrderStatuses = orderStatuses, Riders = riders, Branches = branches };
                 success = true;
             }
             catch (Exception ex)

@@ -7,7 +7,7 @@ namespace ImportService.Services
     public class FlavourMigrationService(
         SqlServerDbContext SqlDb) : IFlavourMigrationService
     {
-        public async Task MigrateFlavoursAsync(int companyId, PostgresDbContext PgDb, CancellationToken ct = default)
+        public async Task MigrateAsync(PostgresDbContext PgDb, int companyId = 0, CancellationToken ct = default)
         {
             var flavours = await SqlDb.Flavours
                 .Where(x => x.IsActive == true && x.CompanyId == companyId)

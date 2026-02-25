@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ImportService.Data
 {
-    public class PostgresDbContext(DbContextOptions<PostgresDbContext> options) : DbContext(options)
+    public class SqlServerDbContext(DbContextOptions<SqlServerDbContext> options) : DbContext(options)
     {
         public DbSet<SetupCompany> SetupCompanies => Set<SetupCompany>();
         public DbSet<BranchMaster> BranchMasters => Set<BranchMaster>();
@@ -34,86 +34,87 @@ namespace ImportService.Data
         public DbSet<DiscountOrderTypeMapping> DiscountOrderTypeMappings => Set<DiscountOrderTypeMapping>();
         public DbSet<DiscountOrderModeMapping> DiscountOrderModeMappings => Set<DiscountOrderModeMapping>();
         public DbSet<SetupCompanySetting> SetupCompanySettings => Set<SetupCompanySetting>();
-        public DbSet<OrderMaster> OrderMasters => Set<OrderMaster>();
-        public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
         public DbSet<Customer> Customers => Set<Customer>();
         public DbSet<CustomerPhone> CustomerPhones => Set<CustomerPhone>();
         public DbSet<CustomerAddressDetail> CustomerAddressDetails => Set<CustomerAddressDetail>();
-        public DbSet<BranchOrderSequence> BranchOrderSequences => Set<BranchOrderSequence>();
+        public DbSet<OrderMaster> OrderMasters => Set<OrderMaster>();
+        public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
         public DbSet<UserLogin> UserLogins => Set<UserLogin>();
         public DbSet<UserRole> UserRoles => Set<UserRole>();
         public DbSet<UserBranchMapping> UserBranchMappings => Set<UserBranchMapping>();
         public DbSet<OrderStatus> OrderStatuses => Set<OrderStatus>();
-        public DbSet<OrderStatusLog> OrderStatusLogs { get; set; }
+        public DbSet<Rider> Riders => Set<Rider>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<SetupCompany>()
-                .ToTable("setup_company")
+                .ToTable("SetupCompany")
                 .HasKey(x => x.CompanyId);
 
             modelBuilder.Entity<BranchMaster>()
-                .ToTable("branch_master")
+                .Ignore(b => b.CityName)
+                .ToTable("BranchMaster", "dbo")
                 .HasKey(x => x.BranchId);
 
             modelBuilder.Entity<City>()
-                .ToTable("city")
+                .ToTable("City", "dbo")
                 .HasKey(x => x.CityId);
 
             modelBuilder.Entity<Area>()
-                .ToTable("area")
+                .ToTable("Area", "dbo")
                 .HasKey(x => x.AreaId);
 
             modelBuilder.Entity<BranchDetail>()
-                .ToTable("branch_detail")
+                .Ignore(b => b.AreaName)
+                .Ignore(b => b.AreaStartTime)
+                .Ignore(b => b.AreaEndTime)
+                .ToTable("BranchDetail", "dbo")
                 .HasKey(x => x.BranchDetailId);
 
-            modelBuilder.Entity<BranchDayMapping>()
-                .ToTable("branch_day_mapping")
-                .HasKey(x => x.BranchDayMappingId);
-
             modelBuilder.Entity<SetupMaster>()
-                .ToTable("setup_master")
+                .ToTable("Setup_Master", "dbo")
                 .HasKey(x => x.SetupMasterId);
 
             modelBuilder.Entity<SetupMasterDetail>()
-                .ToTable("setup_master_detail")
+                .ToTable("Setup_MasterDetail", "dbo")
                 .HasKey(x => x.SetupDetailId);
 
             modelBuilder.Entity<ProductCategory>()
-                .ToTable("product_category")
+                .ToTable("ProductCategory", "dbo")
                 .HasKey(x => x.CategoryId);
 
             modelBuilder.Entity<Product>()
-                .ToTable("product")
+                .ToTable("Product", "dbo")
                 .HasKey(x => x.ProductId);
 
             modelBuilder.Entity<ProductDetail>()
-                .ToTable("product_detail")
+                .Ignore(b => b.SizeName)
+                .Ignore(b => b.FlavourName)
+                .ToTable("ProductDetail", "dbo")
                 .HasKey(x => x.ProductDetailId);
 
             modelBuilder.Entity<ProductSize>()
-                .ToTable("product_size")
+                .ToTable("ProductSize", "dbo")
                 .HasKey(x => x.SizeId);
 
             modelBuilder.Entity<Flavour>()
-                .ToTable("flavour")
+                .ToTable("Flavour", "dbo")
                 .HasKey(x => x.FlavourId);
 
             modelBuilder.Entity<DealItemDetail>()
-                .ToTable("deal_item_detail")
+                .ToTable("DealItemDetail", "dbo")
                 .HasKey(x => x.DealItemId);
 
             modelBuilder.Entity<DealDescription>()
-                .ToTable("deal_description")
+                .ToTable("DealDescription", "dbo")
                 .HasKey(x => x.DealDescId);
 
             modelBuilder.Entity<CategoryAvailability>()
-                .ToTable("category_availability")
+                .ToTable("CategoryAvailability", "dbo")
                 .HasKey(x => x.CategoryAvailableId);
 
             modelBuilder.Entity<PaymentMode>()
-                .ToTable("payment_mode")
+                .ToTable("PaymentMode", "dbo")
                 .HasKey(x => x.PaymentModeId);
 
             modelBuilder.Entity<PaymentMode>()
@@ -121,92 +122,92 @@ namespace ImportService.Data
                 .HasColumnName("PaymentMode");
 
             modelBuilder.Entity<GST>()
-                .ToTable("gst")
+                .ToTable("GST", "dbo")
                 .HasKey(x => x.GSTId);
 
             modelBuilder.Entity<OrderModeCompanyMapping>()
-                .ToTable("order_mode_company_mapping")
+                .ToTable("OrderModeCompanyMapping", "dbo")
                 .HasKey(x => x.OrderModeMappingId);
 
             modelBuilder.Entity<ProductDetailBranchMapping>()
-                .ToTable("product_detail_branch_mapping")
+                .ToTable("ProductDetailBranchMapping", "dbo")
                 .HasKey(x => x.ProductDetailBranchMappingId);
 
             modelBuilder.Entity<ProductDetailAvailability>()
-                .ToTable("product_detail_availability")
+                .ToTable("ProductDetailAvailability", "dbo")
                 .HasKey(x => x.ProductDetailAvailableId);
 
             modelBuilder.Entity<ProductDetailOrderSourcePriceMapping>()
-                .ToTable("product_detail_order_source_price_mapping")
+                .ToTable("ProductDetailOrderSourcePriceMapping", "dbo")
                 .HasKey(x => x.MapId);
 
             modelBuilder.Entity<Discount>()
-                .ToTable("discount")
-                .HasKey(x => x.DiscountId);
+                 .ToTable("Discount", "dbo")
+                 .HasKey(x => x.DiscountId);
 
             modelBuilder.Entity<Discount>()
                 .Property(x => x.DiscountTimeStart)
-                .HasColumnType("time without time zone");
+                .HasColumnType("time(7)");
 
             modelBuilder.Entity<Discount>()
                 .Property(x => x.DiscountTimeEnd)
-                .HasColumnType("time without time zone");
+                .HasColumnType("time(7)");
 
             modelBuilder.Entity<Discount>()
                 .Property(x => x.StartDate)
-                .HasColumnType("timestamp without time zone");
+                .HasColumnType("datetime");
 
             modelBuilder.Entity<Discount>()
                 .Property(x => x.EndDate)
-                .HasColumnType("timestamp without time zone");
+                .HasColumnType("datetime");
 
             modelBuilder.Entity<DiscountDayMapping>()
-                .ToTable("discount_day_mapping")
+                .ToTable("DiscountDayMapping", "dbo")
                 .HasKey(x => x.DiscountDayMappingId);
 
             modelBuilder.Entity<DiscountProductDetailMapping>()
-                .ToTable("discount_product_detail_mapping")
+                .ToTable("DiscountProductDetailMapping", "dbo")
                 .HasKey(x => x.DiscountProductDetailMappingId);
 
             modelBuilder.Entity<DiscountBranchMapping>()
-                .ToTable("discount_branch_mapping")
+                .ToTable("DiscountBranchMapping", "dbo")
                 .HasKey(x => x.DiscountBranchMappingId);
 
             modelBuilder.Entity<DiscountOrderTypeMapping>()
-                .ToTable("discount_order_type_mapping")
+                .ToTable("DiscountOrderTypeMapping", "dbo")
                 .HasKey(x => x.DiscountOrderTypeMappingId);
 
             modelBuilder.Entity<DiscountOrderModeMapping>()
-                .ToTable("discount_order_mode_mapping")
+                .ToTable("DiscountOrderModeMapping", "dbo")
                 .HasKey(x => x.DiscountOrderModeMappingId);
 
             modelBuilder.Entity<SetupCompanySetting>()
-                .ToTable("setup_company_setting")
+                .ToTable("SetupCompanySetting", "dbo")
                 .HasKey(x => x.SettingId);
 
-            modelBuilder.Entity<OrderMaster>()
-                .ToTable("order_master")
-                .HasKey(x => x.OrderMasterId);
-
-            modelBuilder.Entity<OrderDetail>()
-                .ToTable("order_detail")
-                .HasKey(x => x.OrderDetailId);
-
-            modelBuilder.Entity<BranchOrderSequence>()
-                .ToTable("branch_order_sequence")
-                .HasKey(x => x.BranchId);
-
             modelBuilder.Entity<Customer>()
-                .ToTable("customer")
+                .ToTable("Customer")
                 .HasKey(x => x.CustomerId);
 
+            modelBuilder.Entity<CustomerPhone>()
+                .ToTable("CustomerPhone")
+                .HasKey(x => x.PhoneId);
+
             modelBuilder.Entity<CustomerAddressDetail>()
-                .ToTable("customer_address_detail")
+                .ToTable("CustomerAddressDetail")
                 .HasKey(x => x.CustomerAddressId);
 
             modelBuilder.Entity<CustomerPhone>()
-                .ToTable("customer_phone")
-                .HasKey(x => x.PhoneId);
+                .HasMany(c => c.Customers)
+                .WithOne(p => p.CustomerPhone)
+                .HasPrincipalKey(p => p.PhoneId)
+                .HasForeignKey(x => x.PhoneId);
+
+            modelBuilder.Entity<CustomerPhone>()
+                .HasMany(x => x.CustomerAddressDetails)
+                .WithOne(x => x.CustomerPhone)
+                .HasPrincipalKey(x => x.PhoneId)
+                .HasForeignKey(x => x.PhoneId);
 
             modelBuilder.Entity<Customer>()
                 .HasOne(c => c.CustomerPhone)
@@ -221,58 +222,44 @@ namespace ImportService.Data
                 .HasPrincipalKey(p => p.PhoneId);
 
             modelBuilder.Entity<OrderMaster>()
-                .ToTable("order_master")
+                .ToTable("OrderMaster")
                 .HasKey(x => x.OrderMasterId);
 
-            modelBuilder.Entity<OrderMaster>()
-                .HasMany(o => o.OrderDetails)
-                .WithOne(od => od.OrderMaster)
-                .HasForeignKey(od => od.OrderMasterId)
-                .HasPrincipalKey(o => o.OrderMasterId);
-
-            modelBuilder.Entity<OrderMaster>()
-                .Property(o => o.OrderDate)
-                .HasColumnType("timestamp without time zone");
-            modelBuilder.Entity<OrderMaster>()
-                .Property(o => o.AdvanceOrderDate)
-                .HasColumnType("timestamp without time zone");
-
             modelBuilder.Entity<OrderDetail>()
-                .ToTable("order_detail")
+                .ToTable("OrderDetail")
                 .HasKey(x => x.OrderDetailId);
 
             modelBuilder.Entity<UserLogin>()
-                .ToTable("user_login")
+                .ToTable("UserLogin")
                 .HasKey(x => x.UserId);
 
-            modelBuilder.Entity<UserLogin>()
-                .Property(x => x.IsEnabled)
-                .HasColumnName("IsEnable");
-
             modelBuilder.Entity<UserRole>()
-                .ToTable("user_role")
+                .ToTable("UserRole")
                 .HasKey(x => x.RoleId);
 
             modelBuilder.Entity<UserBranchMapping>()
-                .ToTable("user_branch_mapping")
+                .ToTable("UserBranchMapping")
                 .HasKey(x => x.UserBranchId);
 
             modelBuilder.Entity<UserBranchMapping>()
                 .Property(x => x.UserId)
                 .HasColumnName("UserID");
 
+            modelBuilder.Entity<UserLogin>()
+                .Property(x => x.IsEnabled)
+                .HasColumnName("IsEnable");
+
             modelBuilder.Entity<OrderStatus>()
-                .ToTable("order_status")
+                .ToTable("OrderStatus")
                 .HasKey(x => x.OrderStatusId);
 
             modelBuilder.Entity<OrderStatus>()
                 .Property(x => x.OrderStatusName)
                 .HasColumnName("OrderStatus");
 
-            modelBuilder.Entity<OrderStatusLog>()
-            .ToTable("order_status_log")
-            .HasKey(x => x.OrderStatusLogId);
+            modelBuilder.Entity<Rider>()
+                .ToTable("Rider")
+                .HasKey(x => x.RiderId);
         }
-
     }
 }

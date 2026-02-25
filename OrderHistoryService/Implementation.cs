@@ -47,11 +47,20 @@ internal class Implementation()
         var statuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
         var branchDict = await dbContext.BranchMasters.ToDictionaryAsync(x => x.BranchId, x => x.BranchName);
         var discounts = await dbContext.Discounts.ToDictionaryAsync(x => x.DiscountId, x => x);
+        var riders = await dbContext.Riders.ToListAsync();
 
         foreach (var branchId in await dbContext.UserBranchMappings.Where(x => x.UserId == userId).Select(x => x.BranchId).ToListAsync())
         {
-            foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId).ToListAsync())
+            foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId && x.OrderDate > DateOnly.FromDateTime(DateTime.Now.AddDays(-3))).ToListAsync())
             {
+                var orderTime = dbOrder.OrderTime;
+                var orderDate = dbOrder.OrderDate;
+                DateTime? orderDateTime = orderDate?.ToDateTime(orderTime);
+                var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == dbOrder.OrderMasterId).ToListAsync();
+
+                // Find Asia/Karachi timezone once per order
+                var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+
                 var order = new CustomerOrder
                 {
                     OrderNumber = dbOrder.OrderNumber ?? "N/A",
@@ -63,6 +72,16 @@ internal class Implementation()
                     DeliveryCharges = (int?)(dbOrder.DeliveryCharges ?? 0.00),
                     AmountWithoutGst = dbOrder.TotalAmountWithoutGst ?? 0.00,
                     AmountWithGst = dbOrder.TotalAmountWithGst ?? 0.00,
+                    OrderTime = orderDateTime ?? DateTime.MinValue,
+                    OrderStatusLogs = orderStatusLogs.Select(x => new
+                    {
+                        Id = dbOrder.OrderStatusId,
+                        CreatedAt = TimeZoneInfo.ConvertTimeFromUtc(
+                            DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc),
+                            karachiTz
+                        ),
+                    }).ToList(),
+                    Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName, Contact = x.Contact1 }).FirstOrDefault(x => x.Id == dbOrder.RiderId)
                 };
                 if (dbOrder.DiscountId.HasValue && dbOrder.DiscountId != 0)
                 {
@@ -181,5 +200,34 @@ internal class Implementation()
                 ]
             };
         }
+    }
+
+    internal async Task<object> GetRidersAsync(int userId, string connectionString)
+    {
+        using var dbContext = GetDbContext(connectionString);
+        var list = await dbContext.Riders
+            .Join(dbContext.UserBranchMappings, a => a.BranchId, b => b.BranchId, (a, b) => new { Riders = a, b.UserId })
+            .Where(x => x.UserId == userId)
+            .Select(x => new
+            {
+                Id = x.Riders.RiderId,
+                Name = x.Riders.RiderName
+            })
+            .ToListAsync();
+        return list;
+    }
+
+    internal async Task<object> GetBranchesAsync(string connectionString)
+    {
+        using var dbContext = GetDbContext(connectionString);
+        var list = await dbContext.BranchMasters
+            .Where(x => x.IsActive)
+            .Select(x => new
+            {
+                Id = x.BranchId,
+                Name = x.BranchName
+            })
+            .ToListAsync();
+        return list;
     }
 }

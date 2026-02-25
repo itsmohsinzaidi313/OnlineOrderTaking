@@ -6,7 +6,7 @@ namespace ImportService.Services
 {
     public class MenuMigrationService(SqlServerDbContext SqlDb) : IMenuMigrationService
     {
-        public async Task MigrateMenuAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default)
+        public async Task MigrateAsync( PostgresDbContext pgDb, int companyId = 0, CancellationToken ct = default)
         {
             // 3) Categories
             var categories = await SqlDb.ProductCategories

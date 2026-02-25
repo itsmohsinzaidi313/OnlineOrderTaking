@@ -6,12 +6,12 @@ using System.Text.Json;
 
 namespace GatewayService.ServiceResponseListeners
 {
-    public class OrderStatusServiceResponseListener(ILogger<OrderStatusServiceResponseListener> logger, RabbitMqConnection rabbitConnection, Implementation implementation, IConnectionMultiplexer redis) : RabbitMqConsumerService<OrderStatusServiceResponseListener>(logger, rabbitConnection)
+    public class OrderUpdateServiceResponseListener(ILogger<OrderUpdateServiceResponseListener> logger, RabbitMqConnection rabbitConnection, Implementation implementation, IConnectionMultiplexer redis) : RabbitMqConsumerService<OrderUpdateServiceResponseListener>(logger, rabbitConnection)
     {
-        public override string QueueName() => RabbitMqQueues.OrderStatusResponseQueue;
+        public override string QueueName() => RabbitMqQueues.OrderUpdateResponseQueue;
         public override async Task OnMessage(string svcPayload)
         {
-            var payload = JsonSerializer.Deserialize<OrderStatusPayload>(svcPayload);
+            var payload = JsonSerializer.Deserialize<OrderUpdatePayload>(svcPayload);
             var server = redis.GetServer(redis.GetEndPoints().First());
 
             foreach (var key in server.Keys(pattern: $"branch:*:*:connection"))

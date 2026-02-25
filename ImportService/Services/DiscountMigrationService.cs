@@ -7,7 +7,7 @@ namespace ImportService.Services
     public class DiscountMigrationService(
         SqlServerDbContext sqlDb) : IDiscountMigrationService
     {
-        public async Task MigrateDiscountsAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default)
+        public async Task MigrateAsync(PostgresDbContext pgDb, int companyId = 0, CancellationToken ct = default)
         {
             // 1) Migrate main Discount records for this company
             var discounts = await sqlDb.Discounts

@@ -93,6 +93,8 @@ public partial class PgDbContext : DbContext
     public virtual DbSet<UserRole> UserRoles { get; set; }
 
     public virtual DbSet<OrderStatus> OrderStatuses { get; set; }
+    public virtual DbSet<OrderStatusLog> OrderStatusLogs { get; set; }
+    public virtual DbSet<Rider> Riders { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -374,6 +376,18 @@ public partial class PgDbContext : DbContext
             entity
                 .Property(x => x.OrderStatusName)
                 .HasColumnName("OrderStatus");
+        });
+
+        modelBuilder.Entity<OrderStatusLog>(entity =>
+        {
+            entity.ToTable("order_status_log");
+            entity.HasKey(x => x.OrderStatusLogId);
+        });
+
+        modelBuilder.Entity<Rider>(entity =>
+        {
+            entity.ToTable("rider");
+            entity.HasKey(x => x.RiderId);
         });
 
         OnModelCreatingPartial(modelBuilder);

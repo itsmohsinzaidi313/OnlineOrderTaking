@@ -1,4 +1,4 @@
-﻿namespace ImportService.Entities
+﻿namespace PointofSaleModels.PGDatabaseModels
 {
     public class OrderStatusLog
     {
