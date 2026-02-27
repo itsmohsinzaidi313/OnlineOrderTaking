@@ -551,7 +551,9 @@ internal class Implementation()
                             karachiTz
                         ),
                     }).ToList(),
-                    Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName ?? string.Empty, Contact = x.Contact1 ?? string.Empty }).FirstOrDefault(x => x.Id == dbOrder.RiderId)
+                    Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName ?? string.Empty, Contact = x.Contact1 ?? string.Empty }).FirstOrDefault(x => x.Id == dbOrder.RiderId),
+                    DeliveryTime = dbOrder.DeliveryTime ?? 0,
+
                 };
                 if (dbOrder.DiscountId.HasValue && dbOrder.DiscountId != 0)
                 {

@@ -109,7 +109,9 @@ public class Implementation()
         order.Status = OrderStatus.Pending.ToString();
         var orderType = await dbContext.SetupMasterDetails.FirstOrDefaultAsync(x => x.SetupDetailName == order.OrderType);
         order.OrderType = orderType.SetupDetailName;
-        var areaId = (await dbContext.BranchDetails.FirstOrDefaultAsync(x => x.BranchId == branchId))?.AreaId;
+        var branchDetail = await dbContext.BranchDetails.FirstOrDefaultAsync(x => x.BranchId == branchId);
+        var areaId = branchDetail?.AreaId;
+        var deliveryTime = branchDetail?.DeliveryTime ?? 0;
         var orderMaster = new Db.OrderMaster
         {
             OrderSourceId = orderSourceId,
@@ -134,6 +136,7 @@ public class Implementation()
             OrderDetails = [],
             AlternateNumber = order.CustomerDetails.AlternateMobileNumber ?? string.Empty,
             DeliveryCharges = order.DeliveryCharges ?? 0.00,
+            DeliveryTime = deliveryTime,
         };
         order.AmountWithGst = orderMaster.TotalAmountWithGst ?? 0.0;
         order.AmountWithoutGst = orderMaster.TotalAmountWithoutGst ?? 0.0;

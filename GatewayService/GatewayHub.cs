@@ -136,7 +136,7 @@ namespace GatewayService
             await QueuePayload(RabbitMqQueues.OrderRequestQueue, obj);
         }
 
-        public async Task OrderStatus(string domainName, int branchId, string orderNumber, int? orderStatusId, int? branchTransferId, int? riderId, string responseKey)
+        public async Task OrderStatus(string domainName, int branchId, string orderNumber, int? orderStatusId, int? branchTransferId, int? riderId, int? deliveryTime, string responseKey)
         {
             var obj = new OrderUpdatePayload
             {
@@ -146,7 +146,7 @@ namespace GatewayService
                 ResponseKey = responseKey,
                 BranchTransferId = branchTransferId,
                 OrderStatusId = orderStatusId,
-                DeliveryTime = null,
+                DeliveryTime = deliveryTime,
                 RiderId = riderId,
                 SignalRMethodName = "OrderStatus"
             }.FillContext(Context);
