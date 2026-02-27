@@ -8,6 +8,8 @@
 
         public string OrderNumber { get; set; }
 
+        public string OrderToken { get; set; }
+
         public int BranchId { get; set; }
 
         public int? AreaId { get; set; }

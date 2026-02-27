@@ -23,6 +23,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="Protos\protobuf.proto" GrpcServices="Both" Namespace="PointofSaleModels.Protos" />
+    <Protobuf Include="Protos\customerorder.proto" GrpcServices="None" ProtoRoot="Protos" />
+    <Protobuf Include="Protos\pushnotification.proto" GrpcServices="Both" ProtoRoot="Protos" />
+    <Protobuf Include="Protos\orderhistory.proto" GrpcServices="Both" ProtoRoot="Protos" />
   </ItemGroup>
 </Project>

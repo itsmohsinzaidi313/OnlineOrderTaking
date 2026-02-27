@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using PointofSaleModels.Application;
 using Db = PointofSaleModels.PGDatabaseModels;
 using ValueType = PointofSaleModels.Application.ValueType;
@@ -35,8 +36,32 @@ public class Implementation()
     {
         await dbContext.OrderMasters.AddAsync(orderMaster);
         await dbContext.SaveChangesAsync();
+        await AssignOrderToken(dbContext, orderMaster);
         await AddOrderStatusLog(dbContext, orderMaster);
-        return orderMaster.OrderNumber;
+        return orderMaster.OrderToken;
+    }
+
+    private async Task AssignOrderToken(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
+    {
+        var orderToken = await GetUniqueToken(dbContext);
+        orderMaster.OrderToken = orderToken;
+        await dbContext.SaveChangesAsync();
+    }
+
+    private async Task<string> GetUniqueToken(Db.PgDbContext dbContext)
+    {
+        var token = TokenGenerator.GenerateToken();
+        var existingToken = await dbContext.OrderMasters
+            .FirstOrDefaultAsync(x => x.OrderToken == token);
+        if (existingToken == null)
+        {
+            return token;
+        }
+        else
+        {
+            var newToken = TokenGenerator.GenerateToken();
+            return await GetUniqueToken(dbContext);
+        }
     }
 
     private async Task AddOrderStatusLog(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
@@ -273,11 +298,11 @@ public class Implementation()
             yield return userId;
     }
 
-    internal async Task<object> OrderStatusLogs(string connectionString, string orderNumber)
+    internal async Task<object> OrderStatusLogs(string connectionString, string orderToken)
     {
         var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
         var dbContext = GetDbContext(connectionString);
-        var orderMasterId = await dbContext.OrderMasters.Where(x => x.OrderNumber == orderNumber).Select(x => x.OrderMasterId).FirstOrDefaultAsync();
+        var orderMasterId = await dbContext.OrderMasters.Where(x => x.OrderToken == orderToken).Select(x => x.OrderMasterId).FirstOrDefaultAsync();
         var logs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == orderMasterId).ToListAsync();
         return logs.Select(x => new
         {

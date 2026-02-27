@@ -22,16 +22,16 @@ namespace CreateOrderService
                 }
                 var connectionString = await GetConnectionString(requestPayload.DomainName);
                 connectionString = connectionString.Replace("5434", "5433");
-                var orderNumber = await impl.SaveOrderAsync(connectionString, requestPayload.BranchId, requestPayload.Order!);
-                requestPayload.Order.OrderStatusLogs = await impl.OrderStatusLogs(connectionString, orderNumber);
-                response = new { Success = true, Message = "Order processed successfully", OrderNumber = orderNumber, requestPayload.Order };
+                var orderToken = await impl.SaveOrderAsync(connectionString, requestPayload.BranchId, requestPayload.Order!);
+                requestPayload.Order.OrderStatusLogs = await impl.OrderStatusLogs(connectionString, orderToken);
+                response = new { Success = true, Message = "Order processed successfully", OrderNumber = orderToken, requestPayload.Order };
                 await foreach (var userId in impl.GetBranchUsersIdsAsync(connectionString, requestPayload.BranchId))
                 {
                     await publisher.PublishToQueueAsync(RabbitMqQueues.PushNotificationRequestQueue, new PushNotificationServicePayload
                     {
                         ClientId = $"branch:{userId}:*",
                         Title = "New Order Received",
-                        Message = $"{orderNumber}",
+                        Message = $"{orderToken}",
                     });
 
                 }

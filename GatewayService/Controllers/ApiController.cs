@@ -4,20 +4,40 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using PointofSaleModels.Protos;
-using static PointofSaleModels.Protos.PushNotificationService;
 using PointofSaleModels.ServicePayloads;
 using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using static PointofSaleModels.Protos.PushNotificationService;
+using static PointofSaleModels.Protos.OrderHistoryService;
 
 namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
+        [HttpGet("myorder")]
+        public async Task<IActionResult> GetMyOrder([FromQuery] string orderNumber)
+        {
+            var host = HttpContext.Request.Host.Value;
+            logger.LogInformation("Received request for order history with orderNumber: {OrderNumber} from host: {Host}", orderNumber, host);
+            return Ok();
+            //if (string.IsNullOrEmpty(orderNumber))
+            //    return BadRequest(new { error = "Order number is required." });
+            //var host = HttpContext.Request.Host.Value;
+            //var orderhistoryRequest = new OrderHistoryRequest
+            //{
+            //    Host = host,
+            //    OrderToken = orderNumber
+            //};
+            //var orderHistoryResponse = await orderHistoryClient.GetOrderHistoryAsync(orderhistoryRequest);
+
+            //return Ok(orderHistoryResponse.Orders);
+        }
+
         [AllowAnonymous]
         [HttpPost("subscribe")]
         public async Task<IActionResult> SubscribeAsync([FromBody] PushSubscriptionDto dto)

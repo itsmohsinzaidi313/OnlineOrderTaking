@@ -185,14 +185,6 @@ namespace ImportService.Data
                 .ToTable("setup_company_setting")
                 .HasKey(x => x.SettingId);
 
-            modelBuilder.Entity<OrderMaster>()
-                .ToTable("order_master")
-                .HasKey(x => x.OrderMasterId);
-
-            modelBuilder.Entity<OrderDetail>()
-                .ToTable("order_detail")
-                .HasKey(x => x.OrderDetailId);
-
             modelBuilder.Entity<BranchOrderSequence>()
                 .ToTable("branch_order_sequence")
                 .HasKey(x => x.BranchId);
@@ -226,6 +218,10 @@ namespace ImportService.Data
                 .HasKey(x => x.OrderMasterId);
 
             modelBuilder.Entity<OrderMaster>()
+                .HasIndex(x => x.OrderToken)
+                .IsUnique();
+
+            modelBuilder.Entity<OrderMaster>()
                 .HasMany(o => o.OrderDetails)
                 .WithOne(od => od.OrderMaster)
                 .HasForeignKey(od => od.OrderMasterId)
@@ -234,6 +230,7 @@ namespace ImportService.Data
             modelBuilder.Entity<OrderMaster>()
                 .Property(o => o.OrderDate)
                 .HasColumnType("timestamp without time zone");
+
             modelBuilder.Entity<OrderMaster>()
                 .Property(o => o.AdvanceOrderDate)
                 .HasColumnType("timestamp without time zone");

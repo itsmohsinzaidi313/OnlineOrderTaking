@@ -533,6 +533,7 @@ internal class Implementation()
                 var order = new CustomerOrder
                 {
                     OrderNumber = dbOrder.OrderNumber ?? "N/A",
+                    OrderToken = dbOrder.OrderToken ?? "N/A",
                     BranchId = branchId,
                     BranchName = branchDict[branchId],
                     OrderType = setupDetail[dbOrder.OrderModeId!.Value],

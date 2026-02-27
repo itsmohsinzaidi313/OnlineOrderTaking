@@ -17,7 +17,7 @@ namespace OrderUpdateService
             try
             {
                 var dbContext = await GetDbContextAsync(requestPayload.DomainName);
-                var orderMaster = await dbContext.OrderMasters.Where(x => x.OrderNumber == requestPayload.OrderNumber).FirstOrDefaultAsync();
+                var orderMaster = await dbContext.OrderMasters.Where(x => x.OrderToken == requestPayload.OrderNumber).FirstOrDefaultAsync();
                 if (orderMaster != null)
                 {
                     if (requestPayload.BranchTransferId != null)

@@ -13,6 +13,7 @@
             DataRequestType = payload.DataRequestType;
         }
         public string DataRequestType { get; set; } = string.Empty;
+        public string? OrderToken { get; set; }
         public object? DataPayload { get; set; }
         public bool Success { get; set; }
         public int? OrderUserId { get; set; }

@@ -14,4 +14,8 @@
     <ProjectReference Include="..\PointofSaleModels\PointofSaleModels.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Protobuf Include="Protos\orderhistory.proto" GrpcServices="Server" Namespace="PointofSaleModels.Protos" />
+  </ItemGroup>
+
 </Project>

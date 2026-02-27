@@ -4,7 +4,7 @@ using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace OrderHistoryService;
 
-internal class Implementation()
+public class Implementation()
 {
     private static Db.PgDbContext GetDbContext(string connectionString)
     {
@@ -20,7 +20,7 @@ internal class Implementation()
         return new Db.PgDbContext(options);
     }
 
-    internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int userId)
+    internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int userId, string? orderNumber)
     {
         using var dbContext = GetDbContext(connectionString);
         var products = await (from x in dbContext.ProductCategories
@@ -51,7 +51,10 @@ internal class Implementation()
 
         foreach (var branchId in await dbContext.UserBranchMappings.Where(x => x.UserId == userId).Select(x => x.BranchId).ToListAsync())
         {
-            foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId && x.OrderDate > DateOnly.FromDateTime(DateTime.Now.AddDays(-3))).ToListAsync())
+            async Task<List<Db.OrderMaster>> allOrderMastersAsync() => await dbContext.OrderMasters.Where(x => x.BranchId == branchId && x.OrderDate > DateOnly.FromDateTime(DateTime.Now.AddDays(-3))).ToListAsync();
+            async Task<List<Db.OrderMaster>> singleOrderMasterAsync() => await dbContext.OrderMasters.Where(x => x.BranchId == branchId && x.OrderNumber == orderNumber).ToListAsync();
+            var dbOrders = string.IsNullOrEmpty(orderNumber) ? await allOrderMastersAsync() : await singleOrderMasterAsync();
+            foreach (var dbOrder in dbOrders)
             {
                 var orderTime = dbOrder.OrderTime;
                 var orderDate = dbOrder.OrderDate;
@@ -64,6 +67,7 @@ internal class Implementation()
                 var order = new CustomerOrder
                 {
                     OrderNumber = dbOrder.OrderNumber ?? "N/A",
+                    OrderToken = dbOrder.OrderToken ?? "N/A",
                     BranchId = branchId,
                     BranchName = branchDict[branchId],
                     OrderType = setupDetail[dbOrder.OrderModeId!.Value],
