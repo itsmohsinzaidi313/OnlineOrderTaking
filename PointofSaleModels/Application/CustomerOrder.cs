@@ -15,6 +15,7 @@
         public double AmountWithoutGst { get; set; }
         public List<MenuItem> Items { get; set; } = [];
         public object? OrderStatusLogs { get; set; }
+        public int DeliveryTime { get; set; }
         public CustomerOrder() : base()
         {
         }

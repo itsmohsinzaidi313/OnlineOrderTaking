@@ -57,11 +57,13 @@ namespace OrderUpdateService
                             .ExecuteUpdateAsync(x => x.SetProperty(x => x.RiderId, requestPayload.RiderId));
                     }
 
-                    if (requestPayload.DeliveryTime != null)
+                    int? deliveryTime = requestPayload.DeliveryTime;
+                    if (deliveryTime != null)
                     {
+                        deliveryTime = orderMaster.DeliveryTime + (deliveryTime);
                         await dbContext.OrderMasters
                             .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
-                            .ExecuteUpdateAsync(x => x.SetProperty(x => x.DeliveryTime, requestPayload.DeliveryTime));
+                            .ExecuteUpdateAsync(x => x.SetProperty(x => x.DeliveryTime, deliveryTime));
                     }
                     payload = new
                     {
