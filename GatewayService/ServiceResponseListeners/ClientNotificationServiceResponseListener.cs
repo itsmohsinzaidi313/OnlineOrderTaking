@@ -7,12 +7,12 @@ using System.Text.Json;
 
 namespace GatewayService.ServiceResponseListeners
 {
-    public class OrderNotificationServiceResponseListener(ILogger<OrderNotificationServiceResponseListener> logger, RabbitMqConnection rabbitConnection, IHubContext<GatewayHub> hub, IConnectionMultiplexer redis) : RabbitMqConsumerService<OrderNotificationServiceResponseListener>(logger, rabbitConnection)
+    public class ClientNotificationServiceResponseListener(ILogger<ClientNotificationServiceResponseListener> logger, RabbitMqConnection rabbitConnection, IHubContext<GatewayHub> hub, IConnectionMultiplexer redis) : RabbitMqConsumerService<ClientNotificationServiceResponseListener>(logger, rabbitConnection)
     {
-        public override string QueueName() => RabbitMqQueues.OrderNotificationGatewayResponse;
+        public override string QueueName() => RabbitMqQueues.ClientNotificationGatewayResponse;
         public override async Task OnMessage(string svcPayload)
         {
-            var payload = JsonSerializer.Deserialize<OrderNotificationServicePayload>(svcPayload);
+            var payload = JsonSerializer.Deserialize<ClientNotificationServicePayload>(svcPayload);
             if (payload is not null)
             {
                 List<string> clients = [];
