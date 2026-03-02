@@ -37,6 +37,7 @@ namespace GatewayService.ServiceResponseListeners
                 {
                     continue;
                 }
+                logger.LogInformation($"Sending response to client {clientId}");
                 await implementation.SendToUser(clientId, "OrderStatusUpdate", payload);
             }
         }
