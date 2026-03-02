@@ -22,7 +22,7 @@ namespace GatewayService.ServiceResponseListeners
                 {
                     continue;
                 }
-                logger.LogInformation($"Sending response to client {clientId}");
+                logger.LogInformation($"Sending response to backpanel client {clientId}");
                 keys.Add(clientId);
             }
             var responseKey = payload?.ResponseKey ?? throw new Exception("ResponseKey not found");
@@ -37,7 +37,7 @@ namespace GatewayService.ServiceResponseListeners
                 {
                     continue;
                 }
-                logger.LogInformation($"Sending response to client {clientId}");
+                logger.LogInformation($"Sending response to website client {clientId}");
                 await implementation.SendToUser(clientId, "OrderStatusUpdate", payload);
             }
         }
