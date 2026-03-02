@@ -23,6 +23,7 @@ namespace GatewayService.ServiceResponseListeners
                     continue;
                 }
                 var responseKey = payload?.ResponseKey ?? throw new Exception("ResponseKey not found");
+                logger.LogInformation($"Sending response to client {clientId} with key {responseKey}");
                 await implementation.SendToUser(clientId, responseKey, payload);
             }
 
