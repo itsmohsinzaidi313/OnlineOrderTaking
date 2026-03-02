@@ -13,7 +13,7 @@ namespace GatewayService.ServiceResponseListeners
         {
             var payload = JsonSerializer.Deserialize<OrderUpdatePayload>(svcPayload);
             var server = redis.GetServer(redis.GetEndPoints().First());
-
+            List<string> keys = [];
             foreach (var key in server.Keys(pattern: $"branch:*:*:connection"))
             {
                 var arr = key.ToString().Split(':');
@@ -22,11 +22,12 @@ namespace GatewayService.ServiceResponseListeners
                 {
                     continue;
                 }
-                var responseKey = payload?.ResponseKey ?? throw new Exception("ResponseKey not found");
-                logger.LogInformation($"Sending response to client {clientId} with key {responseKey}");
-                await implementation.SendToUser(clientId, responseKey, payload);
+                logger.LogInformation($"Sending response to client {clientId}");
+                keys.Add(clientId);
             }
-
+            var responseKey = payload?.ResponseKey ?? throw new Exception("ResponseKey not found");
+            await implementation.SendToUsers(keys, responseKey, payload);
+            keys.Clear();
             var orderNumber = payload?.OrderNumber ?? throw new Exception("OrderNumber not found");
             foreach (var key in server.Keys(pattern: $"order:{orderNumber}:*"))
             {
