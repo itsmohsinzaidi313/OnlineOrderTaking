@@ -237,10 +237,10 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  ordernotifyservice:
+  clientnotifyservice:
     build:
       context: .
-      dockerfile: ./OrderNotificationService/Dockerfile
+      dockerfile: ./ClientNotificationService/Dockerfile
     environment:
       - ConnectionStrings__Postgres=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}

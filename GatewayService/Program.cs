@@ -46,7 +46,7 @@ builder.Services
     .AddHostedService<SettingsDataServiceResponseListener>()
     .AddHostedService<MenuServiceResponseListener>()
     .AddHostedService<OrderHistoryServiceResponseListener>()
-    .AddHostedService<OrderNotificationServiceResponseListener>()
+    .AddHostedService<ClientNotificationServiceResponseListener>()
     .AddHostedService<OrderUpdateServiceResponseListener>()
     .AddSingleton<IConnectionMultiplexer>(context =>
     {

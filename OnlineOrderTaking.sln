@@ -18,7 +18,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreateOrderService", "Creat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExportService", "ExportService\ExportService.csproj", "{D9C8E1F1-76B1-4133-93FD-BB06B65E575F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderNotificationService", "OrderNotificationService\OrderNotificationService.csproj", "{C4F084B0-F4FE-4904-981F-AD26C45DE4C8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientNotificationService", "OrderNotificationService\ClientNotificationService.csproj", "{C4F084B0-F4FE-4904-981F-AD26C45DE4C8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataService", "DataService\DataService.csproj", "{4DF53EEF-CE53-4B8F-ABD4-D3A5D4725DEB}"
 EndProject

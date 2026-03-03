@@ -19,6 +19,6 @@ namespace PointofSaleModels.ServicePayloads
 
         public CustomerOrder CustomerOrder { get; set; }
 
-        public List<string> NotificationKeys { get; set; } = [];
+        public List<string> NewOrderNotificationKeys { get; set; } = [];
     }
 }
