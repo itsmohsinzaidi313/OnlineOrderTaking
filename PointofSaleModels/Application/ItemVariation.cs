@@ -6,6 +6,8 @@
         public ItemSize Size { get; set; }
         public ItemFlavour Flavour { get; set; }
         public double Price { get; set; }
+        public bool IsPromotional { get; set; }
+        public bool IsPopular { get; set; }
         public Discount? Discount { get; set; }
         public List<ItemChoice> ItemChoices { get; set; } = [];
     }

@@ -446,7 +446,9 @@ internal class Implementation()
                         Size = sizeItem,
                         Flavour = flavourItem,
                         Price = dbProductDetail.Price,
-                        Discount = itemDiscount
+                        Discount = itemDiscount,
+                        IsPromotional =dbProductDetail.IsPromotion,
+                        IsPopular = dbProductDetail.IsBestSeller,
                     };
                     foreach (var dbDealItem in dbMenuData.DealItemDetails.Where(x => x.ProductDetailId == dbProductDetail.ProductDetailId))
                     {
