@@ -22,20 +22,20 @@ namespace GatewayService.Controllers
         [HttpGet("myorder")]
         public async Task<IActionResult> GetMyOrder([FromQuery] string orderNumber)
         {
+            if (string.IsNullOrEmpty(orderNumber))
+                return BadRequest(new { error = "Order number is required." });
             var host = HttpContext.Request.Host.Value;
-            logger.LogInformation("Received request for order history with orderNumber: {OrderNumber} from host: {Host}", orderNumber, host);
-            return Ok();
-            //if (string.IsNullOrEmpty(orderNumber))
-            //    return BadRequest(new { error = "Order number is required." });
-            //var host = HttpContext.Request.Host.Value;
-            //var orderhistoryRequest = new OrderHistoryRequest
-            //{
-            //    Host = host,
-            //    OrderToken = orderNumber
-            //};
-            //var orderHistoryResponse = await orderHistoryClient.GetOrderHistoryAsync(orderhistoryRequest);
-
-            //return Ok(orderHistoryResponse.Orders);
+            var orderhistoryRequest = new OrderHistoryRequest
+            {
+                OrderToken = orderNumber
+            };
+            var orderHistoryResponse = await orderHistoryClient.GetOrderHistoryAsync(orderhistoryRequest);
+            if (orderHistoryResponse.Success == false)
+            {
+                return Ok(orderHistoryResponse);
+            }
+            var customerOrders = orderHistoryResponse.OrdersPayload.Select(json => System.Text.Json.JsonSerializer.Deserialize<CustomerOrder>(json)).ToList();
+            return Ok(customerOrders);
         }
 
         [AllowAnonymous]

@@ -2,18 +2,10 @@
 
 namespace PointofSaleModels.PGDatabaseModels;
 
-public partial class RestaurantsContext : DbContext
+public partial class RestaurantsContext(DbContextOptions<RestaurantsContext> options) : DbContext(options)
 {
-    public RestaurantsContext()
-    {
-    }
-
-    public RestaurantsContext(DbContextOptions<RestaurantsContext> options)
-        : base(options)
-    {
-    }
-
     public virtual DbSet<Restaurant> Restaurants { get; set; }
+    public virtual DbSet<OrderTokens> OrderTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -22,20 +14,13 @@ public partial class RestaurantsContext : DbContext
             entity
                 .HasNoKey()
                 .ToTable("restaurants");
+        });
 
-            entity.Property(e => e.ConnectionString)
-                .HasMaxLength(128)
-                .HasColumnName("connection_string");
-            entity.Property(e => e.DomainName)
-                .HasMaxLength(128)
-                .HasColumnName("domain_name");
-            entity.Property(e => e.Id)
-                .ValueGeneratedOnAdd()
-                .UseIdentityAlwaysColumn()
-                .HasColumnName("id");
-            entity.Property(e => e.Name)
-                .HasMaxLength(128)
-                .HasColumnName("name");
+        modelBuilder.Entity<OrderTokens>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToTable("order_tokens");
         });
 
         OnModelCreatingPartial(modelBuilder);

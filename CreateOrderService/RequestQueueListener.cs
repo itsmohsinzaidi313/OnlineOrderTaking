@@ -1,7 +1,7 @@
-﻿using PointofSaleModels.ServicePayloads;
+﻿using Microsoft.EntityFrameworkCore;
+using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using Microsoft.EntityFrameworkCore;
 using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace CreateOrderService
@@ -23,6 +23,7 @@ namespace CreateOrderService
                 var connectionString = await GetConnectionString(requestPayload.DomainName);
                 connectionString = connectionString.Replace("5434", "5433");
                 var orderToken = await impl.SaveOrderAsync(connectionString, requestPayload.BranchId, requestPayload.Order!);
+                await SaveToken(requestPayload.DomainName, orderToken);
                 requestPayload.Order.OrderStatusLogs = await impl.OrderStatusLogs(connectionString, orderToken);
                 response = new { Success = true, Message = "Order processed successfully", OrderNumber = orderToken, requestPayload.Order };
                 await foreach (var userId in impl.GetBranchUsersIdsAsync(connectionString, requestPayload.BranchId))
@@ -35,8 +36,8 @@ namespace CreateOrderService
                     });
 
                 }
-                await publisher.PublishToQueueAsync(RabbitMqQueues.OrderNotificationRequestQueue,
-                    new OrderNotificationServicePayload(requestPayload)
+                await publisher.PublishToQueueAsync(RabbitMqQueues.ClientNotificationRequestQueue,
+                    new ClientNotificationServicePayload(requestPayload)
                     {
                         CustomerOrder = requestPayload.Order!,
                     });
@@ -51,6 +52,16 @@ namespace CreateOrderService
                 DataPayload = response
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.OrderResponseQueue, response);
+        }
+
+        private async Task SaveToken(string domainName, string orderToken)
+        {
+            await using var context = await contextFactory.CreateDbContextAsync();
+            var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
+            var restaurantId = restaurant?.Id ?? throw new Exception("Restaurant not found");
+            var tokenEntity = new Db.OrderTokens { OrderToken = orderToken, CreatedAt = DateTime.UtcNow, RestaurantId = restaurantId };
+            await context.OrderTokens.AddAsync(tokenEntity);
+            await context.SaveChangesAsync();
         }
 
         private async Task<string> GetConnectionString(string domainName)
