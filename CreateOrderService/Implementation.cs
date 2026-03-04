@@ -101,7 +101,7 @@ public class Implementation()
         var discount = order.Discount;
         var orderNumber = await GenerateOrderNumberAsync(dbContext, branchId);
         var subTotal = order.Items.Select(x => x.Variations.Select(x => x.Price).Sum()).Sum();
-        var dbPaymentMode = await dbContext.PaymentModes.FirstOrDefaultAsync(x => x.PaymentMode1 == order.PaymentType);
+        var dbPaymentMode = await dbContext.PaymentModes.FirstOrDefaultAsync(x => x.PaymentMode1.Equals(order.PaymentType, StringComparison.CurrentCultureIgnoreCase));
         var gst = dbPaymentMode != null ? await dbContext.Gsts.FirstOrDefaultAsync(x => x.PaymentModeId == dbPaymentMode.PaymentModeId) : null;
         var tax = gst?.Gstpercentage ?? 0.00;
         var orderSourceId = await dbContext.SetupMasterDetails.Where(x => x.CompanyId == companyId && x.Flex1 == "WEB").Select(x => x.SetupDetailId).FirstOrDefaultAsync();
