@@ -25,7 +25,7 @@ namespace CreateOrderService
                 var orderToken = await impl.SaveOrderAsync(connectionString, requestPayload.BranchId, requestPayload.Order!);
                 await SaveToken(requestPayload.DomainName, orderToken);
                 requestPayload.Order.OrderStatusLogs = await impl.OrderStatusLogs(connectionString, orderToken);
-                response = new { Success = true, Message = "Order processed successfully", OrderNumber = orderToken, requestPayload.Order };
+                response = new { Success = true, Message = "Order processed successfully", OrderNumber = orderToken };
                 await foreach (var userId in impl.GetBranchUsersIdsAsync(connectionString, requestPayload.BranchId))
                 {
                     await publisher.PublishToQueueAsync(RabbitMqQueues.PushNotificationRequestQueue, new PushNotificationServicePayload
