@@ -19,6 +19,8 @@ namespace GatewayService.Controllers
     public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
+
+        [AllowAnonymous]
         [HttpGet("myorder")]
         public async Task<IActionResult> GetMyOrder([FromQuery] string orderNumber)
         {
