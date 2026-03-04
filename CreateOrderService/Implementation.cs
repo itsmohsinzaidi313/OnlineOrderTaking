@@ -181,8 +181,8 @@ public class Implementation()
                             Gstid = gst?.Gstid,
                             PriceWithGst = option.Price + (option.Price * (gst?.Gstpercentage ?? 0) / 100),
                             PriceWithoutGst = option.Price,
-                            DiscountId = variation.Discount.Id,
-                            DiscountPercent = variation.Discount.Value,
+                            DiscountId = variation.Discount?.Id,
+                            DiscountPercent = variation.Discount?.Value,
                         });
                     }
                 }
