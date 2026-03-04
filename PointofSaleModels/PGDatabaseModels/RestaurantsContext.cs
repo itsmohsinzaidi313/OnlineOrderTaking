@@ -12,15 +12,15 @@ public partial class RestaurantsContext(DbContextOptions<RestaurantsContext> opt
         modelBuilder.Entity<Restaurant>(entity =>
         {
             entity
-                .HasNoKey()
-                .ToTable("restaurants");
+                .ToTable("restaurants")
+                .HasKey(x => x.Id);
         });
 
         modelBuilder.Entity<OrderTokens>(entity =>
         {
             entity
-                .HasNoKey()
-                .ToTable("order_tokens");
+                .ToTable("order_tokens")
+                .HasKey(x => x.Id);
         });
 
         OnModelCreatingPartial(modelBuilder);
