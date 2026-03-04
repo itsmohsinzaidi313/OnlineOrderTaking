@@ -20,7 +20,7 @@ public class Implementation()
         return new Db.PgDbContext(options);
     }
 
-    internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int userId, string? orderNumber)
+    internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int? userId = null, string? orderToken = null)
     {
         using var dbContext = GetDbContext(connectionString);
         var products = await (from x in dbContext.ProductCategories
@@ -48,13 +48,32 @@ public class Implementation()
         var branchDict = await dbContext.BranchMasters.ToDictionaryAsync(x => x.BranchId, x => x.BranchName);
         var discounts = await dbContext.Discounts.ToDictionaryAsync(x => x.DiscountId, x => x);
         var riders = await dbContext.Riders.ToListAsync();
-
-        foreach (var branchId in await dbContext.UserBranchMappings.Where(x => x.UserId == userId).Select(x => x.BranchId).ToListAsync())
+        if (userId.HasValue)
         {
-            async Task<List<Db.OrderMaster>> allOrderMastersAsync() => await dbContext.OrderMasters.Where(x => x.BranchId == branchId && x.OrderDate > DateOnly.FromDateTime(DateTime.Now.AddDays(-3))).ToListAsync();
-            async Task<List<Db.OrderMaster>> singleOrderMasterAsync() => await dbContext.OrderMasters.Where(x => x.BranchId == branchId && x.OrderNumber == orderNumber).ToListAsync();
-            var dbOrders = string.IsNullOrEmpty(orderNumber) ? await allOrderMastersAsync() : await singleOrderMasterAsync();
-            foreach (var dbOrder in dbOrders)
+            var branchIds = await dbContext.UserBranchMappings.Where(x => x.UserId == userId).Select(x => x.BranchId).ToListAsync();
+            foreach (var branchId in branchIds)
+            {
+                async Task<List<Db.OrderMaster>> allOrderMastersAsync() => await dbContext.OrderMasters.Where(x => x.BranchId == branchId && x.OrderDate > DateOnly.FromDateTime(DateTime.Now.AddDays(-3))).ToListAsync();
+                var orderMasters = await allOrderMastersAsync();
+                await foreach (var order in ordersAsync(orderMasters))
+                {
+                    yield return order;
+                }
+
+            }
+        }
+        else if (!string.IsNullOrEmpty(orderToken))
+        {
+            var orderMasters = await dbContext.OrderMasters.Where(x => x.OrderToken == orderToken).ToListAsync();
+            await foreach (var order in ordersAsync(orderMasters))
+            {
+                yield return order;
+            }
+        }
+
+        async IAsyncEnumerable<CustomerOrder> ordersAsync(IEnumerable<Db.OrderMaster> orderMasters)
+        {
+            foreach (var dbOrder in orderMasters)
             {
                 var orderTime = dbOrder.OrderTime;
                 var orderDate = dbOrder.OrderDate;
@@ -68,8 +87,8 @@ public class Implementation()
                 {
                     OrderNumber = dbOrder.OrderNumber ?? "N/A",
                     OrderToken = dbOrder.OrderToken ?? "N/A",
-                    BranchId = branchId,
-                    BranchName = branchDict[branchId],
+                    BranchId = dbOrder.BranchId,
+                    BranchName = branchDict[dbOrder.BranchId],
                     OrderType = setupDetail[dbOrder.OrderModeId!.Value],
                     Status = statuses[dbOrder.OrderStatusId],
                     Items = [],

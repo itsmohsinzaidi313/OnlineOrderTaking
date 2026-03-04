@@ -93,8 +93,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddGrpcClient<PushNotificationServiceClient>(o => o.Address = new Uri("http://pushnotificationservice:8080"));
-builder.Services.AddGrpcClient<OrderHistoryServiceClient>(x => x.Address = new Uri("http://orderhistoryservice:8080"));
+builder.Services.AddGrpcClient<PushNotificationServiceClient>(o =>
+{
+    var address = builder.Configuration["GRPC:PushNotificationHost"] ?? "http://pushnotificationservice:8080";
+    o.Address = new Uri(address);
+});
+
+builder.Services.AddGrpcClient<OrderHistoryServiceClient>(x =>
+{
+    var address = builder.Configuration["GRPC:OrderHistoryHost"] ?? "http://orderhistoryservice:8080";
+    x.Address = new Uri(address);
+});
 
 var app = builder.Build();
 app.UseRouting();

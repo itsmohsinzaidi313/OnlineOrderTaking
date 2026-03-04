@@ -35,9 +35,9 @@ builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<Implementation>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
-    .AddHostedService<RequestQueueListener>()
-    .AddGrpc();
+    .AddHostedService<RequestQueueListener>();
 
+builder.Services.AddGrpc();
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.ListenAnyIP(8080, o =>
@@ -59,5 +59,5 @@ app.MapGet("/health", async ([FromServices] IDbContextFactory<RestaurantsContext
     }
     return Results.Ok();
 });
-
+app.MapGrpcService<OrderHistoryServiceImpl>();
 app.Run();

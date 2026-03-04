@@ -10,11 +10,11 @@ namespace OrderHistoryService
         public override async Task<OrderHistoryResponse> GetOrderHistory(OrderHistoryRequest request, ServerCallContext context)
         {
             using var restaurantDbContext = contextFactory.CreateDbContext();
-            var connectionString = restaurantDbContext.Restaurants
+            var connectionString = await restaurantDbContext.Restaurants
                                     .Join(restaurantDbContext.OrderTokens, r => r.Id, t => t.RestaurantId, (r, t) => new { r.ConnectionString, t.OrderToken })
                                     .Where(rt => rt.OrderToken == request.OrderToken)
                                     .Select(rt => rt.ConnectionString)
-                                    .FirstOrDefault();
+                                    .FirstOrDefaultAsync();
 
             if (string.IsNullOrEmpty(connectionString))
                 return new OrderHistoryResponse
@@ -31,10 +31,13 @@ namespace OrderHistoryService
                     Success = false,
                     Message = "Order number not found",
                 };
-            var orderNumber = orderMaster.OrderNumber;
             var userId = orderMaster.CreatedBy;
-            var response = new OrderHistoryResponse();
-            await foreach (var order in implementation.GetOrdersAsync(connectionString, userId, orderNumber))
+            var response = new OrderHistoryResponse
+            {
+                Success = true,
+                Message = "Order Found",
+            };
+            await foreach (var order in implementation.GetOrdersAsync(connectionString, orderToken: request.OrderToken))
             {
                 response.OrdersPayload.Add(System.Text.Json.JsonSerializer.Serialize(order));
             }

@@ -9,6 +9,7 @@ using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using App = PointofSaleModels.Application;
 using static PointofSaleModels.Protos.PushNotificationService;
 using static PointofSaleModels.Protos.OrderHistoryService;
 
@@ -31,12 +32,12 @@ namespace GatewayService.Controllers
             {
                 OrderToken = orderNumber
             };
-            var orderHistoryResponse = await orderHistoryClient.GetOrderHistoryAsync(orderhistoryRequest);
+            var orderHistoryResponse = await orderHistoryClient.GetOrderHistoryAsync(orderhistoryRequest, cancellationToken: HttpContext.RequestAborted);
             if (orderHistoryResponse.Success == false)
             {
                 return Ok(orderHistoryResponse);
             }
-            var customerOrders = orderHistoryResponse.OrdersPayload.Select(json => System.Text.Json.JsonSerializer.Deserialize<CustomerOrder>(json)).ToList();
+            var customerOrders = orderHistoryResponse.OrdersPayload.Select(json => System.Text.Json.JsonSerializer.Deserialize<App.CustomerOrder>(json)).ToList();
             return Ok(customerOrders);
         }
 
