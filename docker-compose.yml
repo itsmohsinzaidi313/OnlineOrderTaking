@@ -293,7 +293,7 @@ services:
       context: .
       dockerfile: ./CreateOrderService/Dockerfile
     environment:
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - ConnectionStrings__Postgres=${RWSQLCONNECTION}
       - ConnectionStrings__Redis=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
