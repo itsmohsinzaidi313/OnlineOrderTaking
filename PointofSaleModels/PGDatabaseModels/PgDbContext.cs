@@ -256,6 +256,12 @@ public partial class PgDbContext : DbContext
                 .WithOne(od => od.OrderMaster)
                 .HasForeignKey(od => od.OrderMasterId)
                 .HasPrincipalKey(o => o.OrderMasterId);
+            entity
+                .HasIndex(x => x.OrderToken)
+                .IsUnique();
+            entity
+                .HasIndex(x => x.OrderNumber)
+                .IsUnique();
         });
 
         modelBuilder.Entity<OrderModeCompanyMapping>(entity =>

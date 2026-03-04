@@ -37,8 +37,6 @@ namespace ImportService.Data
         public DbSet<Customer> Customers => Set<Customer>();
         public DbSet<CustomerPhone> CustomerPhones => Set<CustomerPhone>();
         public DbSet<CustomerAddressDetail> CustomerAddressDetails => Set<CustomerAddressDetail>();
-        public DbSet<OrderMaster> OrderMasters => Set<OrderMaster>();
-        public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
         public DbSet<UserLogin> UserLogins => Set<UserLogin>();
         public DbSet<UserRole> UserRoles => Set<UserRole>();
         public DbSet<UserBranchMapping> UserBranchMappings => Set<UserBranchMapping>();
@@ -220,14 +218,6 @@ namespace ImportService.Data
                 .WithMany(p => p.CustomerAddressDetails)
                 .HasForeignKey(c => c.PhoneId)
                 .HasPrincipalKey(p => p.PhoneId);
-
-            modelBuilder.Entity<OrderMaster>()
-                .ToTable("OrderMaster")
-                .HasKey(x => x.OrderMasterId);
-
-            modelBuilder.Entity<OrderDetail>()
-                .ToTable("OrderDetail")
-                .HasKey(x => x.OrderDetailId);
 
             modelBuilder.Entity<UserLogin>()
                 .ToTable("UserLogin")

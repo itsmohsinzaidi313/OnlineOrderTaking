@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option csharp_namespace = "PointofSaleModels.Protos";
+
+service OrderHistoryService {
+    rpc GetOrderHistory(OrderHistoryRequest) returns (OrderHistoryResponse);
+}
+
+message OrderHistoryRequest {
+    string orderToken = 1;
+}
+
+message OrderHistoryResponse {
+    bool success = 1;
+    string message = 2;
+    repeated string orders_payload = 3;
+}
+

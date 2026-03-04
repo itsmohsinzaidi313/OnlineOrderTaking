@@ -7,6 +7,7 @@
         public string BranchName { get; set; }
         public CustomerDetail CustomerDetails { get; set; }
         public string OrderNumber { get; set; } = string.Empty;
+        public string OrderToken { get; set; } = string.Empty;
         public string? OrderType { get; set; }
         public string? PaymentType { get; set; }
         public PaymentStatus? PaymentStatus { get; set; }

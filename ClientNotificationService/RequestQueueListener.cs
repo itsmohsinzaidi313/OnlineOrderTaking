@@ -4,15 +4,15 @@ using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using Db = PointofSaleModels.PGDatabaseModels;
 
-namespace OrderNotificationService
+namespace ClientNotificationService
 {
     public class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, IRabbitMqPublisher publisher,
         IDbContextFactory<Db.RestaurantsContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
     {
-        public override string QueueName() => RabbitMqQueues.OrderNotificationRequestQueue;
+        public override string QueueName() => RabbitMqQueues.ClientNotificationRequestQueue;
         public override async Task OnMessage(string payload)
         {
-            var requestPayload = System.Text.Json.JsonSerializer.Deserialize<OrderNotificationServicePayload>(payload);
+            var requestPayload = System.Text.Json.JsonSerializer.Deserialize<ClientNotificationServicePayload>(payload);
             object? response = null;
             try
             {
@@ -23,8 +23,8 @@ namespace OrderNotificationService
                     .Select(x => x.UserId)
                     .ToListAsync();
 
-                requestPayload.NotificationKeys = [.. userIds.Select(x => $"branch:{x}:*:connection")];
-                await publisher.PublishToQueueAsync(RabbitMqQueues.OrderNotificationGatewayResponse, requestPayload);
+                requestPayload.NewOrderNotificationKeys = [.. userIds.Select(x => $"branch:{x}:*:connection")];
+                await publisher.PublishToQueueAsync(RabbitMqQueues.ClientNotificationGatewayResponse, requestPayload);
             }
             catch (Exception ex)
             {
