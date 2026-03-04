@@ -85,6 +85,10 @@ namespace GatewayService
         {
             await hub.Clients.User(clientId).SendAsync(method, payload);
         }
+        public async Task SendToUsers<T>(List<string> clientIds, string method, T payload) where T : ServicePayload
+        {
+            await hub.Clients.Users(clientIds).SendAsync(method, payload);
+        }
 
         public async Task SendCustomerOrderToBranches(CustomerOrder svcPayload, List<string> clientIds)
         {

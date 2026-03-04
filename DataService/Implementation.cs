@@ -404,9 +404,17 @@ internal class Implementation()
                     Image = dbProduct.ProductImage ?? "N/A",
                     DepartmentName = dbMenuData.Departments[dbProduct.ProductCategoryId ?? 0] ?? "N/A",
                     Description = dbProduct.ProductDescription ?? "N/A",
+                    IsPromotional = false,
+                    IsPopular = false,
                 };
                 foreach (var dbProductDetail in dbMenuData.ProductDetails.Where(x => x.ProductId == dbProduct.ProductId))
                 {
+                    if (dbProductDetail.IsPromotion == true)
+                        item.IsPromotional = true;
+
+                    if (dbProductDetail.IsBestSeller == true)
+                        item.IsPopular = true;
+
                     var itemDiscount = dbMenuData.ItemDiscounts.Join(
                                         dbMenuData.DiscountMappings,
                                         a => a.DiscountId,
@@ -446,7 +454,9 @@ internal class Implementation()
                         Size = sizeItem,
                         Flavour = flavourItem,
                         Price = dbProductDetail.Price,
-                        Discount = itemDiscount
+                        Discount = itemDiscount,
+                        IsPromotional = dbProductDetail.IsPromotion,
+                        IsPopular = dbProductDetail.IsBestSeller,
                     };
                     foreach (var dbDealItem in dbMenuData.DealItemDetails.Where(x => x.ProductDetailId == dbProductDetail.ProductDetailId))
                     {
