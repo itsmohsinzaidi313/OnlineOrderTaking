@@ -1,4 +1,195 @@
 services:
+  pushnotificationservice:
+    build:
+      context: .
+      dockerfile: ./PushNotificationService/Dockerfile
+    ports:
+      - "8080"
+    environment:
+      - REDIS__CONNECTIONSTRING=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
+      - VAPID__SUBJECT=${VAPID_SUBJECT}
+      - VAPID__PUBLICKEY=${VAPID_PUBLIC_KEY}
+      - VAPID__PRIVATEKEY=${VAPID_PRIVATE_KEY}
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - patroni-net
+    depends_on:
+      haproxy:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  dataservice:
+    build:
+      context: .
+      dockerfile: ./DataService/Dockerfile
+    environment:
+      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - patroni-net
+    depends_on:
+      haproxy:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  menuservice:
+    build:
+      context: .
+      dockerfile: ./MenuService/Dockerfile
+    environment:
+      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - patroni-net
+    depends_on:
+      haproxy:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  orderhistoryservice:
+    build:
+      context: .
+      dockerfile: ./OrderHistoryService/Dockerfile
+    ports:
+      - "8080"
+    environment:
+      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - patroni-net
+    depends_on:
+      haproxy:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  settingsdataservice:
+    build:
+      context: .
+      dockerfile: ./DataService/Dockerfile
+    environment:
+      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - patroni-net
+    depends_on:
+      haproxy:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  clientnotifyservice:
+    build:
+      context: .
+      dockerfile: ./ClientNotificationService/Dockerfile
+    environment:
+      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - patroni-net
+    depends_on:
+      haproxy:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  orderupdateservice:
+    build:
+      context: .
+      dockerfile: ./OrderUpdateService/Dockerfile
+    environment:
+      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - patroni-net
+    depends_on:
+      haproxy:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  importservice:
+    build:
+      context: .
+      dockerfile: ./ImportService/Dockerfile
+    environment:
+      - ConnectionStrings__SqlServer=${MSSQLCONNECTION}
+      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+    networks:
+      - patroni-net
+    depends_on:
+      haproxy:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  createorderservice:
+    build:
+      context: .
+      dockerfile: ./CreateOrderService/Dockerfile
+    environment:
+      - ConnectionStrings__Postgres=${RWSQLCONNECTION}
+      - ConnectionStrings__Redis=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - patroni-net
+    depends_on:
+      haproxy:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  gatewayservice:
+    build:
+      context: .
+      dockerfile: ./GatewayService/Dockerfile
+    ports:
+      - "8090:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${GATEWAY_ASPNETCORE_ENVIRONMENT}
+      - ASPNETCORE_URLS=${GATEWAY_ASPNETCORE_URLS}
+      - REDIS__CONNECTIONSTRING=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+      - JWT__KEY=${GATEWAY_JWT_KEY}
+      - JWT__ISSUER=${GATEWAY_JWT_ISSUER}
+      - JWT__AUDIENCE=${GATEWAY_JWT_AUDIENCE}
+      - JWT__EXPIREMINUTES=${GATEWAY_JWT_EXPIREMINUTES}
+    networks:
+      - patroni-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+  
   # etcd for Patroni configuration management
   etcd:
     build:
@@ -141,195 +332,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-
-  pushnotificationservice:
-    build:
-      context: .
-      dockerfile: ./PushNotificationService/Dockerfile
-    ports:
-      - "8080"
-    environment:
-      - REDIS__CONNECTIONSTRING=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
-      - VAPID__SUBJECT=${VAPID_SUBJECT}
-      - VAPID__PUBLICKEY=${VAPID_PUBLIC_KEY}
-      - VAPID__PRIVATEKEY=${VAPID_PRIVATE_KEY}
-      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
-      - RABBITMQ__PORT=${RABBITMQ_PORT}
-      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
-      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
-    networks:
-      - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-
-  dataservice:
-    build:
-      context: .
-      dockerfile: ./DataService/Dockerfile
-    environment:
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
-      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
-      - RABBITMQ__PORT=${RABBITMQ_PORT}
-      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
-      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
-    networks:
-      - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-
-  menuservice:
-    build:
-      context: .
-      dockerfile: ./MenuService/Dockerfile
-    environment:
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
-      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
-      - RABBITMQ__PORT=${RABBITMQ_PORT}
-      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
-      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
-    networks:
-      - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-
-  orderhistoryservice:
-    build:
-      context: .
-      dockerfile: ./OrderHistoryService/Dockerfile
-    environment:
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
-      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
-      - RABBITMQ__PORT=${RABBITMQ_PORT}
-      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
-      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
-    networks:
-      - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-
-  settingsdataservice:
-    build:
-      context: .
-      dockerfile: ./DataService/Dockerfile
-    environment:
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
-      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
-      - RABBITMQ__PORT=${RABBITMQ_PORT}
-      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
-      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
-    networks:
-      - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-
-  clientnotifyservice:
-    build:
-      context: .
-      dockerfile: ./ClientNotificationService/Dockerfile
-    environment:
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
-      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
-      - RABBITMQ__PORT=${RABBITMQ_PORT}
-      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
-      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
-    networks:
-      - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-
-  orderupdateservice:
-    build:
-      context: .
-      dockerfile: ./OrderUpdateService/Dockerfile
-    environment:
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
-      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
-      - RABBITMQ__PORT=${RABBITMQ_PORT}
-      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
-      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
-    networks:
-      - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-
-  importservice:
-    build:
-      context: .
-      dockerfile: ./ImportService/Dockerfile
-    environment:
-      - ConnectionStrings__SqlServer=${MSSQLCONNECTION}
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
-    networks:
-      - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-
-  createorderservice:
-    build:
-      context: .
-      dockerfile: ./CreateOrderService/Dockerfile
-    environment:
-      - ConnectionStrings__Postgres=${RWSQLCONNECTION}
-      - ConnectionStrings__Redis=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
-      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
-      - RABBITMQ__PORT=${RABBITMQ_PORT}
-      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
-      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
-    networks:
-      - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-
-  gatewayservice:
-    build:
-      context: .
-      dockerfile: ./GatewayService/Dockerfile
-    ports:
-      - "8090:8080"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=${GATEWAY_ASPNETCORE_ENVIRONMENT}
-      - ASPNETCORE_URLS=${GATEWAY_ASPNETCORE_URLS}
-      - REDIS__CONNECTIONSTRING=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
-      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
-      - RABBITMQ__PORT=${RABBITMQ_PORT}
-      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
-      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
-      - JWT__KEY=${GATEWAY_JWT_KEY}
-      - JWT__ISSUER=${GATEWAY_JWT_ISSUER}
-      - JWT__AUDIENCE=${GATEWAY_JWT_AUDIENCE}
-      - JWT__EXPIREMINUTES=${GATEWAY_JWT_EXPIREMINUTES}
-    networks:
-      - patroni-net
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
 
   # Redis cache
   redis:
