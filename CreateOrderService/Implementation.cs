@@ -36,6 +36,16 @@ public class Implementation()
     {
         await dbContext.OrderMasters.AddAsync(orderMaster);
         await dbContext.SaveChangesAsync();
+        var orderDetails = orderMaster.OrderDetails.ToList();
+        var parents = orderMaster.OrderDetails.Where(x => !x.OrderParentId.HasValue).ToList();
+        foreach (var parent in parents)
+        {
+            var children = orderDetails.Where(x => (x.RandomId == parent.RandomId) && x.OrderParentId.HasValue).ToList();
+            foreach (var child in children)
+            {
+                child.OrderParentId = parent.OrderDetailId;
+            }
+        }
         await AssignOrderToken(dbContext, orderMaster);
         await AddOrderStatusLog(dbContext, orderMaster);
         return orderMaster.OrderToken;
@@ -138,10 +148,6 @@ public class Implementation()
             DeliveryCharges = order.DeliveryCharges ?? 0.00,
             DeliveryTime = deliveryTime,
         };
-        //foreach (var orderDetail in GetOrderDetails(order.Items, gst))
-        //{
-        //    orderMaster.OrderDetails.Add(orderDetail);
-        //}
 
         foreach (var item in order.Items)
         {
@@ -179,7 +185,6 @@ public class Implementation()
                     yield return new Db.OrderDetail
                     {
                         RandomId = orderDetail.RandomId,
-                        OrderParentId = variation.Id,
                         DealItemId = choice.Id,
                         ProductDetailId = option.Id,
                         Quantity = option.Quantity.HasValue ? option.Quantity : choice.Quantity,
