@@ -36,17 +36,23 @@ public class Implementation()
     {
         await dbContext.OrderMasters.AddAsync(orderMaster);
         await dbContext.SaveChangesAsync();
-        var orderDetails = orderMaster.OrderDetails.ToList();
-        var parents = orderMaster.OrderDetails.Where(x => !x.OrderParentId.HasValue).ToList();
-        foreach (var parent in parents)
-        {
-            await dbContext.OrderDetails
-                .Where(x => x.OrderMasterId == parent.OrderMasterId && x.RandomId == parent.RandomId && x.OrderParentId != null)
-                .ExecuteUpdateAsync(x => x.SetProperty(x => x.OrderParentId, parent.OrderDetailId));
-        }
+        await OrderDetailOrderParentIdFix(dbContext, orderMaster.OrderMasterId);
         await AssignOrderToken(dbContext, orderMaster);
         await AddOrderStatusLog(dbContext, orderMaster);
         return orderMaster.OrderToken;
+    }
+
+    private async Task OrderDetailOrderParentIdFix(Db.PgDbContext dbContext, int orderMasterId)
+    {
+        var orderDetails = await dbContext.OrderDetails.Where(x => x.OrderMasterId == orderMasterId).ToListAsync();
+        var parents = orderDetails.Where(x => !x.OrderParentId.HasValue).ToList();
+        foreach (var parent in parents)
+        {
+            orderDetails
+                .Where(x => x.OrderMasterId == orderMasterId && x.RandomId == parent.RandomId && x.OrderParentId != null)
+                .ToList().ForEach(x => x.OrderParentId = parent.OrderDetailId);
+        }
+        await dbContext.SaveChangesAsync();
     }
 
     private async Task AssignOrderToken(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
