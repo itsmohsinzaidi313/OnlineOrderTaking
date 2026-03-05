@@ -101,7 +101,7 @@ public class Implementation()
         var discount = order.Discount;
         var orderNumber = await GenerateOrderNumberAsync(dbContext, branchId);
         var subTotal = order.Items.Select(x => x.Variations.Select(x => x.Price).Sum()).Sum();
-        var dbPaymentMode = await dbContext.PaymentModes.FirstOrDefaultAsync(x => x.PaymentMode1.Equals(order.PaymentType, StringComparison.CurrentCultureIgnoreCase));
+        var dbPaymentMode = await dbContext.PaymentModes.FirstOrDefaultAsync(x => x.PaymentMode1.ToLower() == order.PaymentType.ToLower());
         var gst = dbPaymentMode != null ? await dbContext.Gsts.FirstOrDefaultAsync(x => x.PaymentModeId == dbPaymentMode.PaymentModeId) : null;
         var tax = gst?.Gstpercentage ?? 0.00;
         var orderSourceId = await dbContext.SetupMasterDetails.Where(x => x.CompanyId == companyId && x.Flex1 == "WEB").Select(x => x.SetupDetailId).FirstOrDefaultAsync();
@@ -138,14 +138,69 @@ public class Implementation()
             DeliveryCharges = order.DeliveryCharges ?? 0.00,
             DeliveryTime = deliveryTime,
         };
+        //foreach (var orderDetail in GetOrderDetails(order.Items, gst))
+        //{
+        //    orderMaster.OrderDetails.Add(orderDetail);
+        //}
+
+        foreach (var item in order.Items)
+        {
+            foreach (var orderDetail in GetOrderDetails(item, gst))
+            {
+                orderMaster.TotalAmountWithGst += orderDetail.PriceWithGst * orderDetail.Quantity;
+                orderMaster.TotalAmountWithoutGst += orderDetail.PriceWithoutGst * orderDetail.Quantity;
+                orderMaster.OrderDetails.Add(orderDetail);
+            }
+        }
         order.AmountWithGst = orderMaster.TotalAmountWithGst ?? 0.0;
         order.AmountWithoutGst = orderMaster.TotalAmountWithoutGst ?? 0.0;
-        foreach (var orderDetail in GetOrderDetails(order.Items, gst))
-        {
-            orderMaster.OrderDetails.Add(orderDetail);
-        }
         return orderMaster;
     }
+
+    private IEnumerable<Db.OrderDetail> GetOrderDetails(MenuItem item, Db.Gst? gst = null)
+    {
+        var orderDetail = new Db.OrderDetail
+        {
+            IsKot = true,
+            IsActive = true,
+            SpecialInstruction = item.Comment,
+            Quantity = item.Quantity,
+            RandomId = new Random().Next(8999) + 1000,
+        };
+
+        var variation = item.Variations.FirstOrDefault();
+        if (variation != null && item.Variations.Count >= 1)
+        {
+            orderDetail.ProductDetailId = variation.Id;
+            foreach (var choice in variation.ItemChoices)
+            {
+                foreach (var option in choice.ItemOptions)
+                {
+                    yield return new Db.OrderDetail
+                    {
+                        RandomId = orderDetail.RandomId,
+                        OrderParentId = variation.Id,
+                        DealItemId = choice.Id,
+                        ProductDetailId = option.Id,
+                        Quantity = option.Quantity.HasValue ? option.Quantity : choice.Quantity,
+                        IsKot = true,
+                        IsActive = true,
+                        Gstid = gst?.Gstid,
+                        PriceWithGst = option.Price + (option.Price * (gst?.Gstpercentage ?? 0) / 100),
+                        PriceWithoutGst = option.Price,
+                    };
+                }
+            }
+        }
+        orderDetail.Gstid = gst?.Gstid;
+        orderDetail.PriceWithGst = variation?.Price + ((variation?.Price ?? 0) * ((gst?.Gstpercentage ?? 0) / 100));
+        orderDetail.DiscountId = variation?.Discount?.Id;
+        orderDetail.DiscountPercent = variation?.Discount?.Value;
+        orderDetail.IsPercentage = variation?.Discount?.Type == "Percent";
+        orderDetail.PriceWithoutGst = variation?.Price;
+        yield return orderDetail;
+    }
+
 
     private List<Db.OrderDetail> GetOrderDetails(List<MenuItem> items, Db.Gst? gst = null)
     {
@@ -180,20 +235,17 @@ public class Implementation()
                             IsActive = true,
                             Gstid = gst?.Gstid,
                             PriceWithGst = option.Price + (option.Price * (gst?.Gstpercentage ?? 0) / 100),
-                            PriceWithoutGst = option.Price,
-                            DiscountId = variation.Discount?.Id,
-                            DiscountPercent = variation.Discount?.Value,
+                            PriceWithoutGst = option.Price - (((variation.Discount?.Value ?? 0) / 100) * option.Price),
                         });
                     }
                 }
             }
-            if (gst != null)
-            {
-                orderDetail.Gstid = gst.Gstid;
-                orderDetail.PriceWithGst = variation?.Price;
-                orderDetail.PriceWithoutGst = variation != null ? variation.Price / (1 + (gst.Gstpercentage / 100)) : 0.00;
-
-            }
+            orderDetail.Gstid = gst?.Gstid;
+            orderDetail.PriceWithGst = variation?.Price + ((variation?.Price ?? 0) * ((gst?.Gstpercentage ?? 0) / 100));
+            orderDetail.DiscountId = variation?.Discount?.Id;
+            orderDetail.DiscountPercent = variation?.Discount?.Value;
+            orderDetail.IsPercentage = variation?.Discount?.Type == "Percent";
+            orderDetail.PriceWithoutGst = variation?.Price - (((variation?.Discount?.Value ?? 0) / 100) * variation?.Price);
             list.Add(orderDetail);
         }
         return list;
