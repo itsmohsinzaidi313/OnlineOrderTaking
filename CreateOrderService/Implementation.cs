@@ -142,7 +142,8 @@ public class Implementation()
             DeliveryCharges = order.DeliveryCharges ?? 0.00,
             DeliveryTime = deliveryTime,
         };
-
+        orderMaster.TotalAmountWithGst = 0.00;
+        orderMaster.TotalAmountWithoutGst = 0.00;
         foreach (var item in order.Items)
         {
             foreach (var orderDetail in GetOrderDetails(item, gst))
