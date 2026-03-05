@@ -22,11 +22,14 @@ public class Implementation()
         return new Db.PgDbContext(options);
     }
 
-    internal async Task<string> SaveOrderAsync(string connectionString, int branchId, CustomerOrder order)
+    internal async Task<string> SaveOrderAsync(string connectionString, CustomerOrder order)
     {
+        var branchId = order.BranchId;
+        var areaId = order.AreaId;
         var dbContext = GetDbContext(connectionString);
+
         order.BranchName = (await dbContext.BranchMasters.FirstOrDefaultAsync(x => x.BranchId == order.BranchId))?.BranchName ?? string.Empty;
-        var orderMaster = await GetOrderMasterAsync(dbContext, branchId, order);
+        var orderMaster = await GetOrderMasterAsync(dbContext, order);
         await SetOnlineOrder(dbContext, branchId, orderMaster, order);
         order.OrderNumber = await SaveOrderAsync(dbContext, orderMaster);
         return order.OrderNumber;
@@ -95,8 +98,10 @@ public class Implementation()
         return orderNumber;
     }
 
-    private async Task<Db.OrderMaster> GetOrderMasterAsync(Db.PgDbContext dbContext, int branchId, CustomerOrder order)
+    private async Task<Db.OrderMaster> GetOrderMasterAsync(Db.PgDbContext dbContext, CustomerOrder order)
     {
+        var branchId = order.BranchId;
+        var areaId = order.AreaId;
         var companyId = await dbContext.SetupCompanies.Select(x => x.CompanyId).FirstAsync();
         var orderNumber = await GenerateOrderNumberAsync(dbContext, branchId);
         var dbPaymentMode = await dbContext.PaymentModes.FirstOrDefaultAsync(x => x.PaymentMode1.ToLower() == order.PaymentType.ToLower());
@@ -106,7 +111,6 @@ public class Implementation()
         order.Status = OrderStatus.Pending.ToString();
         var orderType = await dbContext.SetupMasterDetails.FirstOrDefaultAsync(x => x.SetupDetailName == order.OrderType);
         order.OrderType = orderType.SetupDetailName;
-        var branchDetail = await dbContext.BranchDetails.FirstOrDefaultAsync(x => x.BranchId == branchId);
 
         var orderMaster = new Db.OrderMaster
         {
@@ -115,7 +119,6 @@ public class Implementation()
             OrderNumber = orderNumber,
             CompanyId = companyId,
             BranchId = branchId,
-            AreaId = branchDetail?.AreaId,
             OrderModeId = orderType.SetupDetailId,
             OrderDate = DateOnly.FromDateTime(DateTime.Now.ToLocalTime()),
             OrderTime = TimeOnly.FromDateTime(DateTime.Now.ToLocalTime()),
@@ -125,13 +128,22 @@ public class Implementation()
             SpecialInstruction = order.Description,
             OrderDetails = [],
             AlternateNumber = order.CustomerDetails.AlternateMobileNumber ?? string.Empty,
-            DeliveryCharges = branchDetail?.DeliveryCharges ?? 0.00,
-            DeliveryTime = branchDetail?.DeliveryTime,
             TotalAmountWithGst = 0.00,
             TotalAmountWithoutGst = 0.00,
             Gstamount = 0.00,
             DiscountAmount = 0.00,
         };
+
+        if (areaId.HasValue)
+        {
+            var branchDetail = await dbContext.BranchDetails.FirstOrDefaultAsync(x => x.AreaId == areaId.Value && x.BranchId == branchId);
+            if (branchDetail != null)
+            {
+                orderMaster.AreaId = areaId;
+                orderMaster.DeliveryCharges = branchDetail.DeliveryCharges;
+                orderMaster.DeliveryTime = branchDetail.DeliveryTime;
+            }
+        }
 
         double discountAmount = 0.00;
         foreach (var item in order.Items)
