@@ -40,11 +40,9 @@ public class Implementation()
         var parents = orderMaster.OrderDetails.Where(x => !x.OrderParentId.HasValue).ToList();
         foreach (var parent in parents)
         {
-            var children = orderDetails.Where(x => (x.RandomId == parent.RandomId) && x.OrderParentId.HasValue).ToList();
-            foreach (var child in children)
-            {
-                child.OrderParentId = parent.OrderDetailId;
-            }
+            await dbContext.OrderDetails
+                .Where(x => x.OrderMasterId == parent.OrderMasterId && x.RandomId == parent.RandomId && x.OrderParentId != null)
+                .ExecuteUpdateAsync(x => x.SetProperty(x => x.OrderParentId, parent.OrderDetailId));
         }
         await AssignOrderToken(dbContext, orderMaster);
         await AddOrderStatusLog(dbContext, orderMaster);
