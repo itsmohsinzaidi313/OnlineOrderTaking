@@ -36,23 +36,9 @@ public class Implementation()
     {
         await dbContext.OrderMasters.AddAsync(orderMaster);
         await dbContext.SaveChangesAsync();
-        await OrderDetailOrderParentIdFix(dbContext, orderMaster.OrderMasterId);
         await AssignOrderToken(dbContext, orderMaster);
         await AddOrderStatusLog(dbContext, orderMaster);
         return orderMaster.OrderToken;
-    }
-
-    private async Task OrderDetailOrderParentIdFix(Db.PgDbContext dbContext, int orderMasterId)
-    {
-        var orderDetails = await dbContext.OrderDetails.Where(x => x.OrderMasterId == orderMasterId).ToListAsync();
-        var parents = orderDetails.Where(x => !x.OrderParentId.HasValue).ToList();
-        foreach (var parent in parents)
-        {
-            orderDetails
-                .Where(x => x.OrderMasterId == orderMasterId && x.RandomId == parent.RandomId && x.OrderParentId != null)
-                .ToList().ForEach(x => x.OrderParentId = parent.OrderDetailId);
-        }
-        await dbContext.SaveChangesAsync();
     }
 
     private async Task AssignOrderToken(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
@@ -112,50 +98,60 @@ public class Implementation()
     private async Task<Db.OrderMaster> GetOrderMasterAsync(Db.PgDbContext dbContext, int branchId, CustomerOrder order)
     {
         var companyId = await dbContext.SetupCompanies.Select(x => x.CompanyId).FirstAsync();
-        var discount = order.Discount;
         var orderNumber = await GenerateOrderNumberAsync(dbContext, branchId);
         var dbPaymentMode = await dbContext.PaymentModes.FirstOrDefaultAsync(x => x.PaymentMode1.ToLower() == order.PaymentType.ToLower());
         var gst = dbPaymentMode != null ? await dbContext.Gsts.FirstOrDefaultAsync(x => x.PaymentModeId == dbPaymentMode.PaymentModeId) : null;
-        var tax = gst?.Gstpercentage ?? 0.00;
         var orderSourceId = await dbContext.SetupMasterDetails.Where(x => x.CompanyId == companyId && x.Flex1 == "WEB").Select(x => x.SetupDetailId).FirstOrDefaultAsync();
         var orderstatus = await dbContext.OrderStatuses.Where(x => x.OrderStatusName == "Pending").FirstOrDefaultAsync();
         order.Status = OrderStatus.Pending.ToString();
         var orderType = await dbContext.SetupMasterDetails.FirstOrDefaultAsync(x => x.SetupDetailName == order.OrderType);
         order.OrderType = orderType.SetupDetailName;
         var branchDetail = await dbContext.BranchDetails.FirstOrDefaultAsync(x => x.BranchId == branchId);
-        var areaId = branchDetail?.AreaId;
-        var deliveryTime = branchDetail?.DeliveryTime ?? 0;
+
         var orderMaster = new Db.OrderMaster
         {
             OrderSourceId = orderSourceId,
-            OrderStatusId = orderstatus.OrderStatusId,
+            OrderStatusId = orderstatus!.OrderStatusId,
             OrderNumber = orderNumber,
             CompanyId = companyId,
             BranchId = branchId,
-            AreaId = areaId,
+            AreaId = branchDetail?.AreaId,
             OrderModeId = orderType.SetupDetailId,
             OrderDate = DateOnly.FromDateTime(DateTime.Now.ToLocalTime()),
             OrderTime = TimeOnly.FromDateTime(DateTime.Now.ToLocalTime()),
-            DiscountAmount = discount?.Type == ValueType.Amount.ToString() ? discount.Value : 0.00,
-            DiscountId = discount?.Id ?? 0,
-            DiscountPercent = discount?.Type == ValueType.Percentage.ToString() ? discount.Value : 0.00,
             Gstid = gst?.Gstid,
-            Gstpercent = tax,
+            Gstpercent = gst?.Gstpercentage ?? 0.00,
             IsActive = true,
             SpecialInstruction = order.Description,
             OrderDetails = [],
             AlternateNumber = order.CustomerDetails.AlternateMobileNumber ?? string.Empty,
-            DeliveryCharges = order.DeliveryCharges ?? 0.00,
-            DeliveryTime = deliveryTime,
+            DeliveryCharges = branchDetail?.DeliveryCharges ?? 0.00,
+            DeliveryTime = branchDetail?.DeliveryTime,
+            TotalAmountWithGst = 0.00,
+            TotalAmountWithoutGst = 0.00,
+            Gstamount = 0.00,
+            DiscountAmount = 0.00,
         };
-        orderMaster.TotalAmountWithGst = 0.00;
-        orderMaster.TotalAmountWithoutGst = 0.00;
+
+        double discountAmount = 0.00;
         foreach (var item in order.Items)
         {
             foreach (var orderDetail in GetOrderDetails(item, gst))
             {
                 orderMaster.TotalAmountWithGst += orderDetail.PriceWithGst * orderDetail.Quantity;
                 orderMaster.TotalAmountWithoutGst += orderDetail.PriceWithoutGst * orderDetail.Quantity;
+                orderMaster.Gstamount += ((orderDetail.PriceWithGst ?? 0.00) - (orderDetail.PriceWithoutGst ?? 0.00)) * (orderDetail.Quantity ?? 1);
+                if (orderDetail.DiscountPercent.HasValue && orderDetail.PriceWithoutGst.HasValue)
+                {
+                    var discount = orderDetail.IsPercentage == true
+                        ? (orderDetail.PriceWithoutGst.Value * (orderDetail.DiscountPercent.Value / 100))
+                        : orderDetail.DiscountPercent.Value;
+                    var itemDiscount = discount * (orderDetail.Quantity ?? 1);
+                    discountAmount += itemDiscount;
+                    orderMaster.DiscountAmount += itemDiscount;
+                    orderMaster.TotalAmountWithGst -= itemDiscount;
+                    orderMaster.TotalAmountWithoutGst -= itemDiscount;
+                }
                 orderMaster.OrderDetails.Add(orderDetail);
             }
         }
@@ -185,6 +181,7 @@ public class Implementation()
                 {
                     yield return new Db.OrderDetail
                     {
+                        OrderParentId = variation.Id,
                         RandomId = orderDetail.RandomId,
                         DealItemId = choice.Id,
                         ProductDetailId = option.Id,
@@ -192,7 +189,7 @@ public class Implementation()
                         IsKot = true,
                         IsActive = true,
                         Gstid = gst?.Gstid,
-                        PriceWithGst = option.Price + (option.Price * (gst?.Gstpercentage ?? 0) / 100),
+                        PriceWithGst = option.Price + (option.Price * (gst?.Gstpercentage ?? 0) / 100),]
                         PriceWithoutGst = option.Price,
                     };
                 }
@@ -202,7 +199,7 @@ public class Implementation()
         orderDetail.PriceWithGst = variation?.Price + ((variation?.Price ?? 0) * ((gst?.Gstpercentage ?? 0) / 100));
         orderDetail.DiscountId = variation?.Discount?.Id;
         orderDetail.DiscountPercent = variation?.Discount?.Value;
-        orderDetail.IsPercentage = variation?.Discount?.Type == "Percent";
+        orderDetail.IsPercentage = variation?.Discount?.Type == ValueType.Percentage.ToString();
         orderDetail.PriceWithoutGst = variation?.Price;
         yield return orderDetail;
     }

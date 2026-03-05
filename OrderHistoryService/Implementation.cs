@@ -107,20 +107,7 @@ public class Implementation()
                 DeliveryTime = orderMaster.DeliveryTime ?? 0,
 
             };
-            if (orderMaster.DiscountId.HasValue && orderMaster.DiscountId != 0)
-            {
-                var disc = discounts[orderMaster.DiscountId.Value];
-                order.Discount = new Discount
-                {
-                    Id = disc.DiscountId,
-                    Name = disc.DiscountName ?? "N/A",
-                    MaxCap = decimal.ToDouble(disc.DiscountCapEnd),
-                    MinCap = decimal.ToDouble(disc.DiscountCapStart),
-                    Type = "Percentage",
-                    Value = disc.DiscountPercent,
-                };
-            }
-
+            
             var phoneId = orderMaster.PhoneId;
             var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
             if (customerPhone != null)
@@ -138,7 +125,7 @@ public class Implementation()
                 };
                 order.CustomerDetails = customerDetail;
             }
-            await foreach (var item in GetOrderItemsAsync(dbContext, orderMaster.OrderMasterId, productDetails, dealItems, products, flavours, sizes, dealDescriptions))
+            await foreach (var item in GetOrderItemsAsync(dbContext, orderMaster.OrderMasterId, productDetails, dealItems, products, flavours, sizes, dealDescriptions, discounts))
             {
                 item.Price = item.Variations.Sum(x => x.Price + x.ItemChoices.SelectMany(y => y.ItemOptions).Sum(z => z.Price));
                 order.Items.Add(item);
@@ -153,7 +140,7 @@ public class Implementation()
         return await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
     }
 
-    private async IAsyncEnumerable<MenuItem> GetOrderItemsAsync(Db.PgDbContext dbContext, int orderMasterId, List<Db.ProductDetail> productDetails, List<Db.DealItemDetail> dealItems, List<Db.Product> products, Dictionary<int, Db.Flavour> flavours, Dictionary<int, Db.ProductSize> sizes, List<Db.DealDescription> dealDescriptions)
+    private async IAsyncEnumerable<MenuItem> GetOrderItemsAsync(Db.PgDbContext dbContext, int orderMasterId, List<Db.ProductDetail> productDetails, List<Db.DealItemDetail> dealItems, List<Db.Product> products, Dictionary<int, Db.Flavour> flavours, Dictionary<int, Db.ProductSize> sizes, List<Db.DealDescription> dealDescriptions, Dictionary<int, Db.Discount> discounts)
     {
         var orderDetails = await dbContext.OrderDetails
             .Where(x => x.OrderMasterId == orderMasterId && x.IsActive == true)
@@ -173,6 +160,21 @@ public class Implementation()
                         .Select(x => x.DealItemId)
                         .Distinct();
 
+            Discount? discount1 = null;
+            if (orderDetail.DiscountId.HasValue && orderDetail.DiscountId != 0)
+            {
+                var dbDiscount = discounts[orderDetail.DiscountId.Value];
+                discount1 = new Discount
+                {
+                    Id = dbDiscount.DiscountId,
+                    Name = dbDiscount.DiscountName ?? "N/A",
+                    MaxCap = decimal.ToDouble(dbDiscount.DiscountCapEnd),
+                    MinCap = decimal.ToDouble(dbDiscount.DiscountCapStart),
+                    Type = PointofSaleModels.Application.ValueType.Percentage.ToString(),
+                    Value = dbDiscount.DiscountPercent,
+                };
+            }
+
             yield return new MenuItem
             {
                 Id = product.ProductId,
@@ -181,6 +183,7 @@ public class Implementation()
                 CategoryId = categories[product.ProductId].ToString(),
                 IsKot = orderDetail.IsKot,
                 Quantity = orderDetail.Quantity ?? 0,
+                Discount = discount1,
                 Variations =
                 [
                     new ()
