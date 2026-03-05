@@ -110,7 +110,6 @@ public class Implementation()
         var companyId = await dbContext.SetupCompanies.Select(x => x.CompanyId).FirstAsync();
         var discount = order.Discount;
         var orderNumber = await GenerateOrderNumberAsync(dbContext, branchId);
-        var subTotal = order.Items.Select(x => x.Variations.Select(x => x.Price).Sum()).Sum();
         var dbPaymentMode = await dbContext.PaymentModes.FirstOrDefaultAsync(x => x.PaymentMode1.ToLower() == order.PaymentType.ToLower());
         var gst = dbPaymentMode != null ? await dbContext.Gsts.FirstOrDefaultAsync(x => x.PaymentModeId == dbPaymentMode.PaymentModeId) : null;
         var tax = gst?.Gstpercentage ?? 0.00;
@@ -133,12 +132,9 @@ public class Implementation()
             OrderModeId = orderType.SetupDetailId,
             OrderDate = DateOnly.FromDateTime(DateTime.Now.ToLocalTime()),
             OrderTime = TimeOnly.FromDateTime(DateTime.Now.ToLocalTime()),
-            TotalAmountWithoutGst = subTotal,
-            TotalAmountWithGst = subTotal + (subTotal * tax / 100),
             DiscountAmount = discount?.Type == ValueType.Amount.ToString() ? discount.Value : 0.00,
             DiscountId = discount?.Id ?? 0,
             DiscountPercent = discount?.Type == ValueType.Percentage.ToString() ? discount.Value : 0.00,
-            Gstamount = subTotal * (tax / 100),
             Gstid = gst?.Gstid,
             Gstpercent = tax,
             IsActive = true,
@@ -163,7 +159,7 @@ public class Implementation()
         return orderMaster;
     }
 
-    private IEnumerable<Db.OrderDetail> GetOrderDetails(MenuItem item, Db.Gst? gst = null)
+    private static IEnumerable<Db.OrderDetail> GetOrderDetails(MenuItem item, Db.Gst? gst = null)
     {
         var orderDetail = new Db.OrderDetail
         {
@@ -204,56 +200,6 @@ public class Implementation()
         orderDetail.IsPercentage = variation?.Discount?.Type == "Percent";
         orderDetail.PriceWithoutGst = variation?.Price;
         yield return orderDetail;
-    }
-
-
-    private List<Db.OrderDetail> GetOrderDetails(List<MenuItem> items, Db.Gst? gst = null)
-    {
-        var list = new List<Db.OrderDetail>();
-        foreach (var item in items)
-        {
-            var orderDetail = new Db.OrderDetail
-            {
-                IsKot = true,
-                IsActive = true,
-                SpecialInstruction = item.Comment,
-                Quantity = item.Quantity,
-                RandomId = new Random().Next(8999) + 1000,
-            };
-
-            var variation = item.Variations.FirstOrDefault();
-            if (variation != null && item.Variations.Count >= 1)
-            {
-                orderDetail.ProductDetailId = variation.Id;
-                foreach (var choice in variation.ItemChoices)
-                {
-                    foreach (var option in choice.ItemOptions)
-                    {
-                        list.Add(new Db.OrderDetail
-                        {
-                            RandomId = orderDetail.RandomId,
-                            OrderParentId = variation.Id,
-                            DealItemId = choice.Id,
-                            ProductDetailId = option.Id,
-                            Quantity = option.Quantity.HasValue ? option.Quantity : choice.Quantity,
-                            IsKot = true,
-                            IsActive = true,
-                            Gstid = gst?.Gstid,
-                            PriceWithGst = option.Price + (option.Price * (gst?.Gstpercentage ?? 0) / 100),
-                            PriceWithoutGst = option.Price - (((variation.Discount?.Value ?? 0) / 100) * option.Price),
-                        });
-                    }
-                }
-            }
-            orderDetail.Gstid = gst?.Gstid;
-            orderDetail.PriceWithGst = variation?.Price + ((variation?.Price ?? 0) * ((gst?.Gstpercentage ?? 0) / 100));
-            orderDetail.DiscountId = variation?.Discount?.Id;
-            orderDetail.DiscountPercent = variation?.Discount?.Value;
-            orderDetail.IsPercentage = variation?.Discount?.Type == "Percent";
-            orderDetail.PriceWithoutGst = variation?.Price - (((variation?.Discount?.Value ?? 0) / 100) * variation?.Price);
-            list.Add(orderDetail);
-        }
-        return list;
     }
 
     private async Task SetOnlineOrder(Db.PgDbContext dbContext, int branchId, Db.OrderMaster orderMaster, CustomerOrder order)
