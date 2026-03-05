@@ -105,6 +105,7 @@ public class Implementation()
                 }).ToList(),
                 Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName ?? string.Empty, Contact = x.Contact1 ?? string.Empty }).FirstOrDefault(x => x.Id == orderMaster.RiderId),
                 DeliveryTime = orderMaster.DeliveryTime ?? 0,
+                TotalDiscount = orderMaster.DiscountAmount ?? 0.00,
 
             };
             
