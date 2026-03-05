@@ -149,8 +149,6 @@ public class Implementation()
                     var itemDiscount = discount * (orderDetail.Quantity ?? 1);
                     discountAmount += itemDiscount;
                     orderMaster.DiscountAmount += itemDiscount;
-                    orderMaster.TotalAmountWithGst -= itemDiscount;
-                    orderMaster.TotalAmountWithoutGst -= itemDiscount;
                 }
                 orderMaster.OrderDetails.Add(orderDetail);
             }
