@@ -189,7 +189,7 @@ public class Implementation()
                         IsKot = true,
                         IsActive = true,
                         Gstid = gst?.Gstid,
-                        PriceWithGst = option.Price + (option.Price * (gst?.Gstpercentage ?? 0) / 100),]
+                        PriceWithGst = option.Price + (option.Price * (gst?.Gstpercentage ?? 0) / 100),
                         PriceWithoutGst = option.Price,
                     };
                 }
