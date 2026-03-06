@@ -161,7 +161,7 @@ public class Implementation()
                 {
                     itemDiscount = totalItemPrice * ((discountPercent ?? 0.00) / 100);
                 }
-                orderMaster.TotalAmountWithoutGst += totalItemPrice;
+                orderMaster.TotalAmountWithoutGst += totalItemPrice - itemDiscount;
                 orderMaster.DiscountAmount += double.Round(itemDiscount, MidpointRounding.ToZero);
                 orderMaster.OrderDetails.Add(orderDetail);
             }
