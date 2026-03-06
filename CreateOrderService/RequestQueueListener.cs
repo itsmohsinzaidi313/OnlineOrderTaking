@@ -22,7 +22,8 @@ namespace CreateOrderService
                 }
                 var connectionString = await GetConnectionString(requestPayload.DomainName);
                 connectionString = connectionString.Replace("5434", "5433");
-                var orderToken = await impl.SaveOrderAsync(connectionString, requestPayload.Order!);
+                await impl.SaveOrderAsync(connectionString, requestPayload.Order!);
+                var orderToken = requestPayload.Order.OrderToken ?? throw new Exception("Order token not generated");
                 await SaveToken(requestPayload.DomainName, orderToken);
                 requestPayload.Order.OrderStatusLogs = await impl.OrderStatusLogs(connectionString, orderToken);
                 response = new { Success = true, Message = "Order processed successfully", OrderNumber = orderToken };

@@ -22,7 +22,7 @@ public class Implementation()
         return new Db.PgDbContext(options);
     }
 
-    internal async Task<string> SaveOrderAsync(string connectionString, CustomerOrder order)
+    internal async Task SaveOrderAsync(string connectionString, CustomerOrder order)
     {
         var branchId = order.BranchId;
         var areaId = order.AreaId;
@@ -31,8 +31,8 @@ public class Implementation()
         order.BranchName = (await dbContext.BranchMasters.FirstOrDefaultAsync(x => x.BranchId == order.BranchId))?.BranchName ?? string.Empty;
         var orderMaster = await GetOrderMasterAsync(dbContext, order);
         await SetOnlineOrder(dbContext, branchId, orderMaster, order);
-        order.OrderNumber = await SaveOrderAsync(dbContext, orderMaster);
-        return order.OrderNumber;
+        order.OrderToken = await SaveOrderAsync(dbContext, orderMaster);
+        order.OrderNumber = orderMaster.OrderNumber;
     }
 
     private async Task<string> SaveOrderAsync(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
