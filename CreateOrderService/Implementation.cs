@@ -160,7 +160,7 @@ public class Implementation()
                         : orderDetail.DiscountPercent.Value;
                     var itemDiscount = discount * (orderDetail.Quantity ?? 1);
                     discountAmount += itemDiscount;
-                    orderMaster.DiscountAmount += itemDiscount;
+                    orderMaster.DiscountAmount += double.Round(itemDiscount, MidpointRounding.ToZero);
                 }
                 orderMaster.OrderDetails.Add(orderDetail);
             }
@@ -199,14 +199,14 @@ public class Implementation()
                         IsKot = true,
                         IsActive = true,
                         Gstid = gst?.Gstid,
-                        PriceWithGst = option.Price + (option.Price * (gst?.Gstpercentage ?? 0) / 100),
+                        PriceWithGst = double.Round(option.Price + (option.Price * (gst?.Gstpercentage ?? 0) / 100), MidpointRounding.ToZero),
                         PriceWithoutGst = option.Price,
                     };
                 }
             }
         }
         orderDetail.Gstid = gst?.Gstid;
-        orderDetail.PriceWithGst = variation?.Price + ((variation?.Price ?? 0) * ((gst?.Gstpercentage ?? 0) / 100));
+        orderDetail.PriceWithGst = double.Round(variation?.Price + ((variation?.Price ?? 0) * ((gst?.Gstpercentage ?? 0) / 100)) ?? 0.00, MidpointRounding.ToZero);
         orderDetail.DiscountId = variation?.Discount?.Id;
         orderDetail.DiscountPercent = variation?.Discount?.Value;
         orderDetail.IsPercentage = variation?.Discount?.Type == ValueType.Percentage.ToString();

@@ -19,6 +19,7 @@
         public object? OrderStatusLogs { get; set; }
         public int DeliveryTime { get; set; }
         public double TotalDiscount { get; set; }
+        public double GstPercentage { get; set; }
         public CustomerOrder() : base()
         {
         }

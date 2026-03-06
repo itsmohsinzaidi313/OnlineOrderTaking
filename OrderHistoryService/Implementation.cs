@@ -95,6 +95,7 @@ public class Implementation()
                 AmountWithoutGst = orderMaster.TotalAmountWithoutGst ?? 0.00,
                 AmountWithGst = orderMaster.TotalAmountWithGst ?? 0.00,
                 OrderTime = orderDateTime ?? DateTime.MinValue,
+                GstPercentage = orderMaster.Gstpercent,
                 OrderStatusLogs = orderStatusLogs.Select(x => new
                 {
                     Id = x.OrderStatusId,
@@ -108,7 +109,7 @@ public class Implementation()
                 TotalDiscount = orderMaster.DiscountAmount ?? 0.00,
 
             };
-            
+
             var phoneId = orderMaster.PhoneId;
             var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
             if (customerPhone != null)
