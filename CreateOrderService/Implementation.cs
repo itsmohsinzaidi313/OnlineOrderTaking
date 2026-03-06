@@ -162,7 +162,7 @@ public class Implementation()
                 }
 
                 orderMaster.TotalAmountWithGst += ((itemPrice - itemDiscount) + itemTax) * orderDetail.Quantity;
-                orderMaster.TotalAmountWithoutGst += (itemPrice - itemDiscount) * orderDetail.Quantity;
+                orderMaster.TotalAmountWithoutGst += itemPrice * orderDetail.Quantity;
                 orderMaster.Gstamount += itemTax * (orderDetail.Quantity ?? 1);
                 orderMaster.DiscountAmount += double.Round(itemDiscount, MidpointRounding.ToZero);
                 orderMaster.OrderDetails.Add(orderDetail);
