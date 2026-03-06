@@ -195,7 +195,7 @@ public class Implementation()
                         RandomId = orderDetail.RandomId,
                         DealItemId = choice.Id,
                         ProductDetailId = option.Id,
-                        Quantity = option.Quantity.HasValue ? option.Quantity : choice.Quantity,
+                        Quantity = option.Quantity.HasValue ? (option.Quantity * item.Quantity) : choice.Quantity,
                         IsKot = true,
                         IsActive = true,
                         Gstid = gst?.Gstid,
