@@ -149,26 +149,25 @@ public class Implementation()
         {
             foreach (var orderDetail in GetOrderDetails(item, gst))
             {
-                var discount = item.Variations.FirstOrDefault()?.Discount;
-                var itemDiscount = 0.00;
                 var itemPrice = orderDetail.PriceWithoutGst ?? 0.00;
-                var itemTax = ((orderDetail.PriceWithGst ?? 0.00) - itemPrice) * (orderDetail.Quantity ?? 1);
+                var itemQuantity = orderDetail.Quantity ?? 0;
+                var discountPercent = orderDetail.DiscountPercent;
+                
+                var totalItemPrice = itemPrice * itemQuantity;
 
-                if (discount != null)
+                var itemDiscount = 0.00;
+
+                if (discountPercent.HasValue)
                 {
-                    itemDiscount = orderDetail.IsPercentage == true
-                        ? (itemPrice * (discount.Value / 100))
-                        : discount.Value;
-                    itemDiscount = itemDiscount * (orderDetail.Quantity ?? 1);
+                    itemDiscount = totalItemPrice * ((discountPercent ?? 0.00) / 100);
                 }
-
-                orderMaster.TotalAmountWithGst += (((itemPrice * orderDetail.Quantity) - itemDiscount) + itemTax);
-                orderMaster.TotalAmountWithoutGst += itemPrice * orderDetail.Quantity;
-                orderMaster.Gstamount += itemTax * (orderDetail.Quantity ?? 1);
+                orderMaster.TotalAmountWithoutGst += totalItemPrice;
                 orderMaster.DiscountAmount += double.Round(itemDiscount, MidpointRounding.ToZero);
                 orderMaster.OrderDetails.Add(orderDetail);
             }
         }
+        orderMaster.TotalAmountWithGst = orderMaster.TotalAmountWithoutGst + (orderMaster.TotalAmountWithoutGst * (gst?.Gstpercentage ?? 0) / 100);
+        orderMaster.Gstamount = orderMaster.TotalAmountWithGst - orderMaster.TotalAmountWithoutGst;
         order.AmountWithGst = orderMaster.TotalAmountWithGst ?? 0.0;
         order.AmountWithoutGst = orderMaster.TotalAmountWithoutGst ?? 0.0;
         return orderMaster;
