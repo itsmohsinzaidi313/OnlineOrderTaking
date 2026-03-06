@@ -159,6 +159,7 @@ public class Implementation()
                     itemDiscount = orderDetail.IsPercentage == true
                         ? (itemPrice * (discount.Value / 100))
                         : discount.Value;
+                    itemDiscount = itemDiscount * (orderDetail.Quantity ?? 1);
                 }
 
                 orderMaster.TotalAmountWithGst += ((itemPrice - itemDiscount) + itemTax) * orderDetail.Quantity;
