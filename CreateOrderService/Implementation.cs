@@ -145,23 +145,26 @@ public class Implementation()
             }
         }
 
-        double discountAmount = 0.00;
         foreach (var item in order.Items)
         {
             foreach (var orderDetail in GetOrderDetails(item, gst))
             {
-                orderMaster.TotalAmountWithGst += orderDetail.PriceWithGst * orderDetail.Quantity;
-                orderMaster.TotalAmountWithoutGst += orderDetail.PriceWithoutGst * orderDetail.Quantity;
-                orderMaster.Gstamount += ((orderDetail.PriceWithGst ?? 0.00) - (orderDetail.PriceWithoutGst ?? 0.00)) * (orderDetail.Quantity ?? 1);
-                if (orderDetail.DiscountPercent.HasValue && orderDetail.PriceWithoutGst.HasValue)
+                var discount = item.Variations.FirstOrDefault()?.Discount;
+                var itemDiscount = 0.00;
+                var itemPrice = orderDetail.PriceWithoutGst ?? 0.00;
+                var itemTax = (orderDetail.PriceWithGst ?? 0.00) - itemPrice;
+
+                if (discount != null)
                 {
-                    var discount = orderDetail.IsPercentage == true
-                        ? (orderDetail.PriceWithoutGst.Value * (orderDetail.DiscountPercent.Value / 100))
-                        : orderDetail.DiscountPercent.Value;
-                    var itemDiscount = discount * (orderDetail.Quantity ?? 1);
-                    discountAmount += itemDiscount;
-                    orderMaster.DiscountAmount += double.Round(itemDiscount, MidpointRounding.ToZero);
+                    itemDiscount = orderDetail.IsPercentage == true
+                        ? (itemPrice * (discount.Value / 100))
+                        : discount.Value;
                 }
+
+                orderMaster.TotalAmountWithGst += ((itemPrice - itemDiscount) + itemTax) * orderDetail.Quantity;
+                orderMaster.TotalAmountWithoutGst += (itemPrice - itemDiscount) * orderDetail.Quantity;
+                orderMaster.Gstamount += itemTax * (orderDetail.Quantity ?? 1);
+                orderMaster.DiscountAmount += double.Round(itemDiscount, MidpointRounding.ToZero);
                 orderMaster.OrderDetails.Add(orderDetail);
             }
         }
@@ -206,11 +209,20 @@ public class Implementation()
             }
         }
         orderDetail.Gstid = gst?.Gstid;
-        orderDetail.PriceWithGst = double.Round(variation?.Price + ((variation?.Price ?? 0) * ((gst?.Gstpercentage ?? 0) / 100)) ?? 0.00, MidpointRounding.ToZero);
         orderDetail.DiscountId = variation?.Discount?.Id;
         orderDetail.DiscountPercent = variation?.Discount?.Value;
         orderDetail.IsPercentage = variation?.Discount?.Type == ValueType.Percentage.ToString();
         orderDetail.PriceWithoutGst = variation?.Price;
+        var itemPrice = variation?.Price ?? 0.00;
+        var itemDiscount = 0.00;
+        if (variation.Discount != null)
+        {
+            itemDiscount = orderDetail.IsPercentage == true
+                ? (itemPrice * (variation.Discount.Value / 100))
+                : variation.Discount.Value;
+        }
+        var itemPriceAfterDiscount = itemPrice - itemDiscount;
+        orderDetail.PriceWithGst = double.Round(itemPriceAfterDiscount + (itemPriceAfterDiscount * (gst?.Gstpercentage ?? 0) / 100), MidpointRounding.ToZero);
         yield return orderDetail;
     }
 
