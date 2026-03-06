@@ -152,7 +152,7 @@ public class Implementation()
                 var discount = item.Variations.FirstOrDefault()?.Discount;
                 var itemDiscount = 0.00;
                 var itemPrice = orderDetail.PriceWithoutGst ?? 0.00;
-                var itemTax = (orderDetail.PriceWithGst ?? 0.00) - itemPrice;
+                var itemTax = ((orderDetail.PriceWithGst ?? 0.00) - itemPrice) * (orderDetail.Quantity ?? 1);
 
                 if (discount != null)
                 {
@@ -162,7 +162,7 @@ public class Implementation()
                     itemDiscount = itemDiscount * (orderDetail.Quantity ?? 1);
                 }
 
-                orderMaster.TotalAmountWithGst += ((itemPrice - itemDiscount) + itemTax) * orderDetail.Quantity;
+                orderMaster.TotalAmountWithGst += (((itemPrice * orderDetail.Quantity) - itemDiscount) + itemTax);
                 orderMaster.TotalAmountWithoutGst += itemPrice * orderDetail.Quantity;
                 orderMaster.Gstamount += itemTax * (orderDetail.Quantity ?? 1);
                 orderMaster.DiscountAmount += double.Round(itemDiscount, MidpointRounding.ToZero);
