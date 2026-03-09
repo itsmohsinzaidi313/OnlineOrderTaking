@@ -18,6 +18,7 @@ namespace OrderUpdateService
             {
                 var dbContext = await GetDbContextAsync(requestPayload.DomainName);
                 var orderMaster = await dbContext.OrderMasters.Where(x => x.OrderToken == requestPayload.OrderToken).FirstOrDefaultAsync();
+                string? orderStatusName = null;
                 if (orderMaster != null)
                 {
                     if (requestPayload.BranchTransferId != null)
@@ -48,6 +49,10 @@ namespace OrderUpdateService
                             });
                             await dbContext.SaveChangesAsync();
                         }
+                        orderStatusName = await dbContext.OrderStatuses
+                            .Where(x => x.OrderStatusId == requestPayload.OrderStatusId)
+                            .Select(x => x.OrderStatusName)
+                            .FirstOrDefaultAsync();
                     }
 
                     if (requestPayload.RiderId != null)
@@ -68,7 +73,8 @@ namespace OrderUpdateService
                     payload = new
                     {
                         Success = true,
-                        Message = "Order updated successfully"
+                        Message = "Order updated successfully",
+                        OrderStatusName = orderStatusName,
                     };
                 }
                 else
