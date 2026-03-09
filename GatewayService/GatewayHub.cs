@@ -142,7 +142,7 @@ namespace GatewayService
             {
                 DomainName = domainName,
                 BranchId = branchId,
-                OrderNumber = orderNumber,
+                OrderToken = orderNumber,
                 ResponseKey = responseKey,
                 BranchTransferId = branchTransferId,
                 OrderStatusId = orderStatusId,

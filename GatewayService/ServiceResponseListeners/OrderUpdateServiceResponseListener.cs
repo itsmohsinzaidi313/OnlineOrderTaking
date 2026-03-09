@@ -29,7 +29,7 @@ namespace GatewayService.ServiceResponseListeners
             }
             await hub.Clients.Users(keys).SendAsync(responseKey, payload);
             keys.Clear();
-            var orderNumber = payload?.OrderNumber ?? throw new Exception("OrderNumber not found");
+            var orderNumber = payload?.OrderToken ?? throw new Exception("OrderNumber not found");
             foreach (var key in server.Keys(pattern: $"order:{orderNumber}:*"))
             {
                 var arr = key.ToString().Split(':');
