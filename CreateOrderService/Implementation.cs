@@ -152,7 +152,7 @@ public class Implementation()
                 var itemPrice = orderDetail.PriceWithoutGst ?? 0.00;
                 var itemQuantity = orderDetail.Quantity ?? 0;
                 var discountPercent = orderDetail.DiscountPercent;
-                
+
                 var totalItemPrice = itemPrice * itemQuantity;
 
                 var itemDiscount = 0.00;
@@ -215,7 +215,7 @@ public class Implementation()
         orderDetail.PriceWithoutGst = variation?.Price;
         var itemPrice = variation?.Price ?? 0.00;
         var itemDiscount = 0.00;
-        if (variation.Discount != null)
+        if (variation?.Discount != null)
         {
             itemDiscount = orderDetail.IsPercentage == true
                 ? (itemPrice * (variation.Discount.Value / 100))
@@ -230,24 +230,17 @@ public class Implementation()
     {
         var cd = order.CustomerDetails;
         var add = cd.DeliveryAddress ?? string.Empty;
-        var customer = new Customer
-        {
-            Contact = cd.MobileNumber ?? string.Empty,
-            Addresses = [add],
-            Name = cd.FullName ?? string.Empty,
-            SelectedAddress = add,
-        };
-        if (customer.Addresses == null || customer.Addresses.Count == 0)
+        if (cd.DeliveryAddress == null || string.IsNullOrWhiteSpace(cd.DeliveryAddress))
         {
             throw new Exception("Customer must have at least one address");
         }
         var companyId = orderMaster.CompanyId;
 
-        var dbCustomerPhone = await SaveCustomerPhoneAsync(dbContext, companyId, customer);
+        var dbCustomerPhone = await SaveCustomerPhoneAsync(dbContext, companyId, cd);
         orderMaster.PhoneId = dbCustomerPhone.PhoneId;
 
         var dbCustomer = await dbContext.Customers
-            .Where(t => t.CustomerName != null && customer.Name != null && t.CustomerName.Trim().ToLower().Equals(customer.Name.Trim().ToLower()))
+            .Where(t => t.CustomerName != null && cd.FullName != null && t.CustomerName.Trim().ToLower().Equals(cd.FullName.Trim().ToLower()))
             .FirstOrDefaultAsync();
 
         if (dbCustomer == null)
@@ -255,53 +248,56 @@ public class Implementation()
             dbCustomer = new Db.Customer
             {
                 Title = cd.Title,
-                CustomerName = customer.Name,
+                CustomerName = cd.FullName,
                 CompanyId = companyId,
                 CustomerPhone = dbCustomerPhone,
+                Email = cd.EmailAddress ?? string.Empty,
             };
             await dbContext.Customers.AddAsync(dbCustomer);
             await dbContext.SaveChangesAsync();
         }
         orderMaster.CustomerId = dbCustomer.CustomerId;
 
-        var firstAddress = customer.Addresses.First().Trim();
+        var firstAddress = cd.DeliveryAddress?.Trim() ?? string.Empty;
         var dbCustomerAddress = dbContext.CustomerAddressDetails
             .Where(t => t.CompleteAddress != null && t.CompleteAddress.Trim().ToLower().Equals(firstAddress.ToLower()))
             .FirstOrDefault();
 
         if (dbCustomerAddress == null)
         {
-            var cityId = (await dbContext.Areas.FirstAsync(x => x.AreaId == orderMaster.AreaId.Value))?.CityId;
+            var cityId = (await dbContext.Areas.FirstAsync(x => x.AreaId == orderMaster.AreaId!.Value))?.CityId;
             dbCustomerAddress = new Db.CustomerAddressDetail
             {
                 CustomerPhone = dbCustomerPhone,
                 CompanyId = companyId,
                 CompleteAddress = firstAddress,
-                CityId = cityId.Value,
-                AreaId = orderMaster.AreaId.Value,
+                CityId = cityId!.Value,
+                AreaId = orderMaster.AreaId!.Value,
+                LandMark = cd.NearestLandmark ?? string.Empty,
             };
             dbContext.CustomerAddressDetails.Add(dbCustomerAddress);
             await dbContext.SaveChangesAsync();
         }
         orderMaster.CustomerAddressId = dbCustomerAddress.CustomerAddressId;
-        // orderMaster.RiderId = order.Rider?.Id;
-        // orderMaster.DeliveryCharges = order.DeliveryCharges?.Value;
+        orderMaster.SpecialInstruction = cd.DeliveryInstructions;
+        orderMaster.EmailAddress = cd.EmailAddress;
+        orderMaster.AlternateNumber = cd.AlternateMobileNumber;
     }
 
-    private async Task<Db.CustomerPhone> SaveCustomerPhoneAsync(Db.PgDbContext dbContext, int companyId, Customer customer)
+    private async Task<Db.CustomerPhone> SaveCustomerPhoneAsync(Db.PgDbContext dbContext, int companyId, CustomerDetail customer)
     {
         Db.CustomerPhone? dbCustomerPhone;
         var cust = customer ?? throw new Exception("Customer is required");
         if (cust.PhoneId == 0)
         {
             dbCustomerPhone = await dbContext.CustomerPhones
-            .Where(t => t.PhoneNumber != null && cust.Contact != null && t.PhoneNumber.Trim().Equals(cust.Contact.Trim()))
+            .Where(t => t.PhoneNumber != null && cust.MobileNumber != null && t.PhoneNumber.Trim().Equals(cust.MobileNumber.Trim()))
             .FirstOrDefaultAsync();
             if (dbCustomerPhone == null)
             {
                 dbCustomerPhone = new Db.CustomerPhone
                 {
-                    PhoneNumber = cust.Contact ?? string.Empty,
+                    PhoneNumber = cust.MobileNumber ?? string.Empty,
                     CompanyId = companyId,
                     IsActive = true,
                 };
