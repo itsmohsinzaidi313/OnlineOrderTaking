@@ -1,4 +1,5 @@
-﻿using PointofSaleModels.ServicePayloads;
+﻿using Microsoft.AspNetCore.SignalR;
+using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
@@ -6,7 +7,7 @@ using System.Text.Json;
 
 namespace GatewayService.ServiceResponseListeners
 {
-    public class OrderUpdateServiceResponseListener(ILogger<OrderUpdateServiceResponseListener> logger, RabbitMqConnection rabbitConnection, Implementation implementation, IConnectionMultiplexer redis) : RabbitMqConsumerService<OrderUpdateServiceResponseListener>(logger, rabbitConnection)
+    public class OrderUpdateServiceResponseListener(ILogger<OrderUpdateServiceResponseListener> logger, RabbitMqConnection rabbitConnection, , IHubContext<GatewayHub> hub, IConnectionMultiplexer redis) : RabbitMqConsumerService<OrderUpdateServiceResponseListener>(logger, rabbitConnection)
     {
         public override string QueueName() => RabbitMqQueues.OrderUpdateResponseQueue;
         public override async Task OnMessage(string svcPayload)
@@ -26,7 +27,7 @@ namespace GatewayService.ServiceResponseListeners
                 logger.LogInformation($"Sending response to backpanel client '{clientId}' '{responseKey}'");
                 keys.Add(clientId);
             }
-            await implementation.SendToUsers(keys, responseKey, payload);
+            await hub.Clients.Users(keys).SendAsync(responseKey, payload);
             keys.Clear();
             var orderNumber = payload?.OrderNumber ?? throw new Exception("OrderNumber not found");
             foreach (var key in server.Keys(pattern: $"order:{orderNumber}:*"))
@@ -38,7 +39,7 @@ namespace GatewayService.ServiceResponseListeners
                     continue;
                 }
                 logger.LogInformation($"Sending response to website client '{clientId}'");
-                await implementation.SendToUser(clientId, "OrderStatusUpdate", payload);
+                await hub.Clients.User(clientId).SendAsync("OrderStatusUpdate", payload);
             }
         }
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
