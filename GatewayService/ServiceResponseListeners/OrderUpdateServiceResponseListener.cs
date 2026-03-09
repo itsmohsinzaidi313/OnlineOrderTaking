@@ -7,7 +7,7 @@ using System.Text.Json;
 
 namespace GatewayService.ServiceResponseListeners
 {
-    public class OrderUpdateServiceResponseListener(ILogger<OrderUpdateServiceResponseListener> logger, RabbitMqConnection rabbitConnection, , IHubContext<GatewayHub> hub, IConnectionMultiplexer redis) : RabbitMqConsumerService<OrderUpdateServiceResponseListener>(logger, rabbitConnection)
+    public class OrderUpdateServiceResponseListener(ILogger<OrderUpdateServiceResponseListener> logger, RabbitMqConnection rabbitConnection, IHubContext<GatewayHub> hub, IConnectionMultiplexer redis) : RabbitMqConsumerService<OrderUpdateServiceResponseListener>(logger, rabbitConnection)
     {
         public override string QueueName() => RabbitMqQueues.OrderUpdateResponseQueue;
         public override async Task OnMessage(string svcPayload)
