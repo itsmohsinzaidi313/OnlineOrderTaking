@@ -23,7 +23,7 @@ namespace GatewayService.ServiceResponseListeners
                 {
                     continue;
                 }
-                logger.LogInformation($"Sending response to backpanel client {clientId} {responseKey}");
+                logger.LogInformation($"Sending response to backpanel client '{clientId}' '{responseKey}'");
                 keys.Add(clientId);
             }
             await implementation.SendToUsers(keys, responseKey, payload);
@@ -37,7 +37,7 @@ namespace GatewayService.ServiceResponseListeners
                 {
                     continue;
                 }
-                logger.LogInformation($"Sending response to website client {clientId}");
+                logger.LogInformation($"Sending response to website client '{clientId}'");
                 await implementation.SendToUser(clientId, "OrderStatusUpdate", payload);
             }
         }
