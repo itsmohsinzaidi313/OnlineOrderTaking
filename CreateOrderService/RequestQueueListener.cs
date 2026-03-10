@@ -35,7 +35,7 @@ namespace CreateOrderService
                     {
                         ClientId = $"branch:{userId}:*",
                         Title = "New Order Received!",
-                        Message = $" New order received from the ${order?.BranchName} branch (Order #${order?.OrderToken}) — Rs. ${order?.AmountWithGst}.",
+                        Message = $" New order received from the {order?.BranchName} branch - Order# {order?.OrderToken} — Rs.{double.Round(order?.AmountWithGst ?? 0.0 + order.DeliveryCharges ?? 0)}.",
                     });
 
                 }
