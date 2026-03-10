@@ -47,6 +47,7 @@ namespace PushNotificationService
             });
             var pushMessage = new PushMessage(content);
             await service.SendAsync(pushSubscribtion, pushMessage);
+            logger.LogInformation("Sent notification to client {ClientId} at endpoint {Endpoint}", request.ClientId, subscription.Endpoint);
             var response = new PushNotificationNotifyResponse
             {
                 Success = true,
