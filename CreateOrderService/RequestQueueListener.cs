@@ -2,6 +2,7 @@
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace CreateOrderService
@@ -29,11 +30,12 @@ namespace CreateOrderService
                 response = new { Success = true, Message = "Order processed successfully", OrderNumber = orderToken };
                 await foreach (var userId in impl.GetBranchUsersIdsAsync(connectionString, requestPayload.BranchId))
                 {
+                    var order = requestPayload.Order;
                     await publisher.PublishToQueueAsync(RabbitMqQueues.PushNotificationRequestQueue, new PushNotificationServicePayload
                     {
                         ClientId = $"branch:{userId}:*",
-                        Title = "New Order Received",
-                        Message = $"{orderToken}",
+                        Title = "New Order Received!",
+                        Message = $" New order received from the ${order?.BranchName} branch (Order #${order?.OrderToken}) — Rs. ${order?.AmountWithGst}.",
                     });
 
                 }
