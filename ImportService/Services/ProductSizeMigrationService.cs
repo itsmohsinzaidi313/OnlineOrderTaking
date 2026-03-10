@@ -7,7 +7,7 @@ namespace ImportService.Services
     public class ProductSizeMigrationService(
         SqlServerDbContext sqlDb) : IProductSizeMigrationService
     {
-        public async Task MigrateProductSizesAsync(int companyId, PostgresDbContext pgDb, CancellationToken ct = default)
+        public async Task MigrateAsync(PostgresDbContext pgDb, int companyId = 0, CancellationToken ct = default)
         {
             var productSizes = await sqlDb.ProductSizes
                 .Where(x => x.IsActive == true && x.CompanyId == companyId)

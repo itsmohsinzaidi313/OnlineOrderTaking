@@ -8,6 +8,7 @@ using GatewayService.Models;
 using System.Text;
 using GatewayService.ServiceResponseListeners;
 using static PointofSaleModels.Protos.PushNotificationService;
+using static PointofSaleModels.Protos.OrderHistoryService;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -41,11 +42,12 @@ builder.Services
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
     .AddHostedService<DataServiceResponseListener>()
     .AddHostedService<CreateOrderServiceResponseListener>()
-    .AddHostedService<OrderStatusServiceResponseListener>()
+    .AddHostedService<OrderUpdateServiceResponseListener>()
     .AddHostedService<SettingsDataServiceResponseListener>()
     .AddHostedService<MenuServiceResponseListener>()
     .AddHostedService<OrderHistoryServiceResponseListener>()
-    .AddHostedService<OrderNotificationServiceResponseListener>()
+    .AddHostedService<ClientNotificationServiceResponseListener>()
+    .AddHostedService<OrderUpdateServiceResponseListener>()
     .AddSingleton<IConnectionMultiplexer>(context =>
     {
         var configuration = ConfigurationOptions.Parse(redisSettings.ConnectionString, true);
@@ -93,8 +95,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// Point the gRPC client at the container port the pushnotificationservice listens on (8080)
-builder.Services.AddGrpcClient<PushNotificationServiceClient>(o => o.Address = new Uri("http://pushnotificationservice:8080"));
+builder.Services.AddGrpcClient<PushNotificationServiceClient>(o =>
+{
+    var address = builder.Configuration["GRPC:PushNotificationHost"] ?? "http://pushnotificationservice:8080";
+    o.Address = new Uri(address);
+});
+
+builder.Services.AddGrpcClient<OrderHistoryServiceClient>(x =>
+{
+    var address = builder.Configuration["GRPC:OrderHistoryHost"] ?? "http://orderhistoryservice:8080";
+    x.Address = new Uri(address);
+});
 
 var app = builder.Build();
 app.UseRouting();

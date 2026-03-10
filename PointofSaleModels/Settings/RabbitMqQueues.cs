@@ -9,8 +9,8 @@ namespace PointofSaleModels.Settings
         public const string OrderHistoryService = "orderhistory";
         public const string OrderService = "order";
         public const string GatewayService = "gateway";
-        public const string OrderStatusService = "orderstatus";
-        public const string OrderNotificationService = "ordernotification";
+        public const string OrderUpdateService = "orderstatus";
+        public const string ClientNotificationService = "clientnotification";
         public const string PushNotificationService = "pushnotification";
         public const string ImportService = "import";
         public const string Request = "request";
@@ -20,11 +20,11 @@ namespace PointofSaleModels.Settings
         public const string DataResponseQueue = $"{Services}.{DataService}.{Response}";
         public const string OrderRequestQueue = $"{Services}.{OrderService}.{Request}";
         public const string OrderResponseQueue = $"{Services}.{OrderService}.{Response}";
-        public const string OrderStatusRequestQueue = $"{Services}.{OrderStatusService}.{Request}";
-        public const string OrderStatusResponseQueue = $"{Services}.{OrderStatusService}.{Response}";
-        public const string OrderNotificationRequestQueue = $"{Services}.{OrderNotificationService}.{Request}";
-        public const string OrderNotificationResponseQueue = $"{Services}.{OrderNotificationService}.{Response}";
-        public const string OrderNotificationGatewayResponse = $"{Services}.{OrderNotificationService}.{GatewayService}.{Response}";
+        public const string OrderUpdateRequestQueue = $"{Services}.{OrderUpdateService}.{Request}";
+        public const string OrderUpdateResponseQueue = $"{Services}.{OrderUpdateService}.{Response}";
+        public const string ClientNotificationRequestQueue = $"{Services}.{ClientNotificationService}.{Request}";
+        public const string ClientNotificationResponseQueue = $"{Services}.{ClientNotificationService}.{Response}";
+        public const string ClientNotificationGatewayResponse = $"{Services}.{ClientNotificationService}.{GatewayService}.{Response}";
         public const string GatewayRequestQueue = $"{Services}.{GatewayService}.{Request}";
         public const string GatewayResponseQueue = $"{Services}.{GatewayService}.{Response}";
         public const string ImportResponseQueue = $"{Services}.{ImportService}.{Response}";

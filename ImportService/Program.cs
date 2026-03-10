@@ -16,7 +16,9 @@ builder.Configuration
 var sqlServerConnectionString =
     builder.Configuration.GetConnectionString("SqlServer")
     ?? throw new InvalidOperationException("SqlServer connection string is not configured.");
-const string PostgressConnectionString = "Host=haproxy;Port=5433;Database=restaurants;Username=postgres;Password=postgrespass";
+
+var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres")
+    ?? throw new InvalidOperationException("Postgres connection string is not configured.");
 // Services
 
 builder.Services
@@ -31,7 +33,7 @@ builder.Services
                     errorNumbersToAdd: null);
             }))
     .AddDbContextFactory<RestaurantsDbContext>(options =>
-        options.UseNpgsql(PostgressConnectionString, options =>
+        options.UseNpgsql(postgresConnectionString, options =>
         {
             options.EnableRetryOnFailure(
                 maxRetryCount: 5,
@@ -53,14 +55,14 @@ builder.Services
     .AddScoped<IAreaMigrationService, AreaMigrationService>()
     .AddScoped<ISetupCompanySettingsMigrationService, SetupCompanySettingsMigrationService>()
     .AddScoped<ICustomerDataImportService, CustomerDataImportService>()
-    .AddScoped<IOrdersImportService, OrdersImportService>()
     .AddScoped<IUserLoginMigrationService, UserLoginMigrationService>()
+    .AddScoped<IRidersMigrationService, RidersMigrationService>()
     .AddScoped<Implementation>();
 
 var app = builder.Build();
 
 // Optional: minimal endpoint (useful for health checks)
-app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Implementation impl, [FromServices] IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory, HttpContext httpContext) =>
+app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Implementation impl, [FromServices] IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory, HttpContext httpContext, [FromQuery] bool checkOrders = true) =>
 {
     using var sqlServerDbContext = sqlServerDbContextFactory.CreateDbContext();
     var company = await sqlServerDbContext.SetupCompanies.FirstOrDefaultAsync(x => x.CompanyId == companyId, httpContext.RequestAborted);
@@ -79,7 +81,7 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Imple
                 .Replace("https://", "")
                 .Replace("www.", "")
                 .Split('/')[0];
-    var response = await impl.Import(companyId, domain, httpContext.RequestAborted);
+    var response = await impl.Import(companyId, domain, checkOrders, httpContext.RequestAborted);
     try
     {
         var httpClient = new HttpClient

@@ -1,7 +1,8 @@
-﻿using PointofSaleModels.ServicePayloads;
+﻿using Microsoft.EntityFrameworkCore;
+using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using Microsoft.EntityFrameworkCore;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace CreateOrderService
@@ -22,8 +23,27 @@ namespace CreateOrderService
                 }
                 var connectionString = await GetConnectionString(requestPayload.DomainName);
                 connectionString = connectionString.Replace("5434", "5433");
-                var orderNumber = await impl.SaveOrderAsync(connectionString, requestPayload.BranchId, requestPayload.Order!);
-                response = new { Success = true, Message = "Order processed successfully", OrderNumber = orderNumber, requestPayload.Order };
+                await impl.SaveOrderAsync(connectionString, requestPayload.Order!);
+                var orderToken = requestPayload.Order.OrderToken ?? throw new Exception("Order token not generated");
+                await SaveToken(requestPayload.DomainName, orderToken);
+                requestPayload.Order.OrderStatusLogs = await impl.OrderStatusLogs(connectionString, orderToken);
+                response = new { Success = true, Message = "Order processed successfully", OrderNumber = orderToken };
+                await foreach (var userId in impl.GetBranchUsersIdsAsync(connectionString, requestPayload.BranchId))
+                {
+                    var order = requestPayload.Order;
+                    await publisher.PublishToQueueAsync(RabbitMqQueues.PushNotificationRequestQueue, new PushNotificationServicePayload
+                    {
+                        ClientId = $"branch:{userId}:*",
+                        Title = "New Order Received!",
+                        Message = $" New order received from the {order?.BranchName} branch - Order# {order?.OrderToken} — Rs.{double.Round(order?.AmountWithGst ?? 0.0 + order.DeliveryCharges ?? 0)}.",
+                    });
+
+                }
+                await publisher.PublishToQueueAsync(RabbitMqQueues.ClientNotificationRequestQueue,
+                    new ClientNotificationServicePayload(requestPayload)
+                    {
+                        CustomerOrder = requestPayload.Order!,
+                    });
             }
             catch (Exception ex)
             {
@@ -35,11 +55,16 @@ namespace CreateOrderService
                 DataPayload = response
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.OrderResponseQueue, response);
-            await publisher.PublishToQueueAsync(RabbitMqQueues.OrderNotificationRequestQueue,
-                new OrderNotificationServicePayload(requestPayload)
-                {
-                    CustomerOrder = requestPayload.Order!,
-                });
+        }
+
+        private async Task SaveToken(string domainName, string orderToken)
+        {
+            await using var context = await contextFactory.CreateDbContextAsync();
+            var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
+            var restaurantId = restaurant?.Id ?? throw new Exception("Restaurant not found");
+            var tokenEntity = new Db.OrderTokens { OrderToken = orderToken, CreatedAt = DateTime.UtcNow, RestaurantId = restaurantId };
+            await context.OrderTokens.AddAsync(tokenEntity);
+            await context.SaveChangesAsync();
         }
 
         private async Task<string> GetConnectionString(string domainName)

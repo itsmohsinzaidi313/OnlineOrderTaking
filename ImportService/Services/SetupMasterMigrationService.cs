@@ -6,7 +6,7 @@ namespace ImportService.Services
 {
     public class SetupMasterMigrationService(SqlServerDbContext sqlDb) : ISetupMasterMigrationService
     {
-        public async Task MigrateSetupMasterAsync(PostgresDbContext pgDb, CancellationToken ct = default)
+        public async Task MigrateAsync(PostgresDbContext pgDb, int companyId = 0, CancellationToken ct = default)
         {
             var masters = await sqlDb.SetupMasters
                 .AsNoTracking()

@@ -7,7 +7,7 @@ namespace ImportService.Services
     public class CityMigrationService(
         SqlServerDbContext sqlDb) : ICityMigrationService
     {
-        public async Task MigrateCitiesAsync(PostgresDbContext pgDb, CancellationToken ct = default)
+        public async Task MigrateAsync(PostgresDbContext pgDb, int companyId = 0, CancellationToken ct = default)
         {
 
             var cities = await sqlDb.Cities

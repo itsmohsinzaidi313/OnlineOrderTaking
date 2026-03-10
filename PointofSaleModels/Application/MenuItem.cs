@@ -16,6 +16,8 @@
         public bool IsKot { get; set; } = false;
         public bool ItemFOC { get; set; } = false;
         public string Description { get; set; } = string.Empty;
+        public bool IsPromotional { get; set; }
+        public bool IsPopular { get; set; }
         public List<ItemVariation> Variations { get; set; } = [];
         public Discount? Discount { get; set; } = null;
     }

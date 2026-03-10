@@ -81,7 +81,7 @@ namespace GatewayService
             await QueuePayload(RabbitMqQueues.SettingRequestQueue, obj);
         }
 
-        public async Task OrderHistoryRequest(string domainName, int userId, string responseKey)
+        public async Task OrderHistoryRequest(string domainName, int userId, string? orderToken, string responseKey)
         {
             var obj = new DataServicePayload
             {
@@ -91,6 +91,7 @@ namespace GatewayService
                 SignalRMethodName = "OrderHistoryRequest"
             }.FillContext(Context);
             obj.OrderUserId = userId;
+            obj.OrderToken = orderToken;
             await QueuePayload(RabbitMqQueues.OrderHistoryRequestQueue, obj);
         }
 
@@ -152,19 +153,21 @@ namespace GatewayService
             await QueuePayload(RabbitMqQueues.OrderRequestQueue, obj);
         }
 
-        public async Task OrderStatus(string domainName, int branchId, string orderNumber, int? orderStatusId, int? branchTransferId, string responseKey)
+        public async Task OrderStatus(string domainName, int branchId, string orderNumber, int? orderStatusId, int? branchTransferId, int? riderId, int? deliveryTime, string responseKey)
         {
-            var obj = new OrderStatusPayload
+            var obj = new OrderUpdatePayload
             {
                 DomainName = domainName,
                 BranchId = branchId,
-                OrderNumber = orderNumber,
+                OrderToken = orderNumber,
                 ResponseKey = responseKey,
                 BranchTransferId = branchTransferId,
                 OrderStatusId = orderStatusId,
+                DeliveryTime = deliveryTime,
+                RiderId = riderId,
                 SignalRMethodName = "OrderStatus"
             }.FillContext(Context);
-            await QueuePayload(RabbitMqQueues.OrderStatusRequestQueue, obj);
+            await QueuePayload(RabbitMqQueues.OrderUpdateRequestQueue, obj);
         }
 
         private async Task QueuePayload<T>(string queues, T payload)

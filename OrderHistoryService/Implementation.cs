@@ -4,7 +4,7 @@ using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace OrderHistoryService;
 
-internal class Implementation()
+public class Implementation()
 {
     private static Db.PgDbContext GetDbContext(string connectionString)
     {
@@ -20,7 +20,7 @@ internal class Implementation()
         return new Db.PgDbContext(options);
     }
 
-    internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int userId)
+    internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int? userId = null, string? orderToken = null)
     {
         using var dbContext = GetDbContext(connectionString);
         var products = await (from x in dbContext.ProductCategories
@@ -47,62 +47,92 @@ internal class Implementation()
         var statuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
         var branchDict = await dbContext.BranchMasters.ToDictionaryAsync(x => x.BranchId, x => x.BranchName);
         var discounts = await dbContext.Discounts.ToDictionaryAsync(x => x.DiscountId, x => x);
+        var riders = await dbContext.Riders.ToListAsync();
 
-        foreach (var branchId in await dbContext.UserBranchMappings.Where(x => x.UserId == userId).Select(x => x.BranchId).ToListAsync())
+        if (userId.HasValue)
         {
-            foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.BranchId == branchId).ToListAsync())
+            var branchIds = await dbContext.UserBranchMappings.Where(x => x.UserId == userId).Select(x => x.BranchId).ToArrayAsync();
+            var orderMasters = await dbContext.OrderMasters.Where(x => branchIds.Contains(x.BranchId) && x.OrderDate > DateOnly.FromDateTime(DateTime.Now.AddDays(-3))).ToListAsync();
+
+            foreach (var dbOrder in orderMasters)
             {
-                var order = new CustomerOrder
-                {
-                    OrderNumber = dbOrder.OrderNumber ?? "N/A",
-                    BranchId = branchId,
-                    BranchName = branchDict[branchId],
-                    OrderType = setupDetail[dbOrder.OrderModeId!.Value],
-                    Status = statuses[dbOrder.OrderStatusId],
-                    Items = [],
-                    DeliveryCharges = (int?)(dbOrder.DeliveryCharges ?? 0.00),
-                    AmountWithoutGst = dbOrder.TotalAmountWithoutGst ?? 0.00,
-                    AmountWithGst = dbOrder.TotalAmountWithGst ?? 0.00,
-                };
-                if (dbOrder.DiscountId.HasValue && dbOrder.DiscountId != 0)
-                {
-                    var disc = discounts[dbOrder.DiscountId.Value];
-                    order.Discount = new Discount
-                    {
-                        Id = disc.DiscountId,
-                        Name = disc.DiscountName ?? "N/A",
-                        MaxCap = decimal.ToDouble(disc.DiscountCapEnd),
-                        MinCap = decimal.ToDouble(disc.DiscountCapStart),
-                        Type = "Percentage",
-                        Value = disc.DiscountPercent,
-                    };
-                }
-
-                var phoneId = dbOrder.PhoneId;
-                var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
-                if (customerPhone != null)
-                {
-                    var customer = await dbContext.Customers.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
-                    var addressDetails = await dbContext.CustomerAddressDetails.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
-
-                    var customerDetail = new CustomerDetail
-                    {
-                        FullName = customer?.CustomerName ?? "N/A",
-                        MobileNumber = customerPhone.PhoneNumber ?? "N/A",
-                        DeliveryAddress = addressDetails?.CompleteAddress ?? "N/A",
-                        NearestLandmark = addressDetails?.LandMark ?? "N/A",
-                        DeliveryInstructions = addressDetails?.Remarks ?? "N/A"
-                    };
-                    order.CustomerDetails = customerDetail;
-                }
-                await foreach (var item in GetOrderItemsAsync(dbContext, dbOrder.OrderMasterId, productDetails, dealItems, products, flavours, sizes, dealDescriptions))
-                {
-                    item.Price = item.Variations.Sum(x => x.Price + x.ItemChoices.SelectMany(y => y.ItemOptions).Sum(z => z.Price));
-                    order.Items.Add(item);
-                }
-
-                yield return order;
+                yield return await mapToCustomerOrder(dbOrder);
             }
+        }
+        else if (!string.IsNullOrEmpty(orderToken))
+        {
+            var orderMaster = await dbContext.OrderMasters.FirstOrDefaultAsync(x => x.OrderToken == orderToken && x.OrderDate > DateOnly.FromDateTime(DateTime.Now.AddDays(-3)));
+            if (orderMaster != null)
+            {
+                yield return await mapToCustomerOrder(orderMaster);
+            }
+        }
+        else
+        {
+            yield break; // No valid identifier provided, exit the method
+        }
+
+        async Task<CustomerOrder> mapToCustomerOrder(Db.OrderMaster orderMaster)
+        {
+            var orderTime = orderMaster.OrderTime;
+            var orderDate = orderMaster.OrderDate;
+            DateTime? orderDateTime = orderDate?.ToDateTime(orderTime);
+            var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == orderMaster.OrderMasterId).ToListAsync();
+
+            // Find Asia/Karachi timezone once per order
+            var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+
+            var order = new CustomerOrder
+            {
+                OrderNumber = orderMaster.OrderNumber ?? "N/A",
+                OrderToken = orderMaster.OrderToken ?? "N/A",
+                BranchId = orderMaster.BranchId,
+                BranchName = branchDict[orderMaster.BranchId],
+                OrderType = setupDetail[orderMaster.OrderModeId!.Value],
+                Status = statuses[orderMaster.OrderStatusId],
+                Items = [],
+                DeliveryCharges = (int?)(orderMaster.DeliveryCharges ?? 0.00),
+                AmountWithoutGst = orderMaster.TotalAmountWithoutGst ?? 0.00,
+                AmountWithGst = orderMaster.TotalAmountWithGst ?? 0.00,
+                OrderTime = orderDateTime ?? DateTime.MinValue,
+                GstPercentage = orderMaster.Gstpercent,
+                OrderStatusLogs = orderStatusLogs.Select(x => new
+                {
+                    Id = x.OrderStatusId,
+                    CreatedAt = TimeZoneInfo.ConvertTimeFromUtc(
+                        DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc),
+                        karachiTz
+                    ),
+                }).ToList(),
+                Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName ?? string.Empty, Contact = x.Contact1 ?? string.Empty }).FirstOrDefault(x => x.Id == orderMaster.RiderId),
+                DeliveryTime = orderMaster.DeliveryTime ?? 0,
+                TotalDiscount = orderMaster.DiscountAmount ?? 0.00,
+
+            };
+
+            var phoneId = orderMaster.PhoneId;
+            var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
+            if (customerPhone != null)
+            {
+                var customer = await dbContext.Customers.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
+                var addressDetails = await dbContext.CustomerAddressDetails.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
+
+                var customerDetail = new CustomerDetail
+                {
+                    FullName = customer?.CustomerName ?? "N/A",
+                    MobileNumber = customerPhone.PhoneNumber ?? "N/A",
+                    DeliveryAddress = addressDetails?.CompleteAddress ?? "N/A",
+                    NearestLandmark = addressDetails?.LandMark ?? "N/A",
+                    DeliveryInstructions = addressDetails?.Remarks ?? "N/A"
+                };
+                order.CustomerDetails = customerDetail;
+            }
+            await foreach (var item in GetOrderItemsAsync(dbContext, orderMaster.OrderMasterId, productDetails, dealItems, products, flavours, sizes, dealDescriptions, discounts))
+            {
+                item.Price = item.Variations.Sum(x => x.Price + x.ItemChoices.SelectMany(y => y.ItemOptions).Sum(z => z.Price));
+                order.Items.Add(item);
+            }
+            return order;
         }
     }
 
@@ -112,7 +142,7 @@ internal class Implementation()
         return await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
     }
 
-    private async IAsyncEnumerable<MenuItem> GetOrderItemsAsync(Db.PgDbContext dbContext, int orderMasterId, List<Db.ProductDetail> productDetails, List<Db.DealItemDetail> dealItems, List<Db.Product> products, Dictionary<int, Db.Flavour> flavours, Dictionary<int, Db.ProductSize> sizes, List<Db.DealDescription> dealDescriptions)
+    private async IAsyncEnumerable<MenuItem> GetOrderItemsAsync(Db.PgDbContext dbContext, int orderMasterId, List<Db.ProductDetail> productDetails, List<Db.DealItemDetail> dealItems, List<Db.Product> products, Dictionary<int, Db.Flavour> flavours, Dictionary<int, Db.ProductSize> sizes, List<Db.DealDescription> dealDescriptions, Dictionary<int, Db.Discount> discounts)
     {
         var orderDetails = await dbContext.OrderDetails
             .Where(x => x.OrderMasterId == orderMasterId && x.IsActive == true)
@@ -132,6 +162,21 @@ internal class Implementation()
                         .Select(x => x.DealItemId)
                         .Distinct();
 
+            Discount? discount1 = null;
+            if (orderDetail.DiscountId.HasValue && orderDetail.DiscountId != 0)
+            {
+                var dbDiscount = discounts[orderDetail.DiscountId.Value];
+                discount1 = new Discount
+                {
+                    Id = dbDiscount.DiscountId,
+                    Name = dbDiscount.DiscountName ?? "N/A",
+                    MaxCap = decimal.ToDouble(dbDiscount.DiscountCapEnd),
+                    MinCap = decimal.ToDouble(dbDiscount.DiscountCapStart),
+                    Type = PointofSaleModels.Application.ValueType.Percentage.ToString(),
+                    Value = dbDiscount.DiscountPercent,
+                };
+            }
+
             yield return new MenuItem
             {
                 Id = product.ProductId,
@@ -140,6 +185,7 @@ internal class Implementation()
                 CategoryId = categories[product.ProductId].ToString(),
                 IsKot = orderDetail.IsKot,
                 Quantity = orderDetail.Quantity ?? 0,
+                Discount = discount1,
                 Variations =
                 [
                     new ()
@@ -181,5 +227,34 @@ internal class Implementation()
                 ]
             };
         }
+    }
+
+    internal async Task<object> GetRidersAsync(int userId, string connectionString)
+    {
+        using var dbContext = GetDbContext(connectionString);
+        var list = await dbContext.Riders
+            .Join(dbContext.UserBranchMappings, a => a.BranchId, b => b.BranchId, (a, b) => new { Riders = a, b.UserId })
+            .Where(x => x.UserId == userId)
+            .Select(x => new
+            {
+                Id = x.Riders.RiderId,
+                Name = x.Riders.RiderName
+            })
+            .ToListAsync();
+        return list;
+    }
+
+    internal async Task<object> GetBranchesAsync(string connectionString)
+    {
+        using var dbContext = GetDbContext(connectionString);
+        var list = await dbContext.BranchMasters
+            .Where(x => x.IsActive)
+            .Select(x => new
+            {
+                Id = x.BranchId,
+                Name = x.BranchName
+            })
+            .ToListAsync();
+        return list;
     }
 }

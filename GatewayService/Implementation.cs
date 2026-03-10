@@ -53,22 +53,53 @@ namespace GatewayService
             var responseKey = root.GetProperty("ResponseKey").GetString() ?? throw new Exception("ResponseKey not found");
 
             logger.LogInformation("Gateway: Received {method} message", responseKey);
-            var isOnline = await connectionManager.ClientIdExistsAsync(userId);
-            if (!isOnline)
+            var payload = JsonSerializer.Deserialize<T>(svcPayload)!;
+
+            if (!UserOnline(clientId))
             {
                 var pendingPayload = new PendingPayload<T>
                 {
-                    Payload = JsonSerializer.Deserialize<T>(svcPayload)!
+                    Payload = payload!
                 };
                 var pendingPayloadJson = JsonSerializer.Serialize(pendingPayload);
                 await storage.PushToPending(userId, pendingPayloadJson);
             }
             else
             {
-                var payload = JsonSerializer.Deserialize<T>(svcPayload)!;
-                await hub.Clients.User(clientId).SendAsync(responseKey, payload);
-                return;
+                await SendToUser(clientId, responseKey, payload);
             }
+        }
+
+        public async Task SendToUser<T>(string clientId, string method, T payload) where T : ServicePayload
+        {
+            await hub.Clients.User(clientId).SendAsync(method, payload);
+        }
+        public async Task SendToUsers<T>(List<string> clientIds, string method, T payload) where T : ServicePayload
+        {
+            await hub.Clients.Users(clientIds).SendAsync(method, payload);
+        }
+
+        public async Task SendCustomerOrderToBranches(CustomerOrder svcPayload, List<string> clientIds)
+        {
+            await hub.Clients.Users(clientIds).SendAsync("NewOrder", svcPayload);
+        }
+
+        private async Task PublishForPending(string clientId, string payload)
+        {
+            var db = redis.GetDatabase();
+            await db.ListRightPushAsync($"{clientId}{PendingKeySuffix}", payload);
+        }
+
+        internal async Task SetClientOnlineAsync(string clientId, string connectionId)
+        {
+            var db = redis.GetDatabase();
+            await db.StringSetAsync($"{clientId}{ConnectionKeySuffix}", connectionId);
+        }
+
+        internal async Task SetUserOfflineAsync(string clientId)
+        {
+            var db = redis.GetDatabase();
+            await db.KeyDeleteAsync($"{clientId}{ConnectionKeySuffix}");
         }
 
         internal async Task QueueRequestPayload<T>(string queues, T payload)

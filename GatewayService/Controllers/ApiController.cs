@@ -4,21 +4,42 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using PointofSaleModels.Protos;
-using static PointofSaleModels.Protos.PushNotificationService;
 using PointofSaleModels.ServicePayloads;
 using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using App = PointofSaleModels.Application;
+using static PointofSaleModels.Protos.PushNotificationService;
+using static PointofSaleModels.Protos.OrderHistoryService;
 
 namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
-        [AllowAnonymous]
+
+        [HttpGet("myorder")]
+        public async Task<IActionResult> GetMyOrder([FromQuery] string orderNumber)
+        {
+            if (string.IsNullOrEmpty(orderNumber))
+                return BadRequest(new { error = "Order number is required." });
+            var host = HttpContext.Request.Host.Value;
+            var orderhistoryRequest = new OrderHistoryRequest
+            {
+                OrderToken = orderNumber
+            };
+            var orderHistoryResponse = await orderHistoryClient.GetOrderHistoryAsync(orderhistoryRequest, cancellationToken: HttpContext.RequestAborted);
+            if (orderHistoryResponse.Success == false)
+            {
+                return Ok(orderHistoryResponse);
+            }
+            var customerOrders = orderHistoryResponse.OrdersPayload.Select(json => System.Text.Json.JsonSerializer.Deserialize<App.CustomerOrder>(json)).ToList();
+            return Ok(customerOrders);
+        }
+
         [HttpPost("subscribe")]
         public async Task<IActionResult> SubscribeAsync([FromBody] PushSubscriptionDto dto)
         {
@@ -38,11 +59,11 @@ namespace GatewayService.Controllers
         }
 
         [HttpPost("unsubscribe")]
-        public async Task<IActionResult> UnsubscribeAsync([FromBody] PushSubscriptionDto dto)
+        public async Task<IActionResult> UnsubscribeAsync([FromBody] string clientId)
         {
             var request = new PushNotificationUnsubscribeRequest
             {
-                ClientId = dto.ClientId
+                ClientId = clientId
             };
             var response = await pushNotificationClient.UnsubscribeAsync(request);
 
@@ -73,7 +94,7 @@ namespace GatewayService.Controllers
         {
             var db = redis.GetDatabase();
             var server = redis.GetServer(redis.GetEndPoints().First());
-            int menuKeys = 0, dAndPKeys = 0, pendingKeys = 0;
+            int menuKeys = 0, dAndPKeys = 0, pendingKeys = 0, subscriptions = 0;
             foreach (var key in server.Keys(pattern: $"{domain}:*:Menu"))
             {
                 await db.KeyDeleteAsync(key);
@@ -103,7 +124,12 @@ namespace GatewayService.Controllers
                 await db.KeyDeleteAsync(key);
                 pendingKeys++;
             }
-            return Ok(new { Menu = menuKeys, DAndP = dAndPKeys, Pending = pendingKeys });
+            foreach (var key in server.Keys(pattern: "subscription:*"))
+            {
+                await db.KeyDeleteAsync(key);
+                subscriptions++;
+            }
+            return Ok(new { Menu = menuKeys, DAndP = dAndPKeys, Pending = pendingKeys, Subscriptions = subscriptions });
         }
 
         [HttpGet("health")]
@@ -113,12 +139,12 @@ namespace GatewayService.Controllers
         }
 
         [HttpGet("import/{companyId:int}")]
-        public async Task<IActionResult> Import(int companyId, [FromQuery] bool checkhealth = true)
+        public async Task<IActionResult> Import(int companyId, [FromQuery] bool checkhealth = true, [FromQuery] bool checkOrders = true)
         {
             var httpClient = new HttpClient
             {
                 Timeout = TimeSpan.FromMinutes(5),
-                BaseAddress = new Uri("http://importservice:8080")
+                BaseAddress = new Uri("http://importservice:8080"),
             };
 
             if (checkhealth)
@@ -130,7 +156,7 @@ namespace GatewayService.Controllers
                 }
             }
 
-            var response = await httpClient.GetAsync($"import/{companyId}");
+            var response = await httpClient.GetAsync($"import/{companyId}?checkOrders={checkOrders}");
 
             if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
             {

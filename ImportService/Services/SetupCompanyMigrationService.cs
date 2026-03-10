@@ -6,7 +6,7 @@ namespace ImportService.Services
 {
     public class SetupCompanyMigrationService(SqlServerDbContext SqlDb) : ISetupCompanyMigrationService
     {
-        public async Task MigrateSetupCompanyAsync(int companyId, PostgresDbContext PgDb, CancellationToken ct = default)
+        public async Task MigrateAsync(PostgresDbContext PgDb, int companyId = 0, CancellationToken ct = default)
         {
             var source = await SqlDb.SetupCompanies
                 .Where(x => x.CompanyId == companyId)

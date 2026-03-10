@@ -6,7 +6,7 @@ namespace ImportService.Services
 {
     public class BranchMasterMigrationService(SqlServerDbContext SqlDb) : IBranchMasterMigrationService
     {
-        public async Task MigrateBranchMasterAsync(int companyId, PostgresDbContext PgDb, CancellationToken ct = default)
+        public async Task MigrateAsync(PostgresDbContext PgDb, int companyId = 0, CancellationToken ct = default)
         {
             var branches = await SqlDb.BranchMasters
                         .Where(b => b.CompanyId == companyId && b.IsActive == true)

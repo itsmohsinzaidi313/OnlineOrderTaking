@@ -2,9 +2,8 @@ using ImportService.Data;
 
 namespace ImportService.Interfaces
 {
-    public interface IAreaMigrationService
+    public interface IAreaMigrationService : IMigrationService
     {
-        Task MigrateAreasAsync(int companyId, PostgresDbContext PgDb, CancellationToken ct = default);
     }
 }
 

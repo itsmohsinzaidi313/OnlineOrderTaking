@@ -4,9 +4,10 @@
     {
         public string Domain { get; set; }
         public int BranchId { get; set; }
+        public int? AreaId { get; set; }
         public string BranchName { get; set; }
-        public CustomerDetail CustomerDetails { get; set; }
         public string OrderNumber { get; set; } = string.Empty;
+        public string OrderToken { get; set; } = string.Empty;
         public string? OrderType { get; set; }
         public string? PaymentType { get; set; }
         public PaymentStatus? PaymentStatus { get; set; }
@@ -14,6 +15,10 @@
         public double AmountWithGst { get; set; }
         public double AmountWithoutGst { get; set; }
         public List<MenuItem> Items { get; set; } = [];
+        public object? OrderStatusLogs { get; set; }
+        public int DeliveryTime { get; set; }
+        public double TotalDiscount { get; set; }
+        public double GstPercentage { get; set; }
         public CustomerOrder() : base()
         {
         }
@@ -21,6 +26,7 @@
 
     public sealed class CustomerDetail
     {
+        public int PhoneId { get; set; }
         public string? Title { get; set; }
 
         public string? FullName { get; set; }

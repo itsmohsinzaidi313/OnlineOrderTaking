@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="Protos\protobuf.proto" GrpcServices="Server" Namespace="PointofSaleModels.Protos" />
+    <Protobuf Include="Protos\pushnotification.proto" GrpcServices="Server" Namespace="PointofSaleModels.Protos" />
   </ItemGroup>
 
 </Project>
