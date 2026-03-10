@@ -18,7 +18,7 @@ namespace GatewayService.ServiceResponseListeners
                 List<string> clients = [];
                 var db = redis.GetDatabase();
                 var server = redis.GetServer(redis.GetEndPoints().First());
-                foreach (var key in payload.NewOrderNotificationKeys)
+                foreach (var key in payload.NotificationKeys)
                 {
                     clients.AddRange(server.Keys(pattern: key).Select(x => x.ToString().Replace(":connection", "")));
                 }

@@ -17,8 +17,37 @@ namespace PointofSaleModels.ServicePayloads
         {
         }
 
-        public CustomerOrder CustomerOrder { get; set; }
+        public ClientNotificationType NotificationType { get; set; }
 
-        public List<string> NewOrderNotificationKeys { get; set; } = [];
+        public string Payload { get; set; }
+
+        public T? GetPayload<T>()
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<T>(Payload); 
+        }
+
+        public List<ClientNotificationIdentity> NotificationKeys { get; set; } = [];
+    }
+
+    public enum ClientNotificationType
+    {
+        NewOrder,
+        OrderStatusUpdate
+    }
+
+    public abstract class ClientNotificationIdentity
+    {
+        public string ClientId { get; set; }
+    }
+
+    public class BranchNotification : ClientNotificationIdentity
+    {
+        public int UserId { get; set; }
+        public string ClientId { get; set; }
+    }
+
+    public class UserNotification : ClientNotificationIdentity
+    {
+        public int BranchId { get; set; }
     }
 }

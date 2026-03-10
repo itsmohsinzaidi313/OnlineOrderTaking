@@ -23,7 +23,7 @@ namespace ClientNotificationService
                     .Select(x => x.UserId)
                     .ToListAsync();
 
-                requestPayload.NewOrderNotificationKeys = [.. userIds.Select(x => $"branch:{x}:*:connection")];
+                requestPayload.NotificationKeys = [.. userIds.Select(x => $"branch:{x}:*:connection")];
                 await publisher.PublishToQueueAsync(RabbitMqQueues.ClientNotificationGatewayResponse, requestPayload);
             }
             catch (Exception ex)
