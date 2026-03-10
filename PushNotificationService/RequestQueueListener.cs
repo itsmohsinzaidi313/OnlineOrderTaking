@@ -21,7 +21,7 @@ namespace PushNotificationService
             {
                 var endpoint = multiplexer.GetEndPoints().First();
                 var server = multiplexer.GetServer(endpoint);
-                var keys = server.Keys(pattern: $"subscribtion:{request.ClientId}");
+                var keys = server.Keys(pattern: $"subscription:{request.ClientId}");
                 logger.LogInformation("Processing push notification request for pattern {ClientId} Total {Count}", request?.ClientId, keys.Count());
 
                 foreach (var clientId in keys)
