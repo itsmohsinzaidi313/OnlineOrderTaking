@@ -21,7 +21,6 @@ namespace GatewayService.Controllers
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
 
-        [AllowAnonymous]
         [HttpGet("myorder")]
         public async Task<IActionResult> GetMyOrder([FromQuery] string orderNumber)
         {
@@ -41,7 +40,6 @@ namespace GatewayService.Controllers
             return Ok(customerOrders);
         }
 
-        [AllowAnonymous]
         [HttpPost("subscribe")]
         public async Task<IActionResult> SubscribeAsync([FromBody] PushSubscriptionDto dto)
         {

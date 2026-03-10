@@ -235,12 +235,11 @@ public class Implementation()
             throw new Exception("Customer must have at least one address");
         }
         var companyId = orderMaster.CompanyId;
-
         var dbCustomerPhone = await SaveCustomerPhoneAsync(dbContext, companyId, cd);
         orderMaster.PhoneId = dbCustomerPhone.PhoneId;
 
         var dbCustomer = await dbContext.Customers
-            .Where(t => t.CustomerName != null && cd.FullName != null && t.CustomerName.Trim().ToLower().Equals(cd.FullName.Trim().ToLower()))
+            .Where(x => x.PhoneId == dbCustomerPhone.PhoneId)
             .FirstOrDefaultAsync();
 
         if (dbCustomer == null)
@@ -260,7 +259,7 @@ public class Implementation()
 
         var firstAddress = cd.DeliveryAddress?.Trim() ?? string.Empty;
         var dbCustomerAddress = dbContext.CustomerAddressDetails
-            .Where(t => t.CompleteAddress != null && t.CompleteAddress.Trim().ToLower().Equals(firstAddress.ToLower()))
+            .Where(x => x.PhoneId == dbCustomerPhone.PhoneId)
             .FirstOrDefault();
 
         if (dbCustomerAddress == null)

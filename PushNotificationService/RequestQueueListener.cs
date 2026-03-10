@@ -56,7 +56,6 @@ namespace PushNotificationService
                 {
                     await pushService.SendAsync(pushSubscription, pushMessage);
                     logger.LogInformation("Successfully processed push notification request for client {ClientId}", cid);
-
                 }
                 catch (PushServiceClientException clientException)
                 {
