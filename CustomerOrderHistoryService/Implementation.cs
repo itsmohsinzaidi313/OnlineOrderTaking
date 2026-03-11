@@ -23,6 +23,11 @@ public class Implementation()
     internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, string orderToken)
     {
         using var dbContext = GetDbContext(connectionString);
+        var phoneId = await dbContext.OrderMasters.Where(x => x.OrderToken == orderToken).Select(x => x.PhoneId).FirstOrDefaultAsync();
+        if (phoneId == null)
+        {
+            yield break;
+        }
         var products = await (from x in dbContext.ProductCategories
                               join y in dbContext.Products on x.CategoryId equals y.ProductCategoryId
                               select y).ToListAsync();
@@ -48,8 +53,7 @@ public class Implementation()
         var branchDict = await dbContext.BranchMasters.ToDictionaryAsync(x => x.BranchId, x => x.BranchName);
         var discounts = await dbContext.Discounts.ToDictionaryAsync(x => x.DiscountId, x => x);
         var riders = await dbContext.Riders.ToListAsync();
-
-        foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.OrderToken == orderToken).TakeLast(10).ToListAsync())
+        foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.PhoneId == phoneId).OrderByDescending(x => x.OrderMasterId).TakeLast(10).ToListAsync())
         {
             var orderTime = dbOrder.OrderTime;
             var orderDate = dbOrder.OrderDate;
@@ -87,7 +91,6 @@ public class Implementation()
 
             };
 
-            int phoneId = dbOrder.PhoneId ?? 0;
             var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
             if (customerPhone != null)
             {
@@ -96,7 +99,7 @@ public class Implementation()
 
                 var customerDetail = new CustomerDetail
                 {
-                    PhoneId = phoneId,
+                    PhoneId = phoneId.Value,
                     FullName = customer?.CustomerName ?? "N/A",
                     MobileNumber = customerPhone.PhoneNumber ?? "N/A",
                     DeliveryAddress = addressDetails?.CompleteAddress ?? "N/A",
