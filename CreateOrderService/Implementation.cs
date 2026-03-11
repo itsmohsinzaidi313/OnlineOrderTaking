@@ -39,19 +39,11 @@ public class Implementation()
     {
         await dbContext.OrderMasters.AddAsync(orderMaster);
         await dbContext.SaveChangesAsync();
-        await AssignOrderToken(dbContext, orderMaster);
         await AddOrderStatusLog(dbContext, orderMaster);
         return orderMaster.OrderToken;
     }
 
-    private async Task AssignOrderToken(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
-    {
-        var orderToken = await GetUniqueToken(dbContext);
-        orderMaster.OrderToken = orderToken;
-        await dbContext.SaveChangesAsync();
-    }
-
-    private async Task<string> GetUniqueToken(Db.PgDbContext dbContext)
+    private async Task<string> GetUniqueTokenAsync(Db.PgDbContext dbContext)
     {
         var token = TokenGenerator.GenerateToken();
         var existingToken = await dbContext.OrderMasters
@@ -63,7 +55,7 @@ public class Implementation()
         else
         {
             var newToken = TokenGenerator.GenerateToken();
-            return await GetUniqueToken(dbContext);
+            return await GetUniqueTokenAsync(dbContext);
         }
     }
 
@@ -132,6 +124,7 @@ public class Implementation()
             TotalAmountWithoutGst = 0.00,
             Gstamount = 0.00,
             DiscountAmount = 0.00,
+            OrderToken = await GetUniqueTokenAsync(dbContext),
         };
 
         if (areaId.HasValue)
