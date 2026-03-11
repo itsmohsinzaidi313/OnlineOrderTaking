@@ -53,7 +53,7 @@ public class Implementation()
         var branchDict = await dbContext.BranchMasters.ToDictionaryAsync(x => x.BranchId, x => x.BranchName);
         var discounts = await dbContext.Discounts.ToDictionaryAsync(x => x.DiscountId, x => x);
         var riders = await dbContext.Riders.ToListAsync();
-        foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.PhoneId == phoneId).OrderByDescending(x => x.OrderMasterId).Take(10).ToListAsync())
+        foreach (var dbOrder in await dbContext.OrderMasters.Where(x => x.PhoneId == phoneId).OrderByDescending(x => x.OrderMasterId).Take(5).ToListAsync())
         {
             var orderTime = dbOrder.OrderTime;
             var orderDate = dbOrder.OrderDate;
