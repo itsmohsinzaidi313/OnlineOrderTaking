@@ -20,6 +20,17 @@ public class Implementation()
         return new Db.PgDbContext(options);
     }
 
+    internal async Task<int?> GetCustomerOrderCount(string connectionString, string orderToken)
+    {
+        using var dbContext = GetDbContext(connectionString);
+        var phoneId = await dbContext.OrderMasters.Where(x => x.OrderToken == orderToken).Select(x => x.PhoneId).FirstOrDefaultAsync();
+        if (phoneId == null)
+        {
+            return null;
+        }
+        return await dbContext.OrderMasters.Where(x => x.PhoneId == phoneId).CountAsync();
+    }
+
     internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, string orderToken)
     {
         using var dbContext = GetDbContext(connectionString);

@@ -25,10 +25,12 @@ namespace CustomerOrderHistoryService
                 {
                     orders.Add(order);
                 }
+                int? previousOrderCount = await impl.GetCustomerOrderCount(connectionString, requestPayload.OrderToken);
                 payload = new
                 {
                     Success = true,
-                    Orders = orders
+                    Orders = orders,
+                    PreviousOrderCount = previousOrderCount
                 };
             }
             catch (Exception ex)
