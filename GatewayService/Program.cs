@@ -48,6 +48,7 @@ builder.Services
     .AddHostedService<OrderHistoryServiceResponseListener>()
     .AddHostedService<ClientNotificationServiceResponseListener>()
     .AddHostedService<OrderUpdateServiceResponseListener>()
+    .AddHostedService<CustomerOrderHistoryServiceResponseListener>()
     .AddSingleton<IConnectionMultiplexer>(context =>
     {
         var configuration = ConfigurationOptions.Parse(redisSettings.ConnectionString, true);
