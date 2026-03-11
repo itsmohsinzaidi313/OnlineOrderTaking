@@ -567,7 +567,7 @@ internal class Implementation()
                     TotalDiscount = dbOrder.DiscountAmount ?? 0.00,
 
                 };
-
+                order.PreviousOrderCount = await dbContext.OrderMasters.Where(x => x.PhoneId == dbOrder.PhoneId).CountAsync();
                 var phoneId = dbOrder.PhoneId;
                 var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
                 if (customerPhone != null)

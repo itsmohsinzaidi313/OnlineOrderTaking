@@ -73,6 +73,18 @@ namespace GatewayService
             await QueuePayload(RabbitMqQueues.SettingRequestQueue, obj);
         }
 
+        public async Task CustomerOrderHistory(string domainName, string orderToken, string responseKey)
+        {
+            var obj = new CustomerOrderHistoryServicePayload
+            {
+                DomainName = domainName,
+                ResponseKey = responseKey,
+                SignalRMethodName = "CustomerOrderHistory",
+                OrderToken = orderToken
+            }.FillContext(Context);
+            await QueuePayload(RabbitMqQueues.CustomerOrderHistoryRequestQueue, obj);
+        }
+
         public async Task OrderHistoryRequest(string domainName, int userId, string? orderToken, string responseKey)
         {
             var obj = new DataServicePayload
