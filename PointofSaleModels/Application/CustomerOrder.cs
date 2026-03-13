@@ -6,6 +6,8 @@
         public int BranchId { get; set; }
         public int? AreaId { get; set; }
         public string BranchName { get; set; }
+        public string CityName { get; set; }
+        public string AreaName { get; set; }
         public string OrderNumber { get; set; } = string.Empty;
         public string OrderToken { get; set; } = string.Empty;
         public string? OrderType { get; set; }

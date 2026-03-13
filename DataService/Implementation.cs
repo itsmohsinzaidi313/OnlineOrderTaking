@@ -526,6 +526,9 @@ internal class Implementation()
         var statuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
         var branchDict = await dbContext.BranchMasters.ToDictionaryAsync(x => x.BranchId, x => x.BranchName);
         var discounts = await dbContext.Discounts.ToDictionaryAsync(x => x.DiscountId, x => x);
+        var areas = await dbContext.Areas.ToDictionaryAsync(x => x.AreaId, x => x.AreaName);
+        var cities = await dbContext.Cities.ToDictionaryAsync(x => x.CityId, x => x.CityName);
+        var areaCityIds = await dbContext.Areas.ToDictionaryAsync(x => x.AreaId, x => x.CityId);
         var riders = await dbContext.Riders.ToListAsync();
 
         foreach (var branchId in await dbContext.UserBranchMappings.Where(x => x.UserId == userId).Select(x => x.BranchId).ToListAsync())
@@ -549,6 +552,8 @@ internal class Implementation()
                     OrderNumber = dbOrder.OrderNumber ?? "N/A",
                     OrderToken = dbOrder.OrderToken ?? "N/A",
                     BranchId = branchId,
+                    CityName = cities[areaCityIds[dbOrder.AreaId ?? 0] ?? 0],
+                    AreaName = areas[dbOrder.AreaId ?? 0],
                     BranchName = branchDict[branchId],
                     OrderType = setupDetail[dbOrder.OrderModeId!.Value],
                     Status = statuses[dbOrder.OrderStatusId],
@@ -719,20 +724,6 @@ internal class Implementation()
             })
             .ToListAsync();
         return list;
-    }
-
-    internal async Task<Dictionary<int, string>> GetCities(string connectionString)
-    {
-        using var dbContext = GetDbContext(connectionString);
-        return await dbContext.Cities
-            .ToDictionaryAsync(x => x.CityId, x => x.CityName);
-    }
-
-    internal async Task<Dictionary<int, string>> GetAreas(string connectionString)
-    {
-        using var dbContext = GetDbContext(connectionString);
-        return await dbContext.Areas
-            .ToDictionaryAsync(x => x.AreaId, x => x.AreaName);
     }
 
     private record DbMenuData(List<Db.ProductSize> ProductSizes, List<Db.Flavour> Flavours, List<Db.Product> Products, List<Db.ProductDetail> ProductDetails, Dictionary<int, string> Departments, List<Db.DealItemDetail> DealItemDetails, List<Db.DealDescription> DealDescriptions, List<Db.Discount> ItemDiscounts, List<Db.DiscountProductDetailMapping> DiscountMappings);
