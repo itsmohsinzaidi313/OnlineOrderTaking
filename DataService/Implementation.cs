@@ -534,11 +534,15 @@ internal class Implementation()
             {
                 var orderTime = dbOrder.OrderTime;
                 var orderDate = dbOrder.OrderDate;
-                DateTime? orderDateTime = orderDate?.ToDateTime(orderTime);
+
+                var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+                Func<DateTime, DateTime> convertToPkTime = (dateTime) =>
+                {
+                    return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
+                };
+                DateTime orderDateTime = convertToPkTime(orderDate?.ToDateTime(orderTime) ?? DateTime.MinValue);
                 var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == dbOrder.OrderMasterId).ToListAsync();
 
-                // Find Asia/Karachi timezone once per order
-                var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
 
                 var order = new CustomerOrder
                 {
@@ -552,22 +556,18 @@ internal class Implementation()
                     DeliveryCharges = (int?)(dbOrder.DeliveryCharges ?? 0.00),
                     AmountWithoutGst = dbOrder.TotalAmountWithoutGst ?? 0.00,
                     AmountWithGst = dbOrder.TotalAmountWithGst ?? 0.00,
-                    OrderTime = orderDateTime ?? DateTime.MinValue,
+                    OrderTime = orderDateTime,
                     GstPercentage = dbOrder.Gstpercent,
                     OrderStatusLogs = orderStatusLogs.Select(x => new
                     {
                         Id = x.OrderStatusId,
-                        CreatedAt = TimeZoneInfo.ConvertTimeFromUtc(
-                            DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc),
-                            karachiTz
-                        ),
+                        CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc)),
                     }).ToList(),
                     Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName ?? string.Empty, Contact = x.Contact1 ?? string.Empty }).FirstOrDefault(x => x.Id == dbOrder.RiderId),
                     DeliveryTime = dbOrder.DeliveryTime ?? 0,
                     TotalDiscount = dbOrder.DiscountAmount ?? 0.00,
-
+                    PreviousOrderCount = await dbContext.OrderMasters.Where(x => x.PhoneId == dbOrder.PhoneId).CountAsync()
                 };
-                order.PreviousOrderCount = await dbContext.OrderMasters.Where(x => x.PhoneId == dbOrder.PhoneId).CountAsync();
                 var phoneId = dbOrder.PhoneId;
                 var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
                 if (customerPhone != null)
@@ -719,6 +719,20 @@ internal class Implementation()
             })
             .ToListAsync();
         return list;
+    }
+
+    internal async Task<Dictionary<int, string>> GetCities(string connectionString)
+    {
+        using var dbContext = GetDbContext(connectionString);
+        return await dbContext.Cities
+            .ToDictionaryAsync(x => x.CityId, x => x.CityName);
+    }
+
+    internal async Task<Dictionary<int, string>> GetAreas(string connectionString)
+    {
+        using var dbContext = GetDbContext(connectionString);
+        return await dbContext.Areas
+            .ToDictionaryAsync(x => x.AreaId, x => x.AreaName);
     }
 
     private record DbMenuData(List<Db.ProductSize> ProductSizes, List<Db.Flavour> Flavours, List<Db.Product> Products, List<Db.ProductDetail> ProductDetails, Dictionary<int, string> Departments, List<Db.DealItemDetail> DealItemDetails, List<Db.DealDescription> DealDescriptions, List<Db.Discount> ItemDiscounts, List<Db.DiscountProductDetailMapping> DiscountMappings);

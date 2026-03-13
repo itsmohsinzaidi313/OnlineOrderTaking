@@ -39,16 +39,13 @@ namespace DataService
                 {
                     if (!requestPayload.OrderUserId.HasValue) throw new Exception("UserId missing for userwise orders list");
 
-                    var orders = new List<CustomerOrder>();
-                    await foreach (var order in impl.GetOrdersAsync(connectionString, requestPayload.OrderUserId.Value))
-                    {
-                        orders.Add(order);
-                    }
-
+                    var orders = impl.GetOrdersAsync(connectionString, requestPayload.OrderUserId.Value).ToListAsync();
                     var orderStatuses = await impl.GetOrderStatusesAsync(connectionString);
                     var riders = await impl.GetRidersAsync(requestPayload.OrderUserId.Value, connectionString);
                     var branches = await impl.GetBranchesAsync(connectionString);
-                    payload = new { Orders = orders, OrderStatuses = orderStatuses, Riders = riders, Branches = branches };
+                    var cities = await impl.GetCities(connectionString);
+                    var areas = await impl.GetAreas(connectionString);
+                    payload = new { Orders = orders, OrderStatuses = orderStatuses, Riders = riders, Branches = branches, Cities = cities, Areas = areas };
                     success = true;
                 }
             }
