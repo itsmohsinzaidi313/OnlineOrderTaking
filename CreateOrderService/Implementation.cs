@@ -222,7 +222,6 @@ public class Implementation()
     private async Task SetOnlineOrder(Db.PgDbContext dbContext, int branchId, Db.OrderMaster orderMaster, CustomerOrder order)
     {
         var cd = order.CustomerDetails;
-        var add = cd.DeliveryAddress ?? string.Empty;
         if (cd.DeliveryAddress == null || string.IsNullOrWhiteSpace(cd.DeliveryAddress))
         {
             throw new Exception("Customer must have at least one address");

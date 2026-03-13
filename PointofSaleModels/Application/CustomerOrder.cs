@@ -29,12 +29,12 @@
 
     public sealed class CustomerDetail
     {
-        public int PhoneId { get; set; }
-        public string? Title { get; set; }
+        public int? PhoneId { get; set; }
+        public string Title { get; set; }
 
-        public string? FullName { get; set; }
+        public string FullName { get; set; }
 
-        public string? MobileNumber { get; set; }
+        public string MobileNumber { get; set; }
 
         public string? AlternateMobileNumber { get; set; }
 
@@ -47,13 +47,5 @@
         public string? DeliveryInstructions { get; set; }
 
         public string? PaymentMethod { get; set; }
-
-        public bool IsGift { get; set; }
-
-        public string? RecipientName { get; set; }
-
-        public string? RecipientNumber { get; set; }
-
-        public string? GiftingMessage { get; set; }
     }
 }

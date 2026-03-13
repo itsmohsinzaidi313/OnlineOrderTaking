@@ -577,8 +577,8 @@ internal class Implementation()
                 var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
                 if (customerPhone != null)
                 {
-                    var customer = await dbContext.Customers.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
-                    var addressDetails = await dbContext.CustomerAddressDetails.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
+                    var customer = await dbContext.Customers.Where(x => x.CustomerId == dbOrder.CustomerId).FirstOrDefaultAsync();
+                    var addressDetails = await dbContext.CustomerAddressDetails.Where(x => x.CustomerAddressId == dbOrder.CustomerAddressId).FirstOrDefaultAsync();
 
                     var customerDetail = new CustomerDetail
                     {
@@ -586,7 +586,7 @@ internal class Implementation()
                         MobileNumber = customerPhone.PhoneNumber ?? "N/A",
                         DeliveryAddress = addressDetails?.CompleteAddress ?? "N/A",
                         NearestLandmark = addressDetails?.LandMark ?? "N/A",
-                        DeliveryInstructions = addressDetails?.Remarks ?? "N/A",
+                        DeliveryInstructions = dbOrder?.Remarks ?? "N/A",
                         AlternateMobileNumber = dbOrder.AlternateNumber ?? "N/A",
                         EmailAddress = dbOrder.EmailAddress ?? "N/A",
                         Title = customer.Title ?? "N/A",
