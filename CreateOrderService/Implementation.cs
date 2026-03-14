@@ -8,7 +8,7 @@ namespace CreateOrderService;
 
 public class Implementation()
 {
-    private Db.PgDbContext GetDbContext(string connectionString)
+    private static Db.PgDbContext GetDbContext(string connectionString)
     {
         var options = new DbContextOptionsBuilder<Db.PgDbContext>()
             .UseNpgsql(connectionString, options =>
@@ -35,7 +35,7 @@ public class Implementation()
         order.OrderNumber = orderMaster.OrderNumber;
     }
 
-    private async Task<string> SaveOrderAsync(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
+    private static async Task<string> SaveOrderAsync(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
     {
         await dbContext.OrderMasters.AddAsync(orderMaster);
         await dbContext.SaveChangesAsync();
@@ -43,7 +43,7 @@ public class Implementation()
         return orderMaster.OrderToken;
     }
 
-    private async Task<string> GetUniqueTokenAsync(Db.PgDbContext dbContext)
+    private static async Task<string> GetUniqueTokenAsync(Db.PgDbContext dbContext)
     {
         var token = TokenGenerator.GenerateToken();
         var existingToken = await dbContext.OrderMasters
@@ -59,7 +59,7 @@ public class Implementation()
         }
     }
 
-    private async Task AddOrderStatusLog(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
+    private static async Task AddOrderStatusLog(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
     {
         dbContext.OrderStatusLogs.Add(new Db.OrderStatusLog
         {
@@ -72,7 +72,7 @@ public class Implementation()
         await dbContext.SaveChangesAsync();
     }
 
-    public async Task<string> GenerateOrderNumberAsync(Db.PgDbContext dbContext, int branchId)
+    public static async Task<string> GenerateOrderNumberAsync(Db.PgDbContext dbContext, int branchId)
     {
         var id = await dbContext.Database.SqlQuery<long>($"""
                                                             INSERT INTO branch_order_sequence ("BranchId", "LastValue")
@@ -90,7 +90,7 @@ public class Implementation()
         return orderNumber;
     }
 
-    private async Task<Db.OrderMaster> GetOrderMasterAsync(Db.PgDbContext dbContext, CustomerOrder order)
+    private static async Task<Db.OrderMaster> GetOrderMasterAsync(Db.PgDbContext dbContext, CustomerOrder order)
     {
         var branchId = order.BranchId;
         var areaId = order.AreaId;
@@ -219,7 +219,7 @@ public class Implementation()
         yield return orderDetail;
     }
 
-    private async Task SetOnlineOrder(Db.PgDbContext dbContext, int branchId, Db.OrderMaster orderMaster, CustomerOrder order)
+    private static async Task SetOnlineOrder(Db.PgDbContext dbContext, int branchId, Db.OrderMaster orderMaster, CustomerOrder order)
     {
         var cd = order.CustomerDetails;
         if (cd.DeliveryAddress == null || string.IsNullOrWhiteSpace(cd.DeliveryAddress))
@@ -251,7 +251,7 @@ public class Implementation()
 
         var firstAddress = cd.DeliveryAddress?.Trim() ?? string.Empty;
         var dbCustomerAddress = dbContext.CustomerAddressDetails
-            .Where(x => x.PhoneId == dbCustomerPhone.PhoneId)
+            .Where(x => x.CompleteAddress == firstAddress)
             .FirstOrDefault();
 
         if (dbCustomerAddress == null)
@@ -275,49 +275,35 @@ public class Implementation()
         orderMaster.AlternateNumber = cd.AlternateMobileNumber;
     }
 
-    private async Task<Db.CustomerPhone> SaveCustomerPhoneAsync(Db.PgDbContext dbContext, int companyId, CustomerDetail customer)
+    private static async Task<Db.CustomerPhone> SaveCustomerPhoneAsync(Db.PgDbContext dbContext, int companyId, CustomerDetail customer)
     {
         Db.CustomerPhone? dbCustomerPhone;
         var cust = customer ?? throw new Exception("Customer is required");
-        if (cust.PhoneId == 0)
-        {
-            dbCustomerPhone = await dbContext.CustomerPhones
-            .Where(t => t.PhoneNumber != null && cust.MobileNumber != null && t.PhoneNumber.Trim().Equals(cust.MobileNumber.Trim()))
-            .FirstOrDefaultAsync();
-            if (dbCustomerPhone == null)
-            {
-                dbCustomerPhone = new Db.CustomerPhone
-                {
-                    PhoneNumber = cust.MobileNumber ?? string.Empty,
-                    CompanyId = companyId,
-                    IsActive = true,
-                };
-
-                await dbContext.CustomerPhones.AddAsync(dbCustomerPhone);
-                await dbContext.SaveChangesAsync();
-            }
-        }
-        else
-        {
-            dbCustomerPhone = await dbContext.CustomerPhones
-                                   .Where(x => x.PhoneId == cust.PhoneId)
-                                   .FirstOrDefaultAsync();
-        }
+        dbCustomerPhone = await dbContext.CustomerPhones
+        .FirstOrDefaultAsync(x => x.PhoneNumber == cust.MobileNumber);
         if (dbCustomerPhone == null)
         {
-            throw new Exception("Customer phone record could not be resolved");
+            dbCustomerPhone = new Db.CustomerPhone
+            {
+                PhoneNumber = cust.MobileNumber ?? string.Empty,
+                CompanyId = companyId,
+                IsActive = true,
+            };
+
+            await dbContext.CustomerPhones.AddAsync(dbCustomerPhone);
+            await dbContext.SaveChangesAsync();
         }
         return dbCustomerPhone;
     }
 
-    internal async IAsyncEnumerable<int> GetBranchUsersIdsAsync(string connectionString, int branchId)
+    internal static async IAsyncEnumerable<int> GetBranchUsersIdsAsync(string connectionString, int branchId)
     {
         using var dbContext = GetDbContext(connectionString);
         foreach (var userId in await dbContext.UserBranchMappings.Where(x => x.BranchId == branchId).Select(x => x.UserId).ToListAsync())
             yield return userId;
     }
 
-    internal async Task<object> OrderStatusLogs(string connectionString, string orderToken)
+    internal static async Task<object> OrderStatusLogs(string connectionString, string orderToken)
     {
         var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
         var dbContext = GetDbContext(connectionString);
