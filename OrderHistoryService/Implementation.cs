@@ -128,7 +128,7 @@ public class Implementation()
                     MobileNumber = customerPhone.PhoneNumber ?? "N/A",
                     DeliveryAddress = addressDetails?.CompleteAddress ?? "N/A",
                     NearestLandmark = addressDetails?.LandMark ?? "N/A",
-                    DeliveryInstructions = orderMaster?.Remarks ?? "N/A",
+                    DeliveryInstructions = orderMaster?.SpecialInstruction ?? "N/A",
                     AlternateMobileNumber = orderMaster.AlternateNumber ?? "N/A",
                     EmailAddress = orderMaster.EmailAddress ?? "N/A",
                     Title = customer.Title ?? "N/A",
