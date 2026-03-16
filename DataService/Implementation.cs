@@ -526,6 +526,9 @@ internal class Implementation()
         var statuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
         var branchDict = await dbContext.BranchMasters.ToDictionaryAsync(x => x.BranchId, x => x.BranchName);
         var discounts = await dbContext.Discounts.ToDictionaryAsync(x => x.DiscountId, x => x);
+        var areas = await dbContext.Areas.ToDictionaryAsync(x => x.AreaId, x => x.AreaName);
+        var cities = await dbContext.Cities.ToDictionaryAsync(x => x.CityId, x => x.CityName);
+        var areaCityIds = await dbContext.Areas.ToDictionaryAsync(x => x.AreaId, x => x.CityId);
         var riders = await dbContext.Riders.ToListAsync();
 
         foreach (var branchId in await dbContext.UserBranchMappings.Where(x => x.UserId == userId).Select(x => x.BranchId).ToListAsync())
@@ -534,17 +537,23 @@ internal class Implementation()
             {
                 var orderTime = dbOrder.OrderTime;
                 var orderDate = dbOrder.OrderDate;
-                DateTime? orderDateTime = orderDate?.ToDateTime(orderTime);
+
+                var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+                Func<DateTime, DateTime> convertToPkTime = (dateTime) =>
+                {
+                    return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
+                };
+                DateTime orderDateTime = convertToPkTime(orderDate?.ToDateTime(orderTime) ?? DateTime.MinValue);
                 var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == dbOrder.OrderMasterId).ToListAsync();
 
-                // Find Asia/Karachi timezone once per order
-                var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
 
                 var order = new CustomerOrder
                 {
                     OrderNumber = dbOrder.OrderNumber ?? "N/A",
                     OrderToken = dbOrder.OrderToken ?? "N/A",
                     BranchId = branchId,
+                    CityName = cities[areaCityIds[dbOrder.AreaId ?? 0] ?? 0],
+                    AreaName = areas[dbOrder.AreaId ?? 0],
                     BranchName = branchDict[branchId],
                     OrderType = setupDetail[dbOrder.OrderModeId!.Value],
                     Status = statuses[dbOrder.OrderStatusId],
@@ -552,28 +561,24 @@ internal class Implementation()
                     DeliveryCharges = (int?)(dbOrder.DeliveryCharges ?? 0.00),
                     AmountWithoutGst = dbOrder.TotalAmountWithoutGst ?? 0.00,
                     AmountWithGst = dbOrder.TotalAmountWithGst ?? 0.00,
-                    OrderTime = orderDateTime ?? DateTime.MinValue,
+                    OrderTime = orderDateTime,
                     GstPercentage = dbOrder.Gstpercent,
                     OrderStatusLogs = orderStatusLogs.Select(x => new
                     {
                         Id = x.OrderStatusId,
-                        CreatedAt = TimeZoneInfo.ConvertTimeFromUtc(
-                            DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc),
-                            karachiTz
-                        ),
+                        CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc)),
                     }).ToList(),
                     Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName ?? string.Empty, Contact = x.Contact1 ?? string.Empty }).FirstOrDefault(x => x.Id == dbOrder.RiderId),
                     DeliveryTime = dbOrder.DeliveryTime ?? 0,
                     TotalDiscount = dbOrder.DiscountAmount ?? 0.00,
-
+                    PreviousOrderCount = await dbContext.OrderMasters.Where(x => x.PhoneId == dbOrder.PhoneId).CountAsync()
                 };
-                order.PreviousOrderCount = await dbContext.OrderMasters.Where(x => x.PhoneId == dbOrder.PhoneId).CountAsync();
                 var phoneId = dbOrder.PhoneId;
                 var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
                 if (customerPhone != null)
                 {
-                    var customer = await dbContext.Customers.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
-                    var addressDetails = await dbContext.CustomerAddressDetails.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
+                    var customer = await dbContext.Customers.Where(x => x.CustomerId == dbOrder.CustomerId).FirstOrDefaultAsync();
+                    var addressDetails = await dbContext.CustomerAddressDetails.Where(x => x.CustomerAddressId == dbOrder.CustomerAddressId).FirstOrDefaultAsync();
 
                     var customerDetail = new CustomerDetail
                     {
@@ -581,7 +586,7 @@ internal class Implementation()
                         MobileNumber = customerPhone.PhoneNumber ?? "N/A",
                         DeliveryAddress = addressDetails?.CompleteAddress ?? "N/A",
                         NearestLandmark = addressDetails?.LandMark ?? "N/A",
-                        DeliveryInstructions = addressDetails?.Remarks ?? "N/A",
+                        DeliveryInstructions = dbOrder?.Remarks ?? "N/A",
                         AlternateMobileNumber = dbOrder.AlternateNumber ?? "N/A",
                         EmailAddress = dbOrder.EmailAddress ?? "N/A",
                         Title = customer.Title ?? "N/A",

@@ -8,7 +8,7 @@ namespace CreateOrderService;
 
 public class Implementation()
 {
-    private Db.PgDbContext GetDbContext(string connectionString)
+    private static Db.PgDbContext GetDbContext(string connectionString)
     {
         var options = new DbContextOptionsBuilder<Db.PgDbContext>()
             .UseNpgsql(connectionString, options =>
@@ -29,13 +29,16 @@ public class Implementation()
         var dbContext = GetDbContext(connectionString);
 
         order.BranchName = (await dbContext.BranchMasters.FirstOrDefaultAsync(x => x.BranchId == order.BranchId))?.BranchName ?? string.Empty;
+        var areacity = await dbContext.Areas.Where(x => x.AreaId == areaId).Join(dbContext.Cities, a => a.CityId, b => b.CityId, (a, b) => new { a.AreaName, b.CityName }).FirstOrDefaultAsync();
+        order.AreaName = areacity.AreaName;
+        order.CityName = areacity.CityName;
         var orderMaster = await GetOrderMasterAsync(dbContext, order);
         await SetOnlineOrder(dbContext, branchId, orderMaster, order);
         order.OrderToken = await SaveOrderAsync(dbContext, orderMaster);
         order.OrderNumber = orderMaster.OrderNumber;
     }
 
-    private async Task<string> SaveOrderAsync(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
+    private static async Task<string> SaveOrderAsync(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
     {
         await dbContext.OrderMasters.AddAsync(orderMaster);
         await dbContext.SaveChangesAsync();
@@ -43,7 +46,7 @@ public class Implementation()
         return orderMaster.OrderToken;
     }
 
-    private async Task<string> GetUniqueTokenAsync(Db.PgDbContext dbContext)
+    private static async Task<string> GetUniqueTokenAsync(Db.PgDbContext dbContext)
     {
         var token = TokenGenerator.GenerateToken();
         var existingToken = await dbContext.OrderMasters
@@ -59,7 +62,7 @@ public class Implementation()
         }
     }
 
-    private async Task AddOrderStatusLog(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
+    private static async Task AddOrderStatusLog(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
     {
         dbContext.OrderStatusLogs.Add(new Db.OrderStatusLog
         {
@@ -72,7 +75,7 @@ public class Implementation()
         await dbContext.SaveChangesAsync();
     }
 
-    public async Task<string> GenerateOrderNumberAsync(Db.PgDbContext dbContext, int branchId)
+    public static async Task<string> GenerateOrderNumberAsync(Db.PgDbContext dbContext, int branchId)
     {
         var id = await dbContext.Database.SqlQuery<long>($"""
                                                             INSERT INTO branch_order_sequence ("BranchId", "LastValue")
@@ -90,7 +93,7 @@ public class Implementation()
         return orderNumber;
     }
 
-    private async Task<Db.OrderMaster> GetOrderMasterAsync(Db.PgDbContext dbContext, CustomerOrder order)
+    private static async Task<Db.OrderMaster> GetOrderMasterAsync(Db.PgDbContext dbContext, CustomerOrder order)
     {
         var branchId = order.BranchId;
         var areaId = order.AreaId;
@@ -112,12 +115,11 @@ public class Implementation()
             CompanyId = companyId,
             BranchId = branchId,
             OrderModeId = orderType.SetupDetailId,
-            OrderDate = DateOnly.FromDateTime(DateTime.Now.ToLocalTime()),
-            OrderTime = TimeOnly.FromDateTime(DateTime.Now.ToLocalTime()),
+            OrderDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            OrderTime = TimeOnly.FromDateTime(DateTime.UtcNow),
             Gstid = gst?.Gstid,
             Gstpercent = gst?.Gstpercentage ?? 0.00,
             IsActive = true,
-            SpecialInstruction = order.Description,
             OrderDetails = [],
             AlternateNumber = order.CustomerDetails.AlternateMobileNumber ?? string.Empty,
             TotalAmountWithGst = 0.00,
@@ -219,10 +221,13 @@ public class Implementation()
         yield return orderDetail;
     }
 
-    private async Task SetOnlineOrder(Db.PgDbContext dbContext, int branchId, Db.OrderMaster orderMaster, CustomerOrder order)
+    private static async Task SetOnlineOrder(Db.PgDbContext dbContext, int branchId, Db.OrderMaster orderMaster, CustomerOrder order)
     {
         var cd = order.CustomerDetails;
-        var add = cd.DeliveryAddress ?? string.Empty;
+        if (cd == null)
+        {
+            throw new Exception("Customer details are required for online orders");
+        }
         if (cd.DeliveryAddress == null || string.IsNullOrWhiteSpace(cd.DeliveryAddress))
         {
             throw new Exception("Customer must have at least one address");
@@ -246,13 +251,20 @@ public class Implementation()
                 Email = cd.EmailAddress ?? string.Empty,
             };
             await dbContext.Customers.AddAsync(dbCustomer);
-            await dbContext.SaveChangesAsync();
         }
+        else
+        {
+            dbCustomer.Title = cd.Title;
+            dbCustomer.CustomerName = cd.FullName;
+            dbCustomer.Email = cd.EmailAddress ?? string.Empty;
+            dbContext.Customers.Update(dbCustomer);
+        }
+        await dbContext.SaveChangesAsync();
         orderMaster.CustomerId = dbCustomer.CustomerId;
 
         var firstAddress = cd.DeliveryAddress?.Trim() ?? string.Empty;
         var dbCustomerAddress = dbContext.CustomerAddressDetails
-            .Where(x => x.PhoneId == dbCustomerPhone.PhoneId)
+            .Where(x => x.CompleteAddress == firstAddress)
             .FirstOrDefault();
 
         if (dbCustomerAddress == null)
@@ -268,45 +280,39 @@ public class Implementation()
                 LandMark = cd.NearestLandmark ?? string.Empty,
             };
             dbContext.CustomerAddressDetails.Add(dbCustomerAddress);
-            await dbContext.SaveChangesAsync();
         }
+        else
+        {
+            dbCustomerAddress.CustomerPhone = dbCustomerPhone;
+            dbCustomerAddress.CompleteAddress = firstAddress;
+            dbCustomerAddress.CityId = (await dbContext.Areas.FirstAsync(x => x.AreaId == orderMaster.AreaId!.Value))?.CityId ?? 0;
+            dbCustomerAddress.AreaId = orderMaster.AreaId!.Value;
+            dbCustomerAddress.LandMark = cd.NearestLandmark ?? string.Empty;
+            dbContext.CustomerAddressDetails.Update(dbCustomerAddress);
+        }
+        await dbContext.SaveChangesAsync();
         orderMaster.CustomerAddressId = dbCustomerAddress.CustomerAddressId;
         orderMaster.SpecialInstruction = cd.DeliveryInstructions;
         orderMaster.EmailAddress = cd.EmailAddress;
         orderMaster.AlternateNumber = cd.AlternateMobileNumber;
     }
 
-    private async Task<Db.CustomerPhone> SaveCustomerPhoneAsync(Db.PgDbContext dbContext, int companyId, CustomerDetail customer)
+    private static async Task<Db.CustomerPhone> SaveCustomerPhoneAsync(Db.PgDbContext dbContext, int companyId, CustomerDetail customer)
     {
         Db.CustomerPhone? dbCustomerPhone;
-        var cust = customer ?? throw new Exception("Customer is required");
-        if (cust.PhoneId == 0)
-        {
-            dbCustomerPhone = await dbContext.CustomerPhones
-            .Where(t => t.PhoneNumber != null && cust.MobileNumber != null && t.PhoneNumber.Trim().Equals(cust.MobileNumber.Trim()))
-            .FirstOrDefaultAsync();
-            if (dbCustomerPhone == null)
-            {
-                dbCustomerPhone = new Db.CustomerPhone
-                {
-                    PhoneNumber = cust.MobileNumber ?? string.Empty,
-                    CompanyId = companyId,
-                    IsActive = true,
-                };
-
-                await dbContext.CustomerPhones.AddAsync(dbCustomerPhone);
-                await dbContext.SaveChangesAsync();
-            }
-        }
-        else
-        {
-            dbCustomerPhone = await dbContext.CustomerPhones
-                                   .Where(x => x.PhoneId == cust.PhoneId)
-                                   .FirstOrDefaultAsync();
-        }
+        dbCustomerPhone = await dbContext.CustomerPhones
+        .FirstOrDefaultAsync(x => x.PhoneNumber == customer.MobileNumber);
         if (dbCustomerPhone == null)
         {
-            throw new Exception("Customer phone record could not be resolved");
+            dbCustomerPhone = new Db.CustomerPhone
+            {
+                PhoneNumber = customer.MobileNumber ?? string.Empty,
+                CompanyId = companyId,
+                IsActive = true,
+            };
+
+            await dbContext.CustomerPhones.AddAsync(dbCustomerPhone);
+            await dbContext.SaveChangesAsync();
         }
         return dbCustomerPhone;
     }

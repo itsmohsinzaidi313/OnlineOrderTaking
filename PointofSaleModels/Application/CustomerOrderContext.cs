@@ -7,7 +7,6 @@ namespace PointofSaleModels.Application
         public DateTime OrderTime { get; set; } = orderTime ?? DateTime.Now;
         public Rider? Rider { get; set; }
         public CustomerDetail CustomerDetails { get; set; }
-        public string Description { get; set; } = string.Empty;
         public int? DeliveryCharges { get; set; }
     }
 }

@@ -85,7 +85,7 @@ namespace GatewayService
             await QueuePayload(RabbitMqQueues.CustomerOrderHistoryRequestQueue, obj);
         }
 
-        public async Task OrderHistoryRequest(string domainName, int userId, string? orderToken, string responseKey)
+        public async Task OrderHistoryRequest(string domainName, int userId, string responseKey)
         {
             var obj = new DataServicePayload
             {
@@ -95,7 +95,6 @@ namespace GatewayService
                 SignalRMethodName = "OrderHistoryRequest"
             }.FillContext(Context);
             obj.OrderUserId = userId;
-            obj.OrderToken = orderToken;
             await QueuePayload(RabbitMqQueues.OrderHistoryRequestQueue, obj);
         }
 

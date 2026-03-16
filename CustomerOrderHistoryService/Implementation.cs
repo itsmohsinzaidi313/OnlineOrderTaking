@@ -96,7 +96,6 @@ public class Implementation()
             {
                 var customer = await dbContext.Customers.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
                 var addressDetails = await dbContext.CustomerAddressDetails.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
-
                 var customerDetail = new CustomerDetail
                 {
                     PhoneId = phoneId.Value,
@@ -104,7 +103,7 @@ public class Implementation()
                     MobileNumber = customerPhone.PhoneNumber ?? "N/A",
                     DeliveryAddress = addressDetails?.CompleteAddress ?? "N/A",
                     NearestLandmark = addressDetails?.LandMark ?? "N/A",
-                    DeliveryInstructions = addressDetails?.Remarks ?? "N/A",
+                    DeliveryInstructions = dbOrder.SpecialInstruction ?? "N/A",
                     AlternateMobileNumber = dbOrder.AlternateNumber ?? "N/A",
                     EmailAddress = dbOrder.EmailAddress ?? "N/A",
                     Title = customer.Title ?? "N/A",
