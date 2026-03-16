@@ -251,8 +251,15 @@ public class Implementation()
                 Email = cd.EmailAddress ?? string.Empty,
             };
             await dbContext.Customers.AddAsync(dbCustomer);
-            await dbContext.SaveChangesAsync();
         }
+        else
+        {
+            dbCustomer.Title = cd.Title;
+            dbCustomer.CustomerName = cd.FullName;
+            dbCustomer.Email = cd.EmailAddress ?? string.Empty;
+            dbContext.Customers.Update(dbCustomer);
+        }
+        await dbContext.SaveChangesAsync();
         orderMaster.CustomerId = dbCustomer.CustomerId;
 
         var firstAddress = cd.DeliveryAddress?.Trim() ?? string.Empty;
@@ -273,8 +280,17 @@ public class Implementation()
                 LandMark = cd.NearestLandmark ?? string.Empty,
             };
             dbContext.CustomerAddressDetails.Add(dbCustomerAddress);
-            await dbContext.SaveChangesAsync();
         }
+        else
+        {
+            dbCustomerAddress.CustomerPhone = dbCustomerPhone;
+            dbCustomerAddress.CompleteAddress = firstAddress;
+            dbCustomerAddress.CityId = (await dbContext.Areas.FirstAsync(x => x.AreaId == orderMaster.AreaId!.Value))?.CityId ?? 0;
+            dbCustomerAddress.AreaId = orderMaster.AreaId!.Value;
+            dbCustomerAddress.LandMark = cd.NearestLandmark ?? string.Empty;
+            dbContext.CustomerAddressDetails.Update(dbCustomerAddress);
+        }
+        await dbContext.SaveChangesAsync();
         orderMaster.CustomerAddressId = dbCustomerAddress.CustomerAddressId;
         orderMaster.SpecialInstruction = cd.DeliveryInstructions;
         orderMaster.EmailAddress = cd.EmailAddress;
