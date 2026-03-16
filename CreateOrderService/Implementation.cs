@@ -299,14 +299,14 @@ public class Implementation()
         return dbCustomerPhone;
     }
 
-    internal static async IAsyncEnumerable<int> GetBranchUsersIdsAsync(string connectionString, int branchId)
+    internal async IAsyncEnumerable<int> GetBranchUsersIdsAsync(string connectionString, int branchId)
     {
         using var dbContext = GetDbContext(connectionString);
         foreach (var userId in await dbContext.UserBranchMappings.Where(x => x.BranchId == branchId).Select(x => x.UserId).ToListAsync())
             yield return userId;
     }
 
-    internal static async Task<object> OrderStatusLogs(string connectionString, string orderToken)
+    internal async Task<object> OrderStatusLogs(string connectionString, string orderToken)
     {
         var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
         var dbContext = GetDbContext(connectionString);
