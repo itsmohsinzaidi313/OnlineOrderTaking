@@ -131,7 +131,7 @@ internal class Implementation()
             {
                 ["CityName"] = item.CityName,
                 ["Branches"] = branchesJsonArray,
-                ["Tax"] = gsts.Where(x => x.CityId == item.CityId).Select(x => x.Gstpercentage).FirstOrDefault() ?? 0.00
+                ["Tax"] = gsts.FirstOrDefault(x => x.CityId == item.CityId)?.Gstpercentage ?? 0.00
             };
             pickup[item.CityId.ToString()] = cityObj2;
         }
@@ -258,6 +258,8 @@ internal class Implementation()
         settingsData["HAMBURGER_MENU"] = false;
         settingsData["ABOUT_US"] = false;
 
+        var orderStatuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
+        settingsData["OrderStatuses"] = JsonValue.Create(orderStatuses);
         return settingsData;
     }
 }
