@@ -117,7 +117,6 @@ public class Implementation()
             Gstid = gst?.Gstid,
             Gstpercent = gst?.Gstpercentage ?? 0.00,
             IsActive = true,
-            SpecialInstruction = order.Description,
             OrderDetails = [],
             AlternateNumber = order.CustomerDetails.AlternateMobileNumber ?? string.Empty,
             TotalAmountWithGst = 0.00,
