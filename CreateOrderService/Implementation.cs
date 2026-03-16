@@ -29,6 +29,9 @@ public class Implementation()
         var dbContext = GetDbContext(connectionString);
 
         order.BranchName = (await dbContext.BranchMasters.FirstOrDefaultAsync(x => x.BranchId == order.BranchId))?.BranchName ?? string.Empty;
+        var areacity = await dbContext.Areas.Where(x => x.AreaId == areaId).Join(dbContext.Cities, a => a.CityId, b => b.CityId, (a, b) => new { a.AreaName, b.CityName }).FirstOrDefaultAsync();
+        order.AreaName = areacity.AreaName;
+        order.CityName = areacity.CityName;
         var orderMaster = await GetOrderMasterAsync(dbContext, order);
         await SetOnlineOrder(dbContext, branchId, orderMaster, order);
         order.OrderToken = await SaveOrderAsync(dbContext, orderMaster);
@@ -221,7 +224,7 @@ public class Implementation()
     private static async Task SetOnlineOrder(Db.PgDbContext dbContext, int branchId, Db.OrderMaster orderMaster, CustomerOrder order)
     {
         var cd = order.CustomerDetails;
-        if(cd == null)
+        if (cd == null)
         {
             throw new Exception("Customer details are required for online orders");
         }
