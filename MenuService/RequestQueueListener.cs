@@ -19,12 +19,7 @@ namespace MenuService
             try
             {
                 var connectionString = await GetConnectionString(requestPayload.DomainName);
-                var menuItems = new List<Category>();
-                await foreach (var item in GetMenuItemsAsync(connectionString, requestPayload.BranchId))
-                {
-                    menuItems.Add(item);
-                }
-                payload = menuItems;
+                payload = await GetMenuItemsAsync(connectionString, requestPayload.BranchId).ToListAsync();
                 success = true;
             }
             catch (Exception ex)

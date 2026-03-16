@@ -21,11 +21,7 @@ namespace OrderHistoryService
                 var connectionString = await GetConnectionString(requestPayload.DomainName);
                 if (!requestPayload.OrderUserId.HasValue) throw new Exception("UserId missing for userwise orders list");
 
-                var orders = new List<CustomerOrder>();
-                await foreach (var order in impl.GetOrdersAsync(connectionString, requestPayload.OrderUserId.Value, requestPayload.OrderToken))
-                {
-                    orders.Add(order);
-                }
+                var orders = await impl.GetOrdersAsync(connectionString, requestPayload.OrderUserId.Value).ToListAsync();
                 var orderStatuses = await impl.GetOrderStatusesAsync(connectionString);
                 var riders = await impl.GetRidersAsync(requestPayload.OrderUserId.Value, connectionString);
                 var branches = await impl.GetBranchesAsync(connectionString);
