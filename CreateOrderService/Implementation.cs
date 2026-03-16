@@ -222,6 +222,10 @@ public class Implementation()
     private static async Task SetOnlineOrder(Db.PgDbContext dbContext, int branchId, Db.OrderMaster orderMaster, CustomerOrder order)
     {
         var cd = order.CustomerDetails;
+        if(cd == null)
+        {
+            throw new Exception("Customer details are required for online orders");
+        }
         if (cd.DeliveryAddress == null || string.IsNullOrWhiteSpace(cd.DeliveryAddress))
         {
             throw new Exception("Customer must have at least one address");
@@ -278,14 +282,13 @@ public class Implementation()
     private static async Task<Db.CustomerPhone> SaveCustomerPhoneAsync(Db.PgDbContext dbContext, int companyId, CustomerDetail customer)
     {
         Db.CustomerPhone? dbCustomerPhone;
-        var cust = customer ?? throw new Exception("Customer is required");
         dbCustomerPhone = await dbContext.CustomerPhones
-        .FirstOrDefaultAsync(x => x.PhoneNumber == cust.MobileNumber);
+        .FirstOrDefaultAsync(x => x.PhoneNumber == customer.MobileNumber);
         if (dbCustomerPhone == null)
         {
             dbCustomerPhone = new Db.CustomerPhone
             {
-                PhoneNumber = cust.MobileNumber ?? string.Empty,
+                PhoneNumber = customer.MobileNumber ?? string.Empty,
                 CompanyId = companyId,
                 IsActive = true,
             };
