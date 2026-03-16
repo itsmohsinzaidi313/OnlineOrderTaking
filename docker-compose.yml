@@ -81,7 +81,7 @@ services:
   settingsdataservice:
     build:
       context: .
-      dockerfile: ./DataService/Dockerfile
+      dockerfile: ./SettingsDataService/Dockerfile
     environment:
       - ConnectionStrings__Postgres=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
