@@ -40,9 +40,7 @@ builder.Services
 builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
-    .AddHostedService<DataServiceResponseListener>()
     .AddHostedService<CreateOrderServiceResponseListener>()
-    .AddHostedService<OrderUpdateServiceResponseListener>()
     .AddHostedService<SettingsDataServiceResponseListener>()
     .AddHostedService<MenuServiceResponseListener>()
     .AddHostedService<OrderHistoryServiceResponseListener>()

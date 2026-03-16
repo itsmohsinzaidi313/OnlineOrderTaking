@@ -3,7 +3,6 @@ namespace PointofSaleModels.Settings
     public static class RabbitMqQueues
     {
         public const string Services = "services";
-        public const string DataService = "data";
         public const string MenuService = "menu";
         public const string SettingService = "setting";
         public const string OrderHistoryService = "orderhistory";
@@ -17,8 +16,6 @@ namespace PointofSaleModels.Settings
         public const string Request = "request";
         public const string Response = "response";
 
-        public const string DataRequestQueue = $"{Services}.{DataService}.{Request}";
-        public const string DataResponseQueue = $"{Services}.{DataService}.{Response}";
         public const string OrderRequestQueue = $"{Services}.{OrderService}.{Request}";
         public const string OrderResponseQueue = $"{Services}.{OrderService}.{Response}";
         public const string OrderUpdateRequestQueue = $"{Services}.{OrderUpdateService}.{Request}";

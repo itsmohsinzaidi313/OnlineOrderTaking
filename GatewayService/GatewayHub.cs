@@ -98,42 +98,6 @@ namespace GatewayService
             await QueuePayload(RabbitMqQueues.OrderHistoryRequestQueue, obj);
         }
 
-        public async Task DataRequest(string domainName, string requestType, int branchId, string responseKey)
-        {
-            var db = redis.GetDatabase();
-            var redisKey = requestType switch
-            {
-                "Menu" => "Menu",
-                "DeliveryAndPickup" => "DAndP",
-                _ => string.Empty
-            };
-            if (!string.IsNullOrEmpty(redisKey))
-            {
-                var response = await db.StringGetAsync($"{domainName}:{branchId}:{redisKey}");
-                if (!response.IsNull)
-                {
-                    var payload = JsonSerializer.Deserialize<DataServicePayload>(response.ToString());
-                    await Clients.Caller.SendAsync("Ack", new { status = "cached" });
-                    await Clients.Caller.SendAsync(responseKey, payload);
-                    return;
-                }
-            }
-            var obj = new DataServicePayload
-            {
-                DomainName = domainName,
-                DataRequestType = requestType,
-                BranchId = branchId,
-                ResponseKey = responseKey,
-                SignalRMethodName = "DataResponse"
-            }.FillContext(Context);
-
-            if (requestType == "Orders")
-            {
-                obj.OrderUserId = branchId;
-            }
-            await QueuePayload(RabbitMqQueues.DataRequestQueue, obj);
-        }
-
         public async Task PlaceOrder(CustomerOrder order, string responseKey)
         {
             var obj = new OrderServicePayload
