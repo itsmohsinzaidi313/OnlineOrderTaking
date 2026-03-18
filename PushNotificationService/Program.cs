@@ -14,7 +14,7 @@ builder.Services
     .Configure<RedisSettings>(builder.Configuration.GetSection("REDIS"))
     .Configure<RabbitMqSettings>(builder.Configuration.GetSection("RABBITMQ"));
 
-builder.Services.AddScoped<WebPushService>();
+builder.Services.AddSingleton<WebPushService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(context =>
  {
      var connectionString =
