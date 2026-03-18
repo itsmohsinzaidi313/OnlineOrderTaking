@@ -22,7 +22,6 @@
         public double TotalDiscount { get; set; }
         public double GstPercentage { get; set; }
         public int PreviousOrderCount { get; set; }
-        public double ChangeAmount { get; set; }
 
         public CustomerOrder() : base()
         {
@@ -49,5 +48,6 @@
         public string? DeliveryInstructions { get; set; }
 
         public string? PaymentMethod { get; set; }
+        public double ChangeAmount { get; set; }
     }
 }

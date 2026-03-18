@@ -2,7 +2,6 @@
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace CreateOrderService

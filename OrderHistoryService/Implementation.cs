@@ -114,7 +114,6 @@ public class Implementation()
                     DeliveryTime = orderMaster.DeliveryTime ?? 0,
                     TotalDiscount = orderMaster.DiscountAmount ?? 0.00,
                     PreviousOrderCount = await dbContext.OrderMasters.Where(x => x.PhoneId == orderMaster.PhoneId).CountAsync(),
-                    ChangeAmount = orderMaster.ChangeAmount,
                 };
                 if (orderMaster.AreaId.HasValue)
                 {
@@ -139,6 +138,7 @@ public class Implementation()
                         AlternateMobileNumber = orderMaster.AlternateNumber ?? "N/A",
                         EmailAddress = orderMaster.EmailAddress ?? "N/A",
                         Title = customer.Title ?? "N/A",
+                        ChangeAmount = orderMaster.ChangeAmount,
                     };
                     order.CustomerDetails = customerDetail;
                 }
