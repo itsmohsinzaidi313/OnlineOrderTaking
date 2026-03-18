@@ -55,9 +55,5 @@ namespace MenuService
                 yield return element;
             }
         }
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            return Build(stoppingToken);
-        }
     }
 }

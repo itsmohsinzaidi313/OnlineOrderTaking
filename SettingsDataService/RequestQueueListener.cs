@@ -53,9 +53,5 @@ namespace SettingsDataService
             logger.LogInformation("🚚 Fetching delivery and pickup items from database...");
             return await impl.GetDataOneAsync(connectionString: connectionString);
         }
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            return Build(stoppingToken);
-        }
     }
 }
