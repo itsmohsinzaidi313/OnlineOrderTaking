@@ -19,6 +19,7 @@ namespace OrderUpdateService
                 var dbContext = await GetDbContextAsync(requestPayload.DomainName);
                 var orderMaster = await dbContext.OrderMasters.Where(x => x.OrderToken == requestPayload.OrderToken).FirstOrDefaultAsync();
                 string? orderStatusName = null;
+                object? orderStatusLogs = null;
                 if (orderMaster != null)
                 {
                     if (requestPayload.BranchTransferId != null)
@@ -53,6 +54,19 @@ namespace OrderUpdateService
                             .Where(x => x.OrderStatusId == requestPayload.OrderStatusId)
                             .Select(x => x.OrderStatusName)
                             .FirstOrDefaultAsync();
+                        Func<DateTime, DateTime> convertToPkTime = (dateTime) =>
+                        {
+                            var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+                            return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
+                        };
+                        orderStatusLogs = (await dbContext.OrderStatusLogs
+                                                        .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
+                                                        .ToListAsync())
+                                                        .Select(x => new
+                                                        {
+                                                            Id = x.OrderStatusId,
+                                                            CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc)),
+                                                        });
                     }
 
                     if (requestPayload.RiderId != null)
@@ -75,6 +89,7 @@ namespace OrderUpdateService
                         Success = true,
                         Message = "Order updated successfully",
                         OrderStatusName = orderStatusName,
+                        OrderStatusLogs = orderStatusLogs,
                     };
                 }
                 else
