@@ -67,15 +67,29 @@ namespace PushNotificationService
                 Auth = request.Auth
             };
             var json = System.Text.Json.JsonSerializer.Serialize(pushSubscribtion);
-            await _db.StringSetAsync($"subscription:{clientId}", json);
-            var redisValue = await _db.StringGetAsync($"subscription:{clientId}");
-            logger.LogInformation("Stored subscription for client {ClientId} ({HasValue})", clientId, redisValue.HasValue);
-            var response = new PushNotificationSubscriptionResponse
+            var key = $"subscription:{clientId}";
+            if (!await _db.KeyExistsAsync(key))
             {
-                Success = true,
-                Message = "Subscribed successfully"
-            };
-            return response;
+                await _db.StringSetAsync(key, json);
+                var redisValue = await _db.StringGetAsync(key);
+                logger.LogInformation("Stored subscription for client {ClientId} ({HasValue})", clientId, redisValue.HasValue);
+                var response = new PushNotificationSubscriptionResponse
+                {
+                    Success = true,
+                    Message = "Subscribed successfully"
+                };
+                return response;
+            }
+            else
+            {
+                logger.LogInformation("Subscription already exists for client {ClientId}", clientId);
+                var response = new PushNotificationSubscriptionResponse
+                {
+                    Success = true,
+                    Message = "Subscription already exists for this client"
+                };
+                return response;
+            }
         }
 
         public override async Task<PushNotificationUnsubscribeResponse> Unsubscribe(PushNotificationUnsubscribeRequest request, ServerCallContext context)
