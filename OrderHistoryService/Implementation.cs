@@ -77,70 +77,82 @@ public class Implementation()
 
         async Task<CustomerOrder> mapToCustomerOrder(Db.OrderMaster orderMaster)
         {
-            var orderTime = orderMaster.OrderTime;
-            var orderDate = orderMaster.OrderDate;
-
-            var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
-            Func<DateTime, DateTime> convertToPkTime = (dateTime) =>
+            try
             {
-                return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
-            };
-            DateTime orderDateTime = convertToPkTime(orderDate?.ToDateTime(orderTime) ?? DateTime.MinValue);
-            var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == orderMaster.OrderMasterId).ToListAsync();
+                var orderTime = orderMaster.OrderTime;
+                var orderDate = orderMaster.OrderDate;
 
-
-            var order = new CustomerOrder
-            {
-                OrderNumber = orderMaster.OrderNumber ?? "N/A",
-                OrderToken = orderMaster.OrderToken ?? "N/A",
-                BranchId = orderMaster.BranchId,
-                CityName = cities[areaCityIds[orderMaster.AreaId ?? 0] ?? 0],
-                AreaName = areas[orderMaster.AreaId ?? 0],
-                BranchName = branchDict[orderMaster.BranchId],
-                OrderType = setupDetail[orderMaster.OrderModeId!.Value],
-                Status = statuses[orderMaster.OrderStatusId],
-                Items = [],
-                DeliveryCharges = (int?)(orderMaster.DeliveryCharges ?? 0.00),
-                AmountWithoutGst = orderMaster.TotalAmountWithoutGst ?? 0.00,
-                AmountWithGst = orderMaster.TotalAmountWithGst ?? 0.00,
-                OrderTime = orderDateTime,
-                GstPercentage = orderMaster.Gstpercent,
-                OrderStatusLogs = orderStatusLogs.Select(x => new
+                var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+                Func<DateTime, DateTime> convertToPkTime = (dateTime) =>
                 {
-                    Id = x.OrderStatusId,
-                    CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc)),
-                }).ToList(),
-                Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName ?? string.Empty, Contact = x.Contact1 ?? string.Empty }).FirstOrDefault(x => x.Id == orderMaster.RiderId),
-                DeliveryTime = orderMaster.DeliveryTime ?? 0,
-                TotalDiscount = orderMaster.DiscountAmount ?? 0.00,
-                PreviousOrderCount = await dbContext.OrderMasters.Where(x => x.PhoneId == orderMaster.PhoneId).CountAsync()
-            };
-            var phoneId = orderMaster.PhoneId;
-            var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
-            if (customerPhone != null)
-            {
-                var customer = await dbContext.Customers.Where(x => x.CustomerId == orderMaster.CustomerId).FirstOrDefaultAsync();
-                var addressDetails = await dbContext.CustomerAddressDetails.Where(x => x.CustomerAddressId == orderMaster.CustomerAddressId).FirstOrDefaultAsync();
-
-                var customerDetail = new CustomerDetail
-                {
-                    FullName = customer?.CustomerName ?? "N/A",
-                    MobileNumber = customerPhone.PhoneNumber ?? "N/A",
-                    DeliveryAddress = addressDetails?.CompleteAddress ?? "N/A",
-                    NearestLandmark = addressDetails?.LandMark ?? "N/A",
-                    DeliveryInstructions = orderMaster?.SpecialInstruction ?? "N/A",
-                    AlternateMobileNumber = orderMaster.AlternateNumber ?? "N/A",
-                    EmailAddress = orderMaster.EmailAddress ?? "N/A",
-                    Title = customer.Title ?? "N/A",
+                    return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
                 };
-                order.CustomerDetails = customerDetail;
+                DateTime orderDateTime = convertToPkTime(orderDate?.ToDateTime(orderTime) ?? DateTime.MinValue);
+                var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == orderMaster.OrderMasterId).ToListAsync();
+
+
+                var order = new CustomerOrder
+                {
+                    OrderNumber = orderMaster.OrderNumber ?? "N/A",
+                    OrderToken = orderMaster.OrderToken ?? "N/A",
+                    BranchId = orderMaster.BranchId,
+                    BranchName = branchDict[orderMaster.BranchId],
+                    OrderType = setupDetail[orderMaster.OrderModeId!.Value],
+                    Status = statuses[orderMaster.OrderStatusId],
+                    Items = [],
+                    DeliveryCharges = (int?)(orderMaster.DeliveryCharges ?? 0.00),
+                    AmountWithoutGst = orderMaster.TotalAmountWithoutGst ?? 0.00,
+                    AmountWithGst = orderMaster.TotalAmountWithGst ?? 0.00,
+                    OrderTime = orderDateTime,
+                    GstPercentage = orderMaster.Gstpercent,
+                    OrderStatusLogs = orderStatusLogs.Select(x => new
+                    {
+                        Id = x.OrderStatusId,
+                        CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc)),
+                    }).ToList(),
+                    Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName ?? string.Empty, Contact = x.Contact1 ?? string.Empty }).FirstOrDefault(x => x.Id == orderMaster.RiderId),
+                    DeliveryTime = orderMaster.DeliveryTime ?? 0,
+                    TotalDiscount = orderMaster.DiscountAmount ?? 0.00,
+                    PreviousOrderCount = await dbContext.OrderMasters.Where(x => x.PhoneId == orderMaster.PhoneId).CountAsync()
+                };
+                if (orderMaster.AreaId.HasValue)
+                {
+
+                    order.CityName = cities[areaCityIds[orderMaster.AreaId ?? 0] ?? 0];
+                    order.AreaName = areas[orderMaster.AreaId ?? 0];
+                }
+                var phoneId = orderMaster.PhoneId;
+                var customerPhone = await dbContext.CustomerPhones.Where(x => x.PhoneId == phoneId).FirstOrDefaultAsync();
+                if (customerPhone != null)
+                {
+                    var customer = await dbContext.Customers.Where(x => x.CustomerId == orderMaster.CustomerId).FirstOrDefaultAsync();
+                    var addressDetails = await dbContext.CustomerAddressDetails.Where(x => x.CustomerAddressId == orderMaster.CustomerAddressId).FirstOrDefaultAsync();
+
+                    var customerDetail = new CustomerDetail
+                    {
+                        FullName = customer?.CustomerName ?? "N/A",
+                        MobileNumber = customerPhone.PhoneNumber ?? "N/A",
+                        DeliveryAddress = addressDetails?.CompleteAddress ?? "N/A",
+                        NearestLandmark = addressDetails?.LandMark ?? "N/A",
+                        DeliveryInstructions = orderMaster?.SpecialInstruction ?? "N/A",
+                        AlternateMobileNumber = orderMaster.AlternateNumber ?? "N/A",
+                        EmailAddress = orderMaster.EmailAddress ?? "N/A",
+                        Title = customer.Title ?? "N/A",
+                    };
+                    order.CustomerDetails = customerDetail;
+                }
+                await foreach (var item in GetOrderItemsAsync(dbContext, orderMaster.OrderMasterId, productDetails, dealItems, products, flavours, sizes, dealDescriptions, discounts))
+                {
+                    item.Price = item.Variations.Sum(x => x.Price + x.ItemChoices.SelectMany(y => y.ItemOptions).Sum(z => z.Price));
+                    order.Items.Add(item);
+                }
+                return order;
             }
-            await foreach (var item in GetOrderItemsAsync(dbContext, orderMaster.OrderMasterId, productDetails, dealItems, products, flavours, sizes, dealDescriptions, discounts))
+            catch (Exception)
             {
-                item.Price = item.Variations.Sum(x => x.Price + x.ItemChoices.SelectMany(y => y.ItemOptions).Sum(z => z.Price));
-                order.Items.Add(item);
+                Console.WriteLine(orderMaster.OrderToken);
+                throw;
             }
-            return order;
         }
     }
 

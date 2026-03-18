@@ -29,9 +29,12 @@ public class Implementation()
         var dbContext = GetDbContext(connectionString);
 
         order.BranchName = (await dbContext.BranchMasters.FirstOrDefaultAsync(x => x.BranchId == order.BranchId))?.BranchName ?? string.Empty;
-        var areacity = await dbContext.Areas.Where(x => x.AreaId == areaId).Join(dbContext.Cities, a => a.CityId, b => b.CityId, (a, b) => new { a.AreaName, b.CityName }).FirstOrDefaultAsync();
-        order.AreaName = areacity.AreaName;
-        order.CityName = areacity.CityName;
+        if (areaId.HasValue)
+        {
+            var areacity = await dbContext.Areas.Where(x => x.AreaId == areaId).Join(dbContext.Cities, a => a.CityId, b => b.CityId, (a, b) => new { a.AreaName, b.CityName }).FirstOrDefaultAsync();
+            order.AreaName = areacity.AreaName;
+            order.CityName = areacity.CityName;
+        }
         var orderMaster = await GetOrderMasterAsync(dbContext, order);
         await SetOnlineOrder(dbContext, branchId, orderMaster, order);
         order.OrderToken = await SaveOrderAsync(dbContext, orderMaster);
@@ -228,10 +231,6 @@ public class Implementation()
         {
             throw new Exception("Customer details are required for online orders");
         }
-        if (cd.DeliveryAddress == null || string.IsNullOrWhiteSpace(cd.DeliveryAddress))
-        {
-            throw new Exception("Customer must have at least one address");
-        }
         var companyId = orderMaster.CompanyId;
         var dbCustomerPhone = await SaveCustomerPhoneAsync(dbContext, companyId, cd);
         orderMaster.PhoneId = dbCustomerPhone.PhoneId;
@@ -263,35 +262,39 @@ public class Implementation()
         orderMaster.CustomerId = dbCustomer.CustomerId;
 
         var firstAddress = cd.DeliveryAddress?.Trim() ?? string.Empty;
-        var dbCustomerAddress = dbContext.CustomerAddressDetails
-            .Where(x => x.CompleteAddress == firstAddress)
-            .FirstOrDefault();
+        if (!string.IsNullOrEmpty(cd.DeliveryAddress))
+        {
 
-        if (dbCustomerAddress == null)
-        {
-            var cityId = (await dbContext.Areas.FirstAsync(x => x.AreaId == orderMaster.AreaId!.Value))?.CityId;
-            dbCustomerAddress = new Db.CustomerAddressDetail
+            var dbCustomerAddress = dbContext.CustomerAddressDetails
+                .Where(x => x.CompleteAddress == firstAddress)
+                .FirstOrDefault();
+
+            if (dbCustomerAddress == null)
             {
-                CustomerPhone = dbCustomerPhone,
-                CompanyId = companyId,
-                CompleteAddress = firstAddress,
-                CityId = cityId!.Value,
-                AreaId = orderMaster.AreaId!.Value,
-                LandMark = cd.NearestLandmark ?? string.Empty,
-            };
-            dbContext.CustomerAddressDetails.Add(dbCustomerAddress);
+                var cityId = (await dbContext.Areas.FirstAsync(x => x.AreaId == orderMaster.AreaId!.Value))?.CityId;
+                dbCustomerAddress = new Db.CustomerAddressDetail
+                {
+                    CustomerPhone = dbCustomerPhone,
+                    CompanyId = companyId,
+                    CompleteAddress = firstAddress,
+                    CityId = cityId!.Value,
+                    AreaId = orderMaster.AreaId!.Value,
+                    LandMark = cd.NearestLandmark ?? string.Empty,
+                };
+                dbContext.CustomerAddressDetails.Add(dbCustomerAddress);
+            }
+            else
+            {
+                dbCustomerAddress.CustomerPhone = dbCustomerPhone;
+                dbCustomerAddress.CompleteAddress = firstAddress;
+                dbCustomerAddress.CityId = (await dbContext.Areas.FirstAsync(x => x.AreaId == orderMaster.AreaId!.Value))?.CityId ?? 0;
+                dbCustomerAddress.AreaId = orderMaster.AreaId!.Value;
+                dbCustomerAddress.LandMark = cd.NearestLandmark ?? string.Empty;
+                dbContext.CustomerAddressDetails.Update(dbCustomerAddress);
+            }
+            await dbContext.SaveChangesAsync();
+            orderMaster.CustomerAddressId = dbCustomerAddress.CustomerAddressId;
         }
-        else
-        {
-            dbCustomerAddress.CustomerPhone = dbCustomerPhone;
-            dbCustomerAddress.CompleteAddress = firstAddress;
-            dbCustomerAddress.CityId = (await dbContext.Areas.FirstAsync(x => x.AreaId == orderMaster.AreaId!.Value))?.CityId ?? 0;
-            dbCustomerAddress.AreaId = orderMaster.AreaId!.Value;
-            dbCustomerAddress.LandMark = cd.NearestLandmark ?? string.Empty;
-            dbContext.CustomerAddressDetails.Update(dbCustomerAddress);
-        }
-        await dbContext.SaveChangesAsync();
-        orderMaster.CustomerAddressId = dbCustomerAddress.CustomerAddressId;
         orderMaster.SpecialInstruction = cd.DeliveryInstructions;
         orderMaster.EmailAddress = cd.EmailAddress;
         orderMaster.AlternateNumber = cd.AlternateMobileNumber;
