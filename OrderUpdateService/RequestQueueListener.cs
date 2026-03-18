@@ -59,14 +59,14 @@ namespace OrderUpdateService
                             var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
                             return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
                         };
-                        orderStatusLogs = await dbContext.OrderStatusLogs
+                        orderStatusLogs = (await dbContext.OrderStatusLogs
                                                         .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
+                                                        .ToListAsync())
                                                         .Select(x => new
                                                         {
                                                             Id = x.OrderStatusId,
                                                             CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc)),
-                                                        })
-                                                        .ToListAsync();
+                                                        });
                     }
 
                     if (requestPayload.RiderId != null)
