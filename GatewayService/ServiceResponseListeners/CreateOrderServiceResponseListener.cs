@@ -17,7 +17,7 @@ namespace GatewayService.ServiceResponseListeners
             var clientId = root.GetProperty("UserId").GetString() ?? throw new Exception("UserId not found");
             var orderNumber = root.GetProperty("DataPayload").GetProperty("OrderNumber").GetString() ?? throw new Exception("OrderNumber not found");
             var db = redis.GetDatabase();
-            await db.StringSetAsync($"order:{orderNumber}:{clientId}", svcPayload);
+            await db.StringSetAsync($"order:{orderNumber}:{clientId}", svcPayload, expiry: TimeSpan.FromHours(2));
         }
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {

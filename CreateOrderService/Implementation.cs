@@ -130,6 +130,7 @@ public class Implementation()
             Gstamount = 0.00,
             DiscountAmount = 0.00,
             OrderToken = await GetUniqueTokenAsync(dbContext),
+            ChangeAmount = order.ChangeAmount,
         };
 
         if (areaId.HasValue)
