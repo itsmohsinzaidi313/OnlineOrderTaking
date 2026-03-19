@@ -95,7 +95,7 @@ namespace ImportService
                 restaurant = new Entities.Restaurants
                 {
                     DomainName = domain,
-                    ConnectionString = $"Host=haproxy;Port=5434;Database={dbname};Username=postgres;Password=postgrespass",
+                    ConnectionString = $"Host=haproxy;Port=5433;Database={dbname};Username=postgres;Password=postgrespass",
                     Name = dbname
                 };
                 await pgDb.Restaurants.AddAsync(restaurant, cancellationToken);
