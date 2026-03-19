@@ -138,7 +138,7 @@ services:
       dockerfile: ./ImportService/Dockerfile
     environment:
       - ConnectionStrings__SqlServer=${MSSQLCONNECTION}
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - ConnectionStrings__Postgres=${RWSQLCONNECTION}
     networks:
       - patroni-net
     depends_on:
