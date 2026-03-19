@@ -42,9 +42,5 @@ namespace GatewayService.ServiceResponseListeners
                 await hub.Clients.User(clientId).SendAsync("OrderStatusUpdate", payload);
             }
         }
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            return Build(stoppingToken);
-        }
     }
 }

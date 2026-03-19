@@ -19,9 +19,5 @@ namespace GatewayService.ServiceResponseListeners
             var db = redis.GetDatabase();
             await db.StringSetAsync($"order:{orderNumber}:{clientId}", svcPayload, expiry: TimeSpan.FromHours(2));
         }
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            return Build(stoppingToken);
-        }
     }
 }

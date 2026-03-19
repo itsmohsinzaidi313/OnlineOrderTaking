@@ -71,13 +71,6 @@ namespace PushNotificationService
                     logger.LogError(ex, "Error processing push notification request for client {ClientId}", request.ClientId);
                 }
             }
-
-
-        }
-
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            return Build(stoppingToken);
         }
     }
 }

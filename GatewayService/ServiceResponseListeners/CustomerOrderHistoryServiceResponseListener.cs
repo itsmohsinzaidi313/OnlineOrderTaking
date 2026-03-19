@@ -12,9 +12,5 @@ namespace GatewayService.ServiceResponseListeners
         {
             await implementation.SendToUser<CustomerOrderHistoryServicePayload>(svcPayload);
         }
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            return Build(stoppingToken);
-        }
     }
 }

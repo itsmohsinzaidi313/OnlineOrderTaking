@@ -143,9 +143,5 @@ namespace OrderUpdateService
                 .Options;
             return new Db.PgDbContext(options);
         }
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            return Build(stoppingToken);
-        }
     }
 }

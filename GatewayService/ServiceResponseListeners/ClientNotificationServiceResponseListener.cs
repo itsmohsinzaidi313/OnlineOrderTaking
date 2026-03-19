@@ -26,9 +26,5 @@ namespace GatewayService.ServiceResponseListeners
                     await hub.Clients.Users(clients).SendAsync("NewOrder", payload.CustomerOrder);
             }
         }
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            return Build(stoppingToken);
-        }
     }
 }

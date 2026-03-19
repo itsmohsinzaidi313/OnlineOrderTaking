@@ -23,9 +23,5 @@ namespace GatewayService.ServiceResponseListeners
 
             await implementation.SendToUser<DataServicePayload>(svcPayload);
         }
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            return Build(stoppingToken);
-        }
     }
 }

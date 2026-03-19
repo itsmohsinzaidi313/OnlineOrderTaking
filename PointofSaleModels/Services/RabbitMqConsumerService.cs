@@ -70,6 +70,11 @@ namespace PointofSaleModels.Services
                 try { await channel?.CloseAsync(stoppingToken); } catch { /* ignore */ }
             }
         }
+
+        protected override Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            return Build(stoppingToken);
+        }
     }
 }
 
