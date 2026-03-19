@@ -53,6 +53,7 @@ namespace GatewayService
 
         public async Task DeliveryAndPickupRequest(string domainName, int branchId, string responseKey)
         {
+            Console.WriteLine(domainName);
             var db = redis.GetDatabase();
             var response = await db.StringGetAsync($"{domainName}:{branchId}:dandp");
             if (!response.IsNull)
