@@ -38,13 +38,13 @@ builder.Services
     .AddHostedService<RequestQueueListener>();
 
 builder.Services.AddGrpc();
-//builder.WebHost.ConfigureKestrel(options =>
-//{
-//    options.ListenAnyIP(8080, o =>
-//    {
-//        o.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
-//    });
-//});
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(8080, o =>
+    {
+        o.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
+    });
+});
 
 var app = builder.Build();
 
