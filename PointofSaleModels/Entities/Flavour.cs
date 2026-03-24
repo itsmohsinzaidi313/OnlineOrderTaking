@@ -1,0 +1,14 @@
+namespace PointofSaleModels.Entities
+{
+    public class Flavour
+    {
+        public int FlavourId { get; set; }
+
+        public string? FlavourName { get; set; }
+
+        public int? CompanyId { get; set; }
+        
+        public bool IsActive { get; set; }
+        
+    }
+}
