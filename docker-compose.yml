@@ -226,11 +226,11 @@ services:
     networks:
       - patroni-net
     healthcheck:
-      # Check etcd HTTP health endpoint on port 2379
-      test: ["CMD", "curl", "-f", "http://localhost:2379/health"]
-      interval: 10s
-      timeout: 5s
+      test: ["CMD", "etcdctl", "endpoint", "health", "--dial-timeout=5s", "--command-timeout=5s"]
+      interval: 30s
+      timeout: 10s
       retries: 5
+      start_period: 10s
 
   # Patroni Node 1
   patroni1:
