@@ -225,6 +225,12 @@ services:
       - etcd_data:/etcd-data
     networks:
       - patroni-net
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health", "--dial-timeout=5s", "--command-timeout=5s"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
 
   # Patroni Node 1
   patroni1:
