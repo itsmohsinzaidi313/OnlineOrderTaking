@@ -1,4 +1,4 @@
-# Single-stage Dockerfile
+# Single-stage Dockerfile with permission fixes
 FROM node:24-alpine
 
 RUN apk add --no-cache unzip
@@ -16,10 +16,14 @@ RUN unzip /tmp/nextjsprojectcode.zip -d /tmp/extracted && \
         cp -r /tmp/extracted/$SUBDIR/* /app/; \
     else \
         cp -r /tmp/extracted/* /app/; \
-    fi
+    fi && \
+    # Fix permissions for node_modules/.bin
+    chmod -R +x /app/node_modules/.bin 2>/dev/null || true
 
-# Install dependencies
-RUN npm install
+# Install dependencies with proper permissions
+RUN npm install && \
+    # Ensure next has execute permission
+    chmod +x node_modules/.bin/next
 
 # Build the application
 RUN npm run build
