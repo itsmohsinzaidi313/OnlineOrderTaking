@@ -2,7 +2,7 @@ services:
   
   website:
     build:
-      context: .
+      context: ./nextjs
       dockerfile: ./nextjs/Dockerfile
     ports:
       - "3000:3000"
