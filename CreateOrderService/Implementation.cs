@@ -1,16 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using PointofSaleModels.Application;
-using Db = PointofSaleModels.PGDatabaseModels;
+using Db = PointofSaleModels.Entities;
+using PointofSaleModels.DatabaseContexts;
 using ValueType = PointofSaleModels.Application.ValueType;
 
 namespace CreateOrderService;
 
 public class Implementation()
 {
-    private static Db.PgDbContext GetDbContext(string connectionString)
+    private static PostgresDbContext GetDbContext(string connectionString)
     {
-        var options = new DbContextOptionsBuilder<Db.PgDbContext>()
+        var options = new DbContextOptionsBuilder<PostgresDbContext>()
             .UseNpgsql(connectionString, options =>
             {
                 options.EnableRetryOnFailure(
@@ -19,7 +20,7 @@ public class Implementation()
                     errorCodesToAdd: null);
             })
             .Options;
-        return new Db.PgDbContext(options);
+        return new PostgresDbContext(options);
     }
 
     internal async Task SaveOrderAsync(string connectionString, CustomerOrder order)
@@ -41,7 +42,7 @@ public class Implementation()
         order.OrderNumber = orderMaster.OrderNumber;
     }
 
-    private static async Task<string> SaveOrderAsync(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
+    private static async Task<string> SaveOrderAsync(PostgresDbContext dbContext, Db.OrderMaster orderMaster)
     {
         await dbContext.OrderMasters.AddAsync(orderMaster);
         await dbContext.SaveChangesAsync();
@@ -49,7 +50,7 @@ public class Implementation()
         return orderMaster.OrderToken;
     }
 
-    private static async Task<string> GetUniqueTokenAsync(Db.PgDbContext dbContext)
+    private static async Task<string> GetUniqueTokenAsync(PostgresDbContext dbContext)
     {
         var token = TokenGenerator.GenerateToken();
         var existingToken = await dbContext.OrderMasters
@@ -65,7 +66,7 @@ public class Implementation()
         }
     }
 
-    private static async Task AddOrderStatusLog(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
+    private static async Task AddOrderStatusLog(PostgresDbContext dbContext, Db.OrderMaster orderMaster)
     {
         dbContext.OrderStatusLogs.Add(new Db.OrderStatusLog
         {
@@ -78,7 +79,7 @@ public class Implementation()
         await dbContext.SaveChangesAsync();
     }
 
-    public static async Task<string> GenerateOrderNumberAsync(Db.PgDbContext dbContext, int branchId)
+    public static async Task<string> GenerateOrderNumberAsync(PostgresDbContext dbContext, int branchId)
     {
         var id = await dbContext.Database.SqlQuery<long>($"""
                                                             INSERT INTO branch_order_sequence ("BranchId", "LastValue")
@@ -96,14 +97,14 @@ public class Implementation()
         return orderNumber;
     }
 
-    private static async Task<Db.OrderMaster> GetOrderMasterAsync(Db.PgDbContext dbContext, CustomerOrder order)
+    private static async Task<Db.OrderMaster> GetOrderMasterAsync(PostgresDbContext dbContext, CustomerOrder order)
     {
         var branchId = order.BranchId;
         var areaId = order.AreaId;
         var companyId = await dbContext.SetupCompanies.Select(x => x.CompanyId).FirstAsync();
         var orderNumber = await GenerateOrderNumberAsync(dbContext, branchId);
-        var dbPaymentMode = await dbContext.PaymentModes.FirstOrDefaultAsync(x => x.PaymentMode1.ToLower() == order.PaymentType.ToLower());
-        var gst = dbPaymentMode != null ? await dbContext.Gsts.FirstOrDefaultAsync(x => x.PaymentModeId == dbPaymentMode.PaymentModeId) : null;
+        var dbPaymentMode = await dbContext.PaymentModes.FirstOrDefaultAsync(x => x.PaymentModeName.ToLower() == order.PaymentType.ToLower());
+        var gst = dbPaymentMode != null ? await dbContext.GSTs.FirstOrDefaultAsync(x => x.PaymentModeId == dbPaymentMode.PaymentModeId) : null;
         var orderSourceId = await dbContext.SetupMasterDetails.Where(x => x.CompanyId == companyId && x.Flex1 == "WEB").Select(x => x.SetupDetailId).FirstOrDefaultAsync();
         var orderstatus = await dbContext.OrderStatuses.Where(x => x.OrderStatusName == "Pending").FirstOrDefaultAsync();
         order.Status = OrderStatus.Pending.ToString();
@@ -120,8 +121,8 @@ public class Implementation()
             OrderModeId = orderType.SetupDetailId,
             OrderDate = DateOnly.FromDateTime(DateTime.UtcNow),
             OrderTime = TimeOnly.FromDateTime(DateTime.UtcNow),
-            Gstid = gst?.Gstid,
-            Gstpercent = gst?.Gstpercentage ?? 0.00,
+            Gstid = gst?.GSTId,
+            Gstpercent = gst?.GSTPercentage ?? 0.00,
             IsActive = true,
             OrderDetails = [],
             AlternateNumber = order.CustomerDetails.AlternateMobileNumber ?? string.Empty,
@@ -165,14 +166,14 @@ public class Implementation()
                 orderMaster.OrderDetails.Add(orderDetail);
             }
         }
-        orderMaster.TotalAmountWithGst = orderMaster.TotalAmountWithoutGst + (orderMaster.TotalAmountWithoutGst * (gst?.Gstpercentage ?? 0) / 100);
+        orderMaster.TotalAmountWithGst = orderMaster.TotalAmountWithoutGst + (orderMaster.TotalAmountWithoutGst * (gst?.GSTPercentage ?? 0) / 100);
         orderMaster.Gstamount = orderMaster.TotalAmountWithGst - orderMaster.TotalAmountWithoutGst;
         order.AmountWithGst = orderMaster.TotalAmountWithGst ?? 0.0;
         order.AmountWithoutGst = orderMaster.TotalAmountWithoutGst ?? 0.0;
         return orderMaster;
     }
 
-    private static IEnumerable<Db.OrderDetail> GetOrderDetails(MenuItem item, Db.Gst? gst = null)
+    private static IEnumerable<Db.OrderDetail> GetOrderDetails(MenuItem item, Db.GST? gst = null)
     {
         var orderDetail = new Db.OrderDetail
         {
@@ -200,14 +201,14 @@ public class Implementation()
                         Quantity = option.Quantity.HasValue ? (option.Quantity * item.Quantity) : choice.Quantity,
                         IsKot = true,
                         IsActive = true,
-                        Gstid = gst?.Gstid,
-                        PriceWithGst = double.Round(option.Price + (option.Price * (gst?.Gstpercentage ?? 0) / 100), MidpointRounding.ToZero),
+                        Gstid = gst?.GSTId,
+                        PriceWithGst = double.Round(option.Price + (option.Price * (gst?.GSTPercentage ?? 0) / 100), MidpointRounding.ToZero),
                         PriceWithoutGst = option.Price,
                     };
                 }
             }
         }
-        orderDetail.Gstid = gst?.Gstid;
+        orderDetail.Gstid = gst?.GSTId;
         orderDetail.DiscountId = variation?.Discount?.Id;
         orderDetail.DiscountPercent = variation?.Discount?.Value;
         orderDetail.IsPercentage = variation?.Discount?.Type == ValueType.Percentage.ToString();
@@ -221,11 +222,11 @@ public class Implementation()
                 : variation.Discount.Value;
         }
         var itemPriceAfterDiscount = itemPrice - itemDiscount;
-        orderDetail.PriceWithGst = double.Round(itemPriceAfterDiscount + (itemPriceAfterDiscount * (gst?.Gstpercentage ?? 0) / 100), MidpointRounding.ToZero);
+        orderDetail.PriceWithGst = double.Round(itemPriceAfterDiscount + (itemPriceAfterDiscount * (gst?.GSTPercentage ?? 0) / 100), MidpointRounding.ToZero);
         yield return orderDetail;
     }
 
-    private static async Task SetOnlineOrder(Db.PgDbContext dbContext, int branchId, Db.OrderMaster orderMaster, CustomerOrder order)
+    private static async Task SetOnlineOrder(PostgresDbContext dbContext, int branchId, Db.OrderMaster orderMaster, CustomerOrder order)
     {
         var cd = order.CustomerDetails;
         if (cd == null)
@@ -301,7 +302,7 @@ public class Implementation()
         orderMaster.AlternateNumber = cd.AlternateMobileNumber;
     }
 
-    private static async Task<Db.CustomerPhone> SaveCustomerPhoneAsync(Db.PgDbContext dbContext, int companyId, CustomerDetail customer)
+    private static async Task<Db.CustomerPhone> SaveCustomerPhoneAsync(PostgresDbContext dbContext, int companyId, CustomerDetail customer)
     {
         Db.CustomerPhone? dbCustomerPhone;
         dbCustomerPhone = await dbContext.CustomerPhones

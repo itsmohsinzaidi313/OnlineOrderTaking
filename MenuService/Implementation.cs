@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Application;
-using System.Text.Json.Nodes;
-using Db = PointofSaleModels.PGDatabaseModels;
+using PointofSaleModels.DatabaseContexts;
+using Db = PointofSaleModels.Entities;
 
 namespace MenuService;
 
 internal class Implementation()
 {
-    private static Db.PgDbContext GetDbContext(string connectionString)
+    private static PostgresDbContext GetDbContext(string connectionString)
     {
-        var options = new DbContextOptionsBuilder<Db.PgDbContext>()
+        var options = new DbContextOptionsBuilder<PostgresDbContext>()
             .UseNpgsql(connectionString, options =>
             {
                 options.EnableRetryOnFailure(
@@ -18,7 +18,7 @@ internal class Implementation()
                     errorCodesToAdd: null);
             })
             .Options;
-        return new Db.PgDbContext(options);
+        return new PostgresDbContext(options);
     }
 
     private async Task<DbMenuData> GetDbMenuDataAsync(string connectionString, int branchId)

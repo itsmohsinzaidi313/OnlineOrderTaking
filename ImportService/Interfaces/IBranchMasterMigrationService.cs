@@ -1,6 +1,4 @@
-﻿using ImportService.Data;
-
-namespace ImportService.Interfaces
+﻿namespace ImportService.Interfaces
 {
     public interface IBranchMasterMigrationService : IMigrationService
     {

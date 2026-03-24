@@ -1,4 +1,4 @@
-﻿using ExportService.Data;
+﻿using PointofSaleModels.DatabaseContexts;
 
 namespace ExportService.Interfaces
 {

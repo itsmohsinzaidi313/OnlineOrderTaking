@@ -1,6 +1,6 @@
-﻿using ImportService.Data;
-using ImportService.Interfaces;
+﻿using ImportService.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using PointofSaleModels.DatabaseContexts;
 
 namespace ImportService.Services
 {

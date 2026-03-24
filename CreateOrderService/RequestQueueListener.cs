@@ -2,11 +2,12 @@
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using Db = PointofSaleModels.PGDatabaseModels;
+using PointofSaleModels.DatabaseContexts;
+
 
 namespace CreateOrderService
 {
-    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher, IDbContextFactory<Db.RestaurantsContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
+    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher, IDbContextFactory<RestaurantsDbContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
     {
         public override string QueueName() => RabbitMqQueues.OrderRequestQueue;
         public override async Task OnMessage(string transport)
@@ -61,7 +62,7 @@ namespace CreateOrderService
             await using var context = await contextFactory.CreateDbContextAsync();
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
             var restaurantId = restaurant?.Id ?? throw new Exception("Restaurant not found");
-            var tokenEntity = new Db.OrderTokens { OrderToken = orderToken, CreatedAt = DateTime.UtcNow, RestaurantId = restaurantId };
+            var tokenEntity = new PointofSaleModels.Entities.OrderTokens { OrderToken = orderToken, CreatedAt = DateTime.UtcNow, RestaurantId = restaurantId };
             await context.OrderTokens.AddAsync(tokenEntity);
             await context.SaveChangesAsync();
         }

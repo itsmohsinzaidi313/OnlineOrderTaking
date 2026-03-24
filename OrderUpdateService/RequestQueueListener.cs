@@ -2,11 +2,12 @@
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using Db = PointofSaleModels.PGDatabaseModels;
+using PointofSaleModels.DatabaseContexts;
+using PointofSaleModels.Entities;
 
 namespace OrderUpdateService
 {
-    public class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, IRabbitMqPublisher publisher, IDbContextFactory<Db.RestaurantsContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
+    public class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, IRabbitMqPublisher publisher, IDbContextFactory<RestaurantsDbContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
     {
         public override string QueueName() => RabbitMqQueues.OrderUpdateRequestQueue;
 
@@ -40,7 +41,7 @@ namespace OrderUpdateService
                             .FirstOrDefaultAsync();
                         if (previousOrderStatusLog == null)
                         {
-                            dbContext.OrderStatusLogs.Add(new Db.OrderStatusLog
+                            dbContext.OrderStatusLogs.Add(new OrderStatusLog
                             {
                                 OrderMasterId = orderMaster.OrderMasterId,
                                 OrderStatusId = requestPayload.OrderStatusId.Value,
@@ -118,7 +119,7 @@ namespace OrderUpdateService
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.OrderUpdateResponseQueue, response);
         }
-        private async Task<Db.PgDbContext> GetDbContextAsync(string domainName)
+        private async Task<PostgresDbContext> GetDbContextAsync(string domainName)
         {
             var connectionString = await GetConnectionString(domainName);
             connectionString = connectionString.Replace("5434", "5433");
@@ -130,9 +131,9 @@ namespace OrderUpdateService
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
             return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
         }
-        private static Db.PgDbContext GetDbContext(string connectionString)
+        private static PostgresDbContext GetDbContext(string connectionString)
         {
-            var options = new DbContextOptionsBuilder<Db.PgDbContext>()
+            var options = new DbContextOptionsBuilder<PostgresDbContext>()
                 .UseNpgsql(connectionString, options =>
                 {
                     options.EnableRetryOnFailure(
@@ -141,7 +142,7 @@ namespace OrderUpdateService
                         errorCodesToAdd: null);
                 })
                 .Options;
-            return new Db.PgDbContext(options);
+            return new PostgresDbContext(options);
         }
     }
 }

@@ -1,6 +1,6 @@
-﻿using ImportService.Data;
-using ImportService.Interfaces;
+﻿using ImportService.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using PointofSaleModels.DatabaseContexts;
 
 namespace ImportService.Services
 {
@@ -13,7 +13,7 @@ namespace ImportService.Services
                                                      .Where(x => x.CompanyId == companyId)
                                                      .ToListAsync(cancellationToken: ct);
 
-            pgDb.UserLogins.AddRange(userLogins.Select(x => new Entities.UserLogin
+            pgDb.UserLogins.AddRange(userLogins.Select(x => new PointofSaleModels.Entities.UserLogin
             {
                 UserId = x.UserId,
                 CompanyId = x.CompanyId,
@@ -32,7 +32,7 @@ namespace ImportService.Services
                                                     .Where(x => x.RoleId != 0)
                                                     .ToListAsync(cancellationToken: ct);
             if (userRoles != null)
-                pgDb.UserRoles.AddRange(userRoles.Select(x => new Entities.UserRole
+                pgDb.UserRoles.AddRange(userRoles.Select(x => new PointofSaleModels.Entities.UserRole
                 {
                     RoleId = x.RoleId,
                     RoleName = x.RoleName ?? string.Empty,

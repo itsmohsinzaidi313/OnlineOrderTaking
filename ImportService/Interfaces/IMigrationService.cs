@@ -1,4 +1,4 @@
-﻿using ImportService.Data;
+﻿using PointofSaleModels.DatabaseContexts;
 
 namespace ImportService.Interfaces
 {

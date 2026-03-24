@@ -3,11 +3,10 @@ using PointofSaleModels.Application;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace OrderHistoryService
 {
-    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher, IDbContextFactory<Db.RestaurantsContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
+    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher, IDbContextFactory<PointofSaleModels.DatabaseContexts.RestaurantsDbContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
     {
         public override string QueueName() => RabbitMqQueues.OrderHistoryRequestQueue;
 

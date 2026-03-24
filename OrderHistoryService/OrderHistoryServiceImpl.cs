@@ -1,11 +1,12 @@
 ﻿using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Protos;
-using Db = PointofSaleModels.PGDatabaseModels;
+using Db = PointofSaleModels.Entities;
+using PointofSaleModels.DatabaseContexts;
 
 namespace OrderHistoryService
 {
-    public class OrderHistoryServiceImpl(IDbContextFactory<Db.RestaurantsContext> contextFactory, Implementation implementation) : PointofSaleModels.Protos.OrderHistoryService.OrderHistoryServiceBase
+    public class OrderHistoryServiceImpl(IDbContextFactory<RestaurantsDbContext> contextFactory, Implementation implementation) : PointofSaleModels.Protos.OrderHistoryService.OrderHistoryServiceBase
     {
         public override async Task<OrderHistoryResponse> GetOrderHistory(OrderHistoryRequest request, ServerCallContext context)
         {
@@ -45,9 +46,9 @@ namespace OrderHistoryService
             return response;
         }
 
-        private static Db.PgDbContext GetDbContext(string connectionString)
+        private static PostgresDbContext GetDbContext(string connectionString)
         {
-            var options = new DbContextOptionsBuilder<Db.PgDbContext>()
+            var options = new DbContextOptionsBuilder<PostgresDbContext>()
                 .UseNpgsql(connectionString, options =>
                 {
                     options.EnableRetryOnFailure(
@@ -56,7 +57,7 @@ namespace OrderHistoryService
                         errorCodesToAdd: null);
                 })
                 .Options;
-            return new Db.PgDbContext(options);
+            return new PostgresDbContext(options);
         }
     }
 }

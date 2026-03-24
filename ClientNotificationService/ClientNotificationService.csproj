@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ExportService\ExportService.csproj" />
     <ProjectReference Include="..\PointofSaleModels\PointofSaleModels.csproj" />
   </ItemGroup>
 

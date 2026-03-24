@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Application;
 using System.Text.Json.Nodes;
-using Db = PointofSaleModels.PGDatabaseModels;
+using Db = PointofSaleModels.DatabaseContexts;
 
 namespace SettingsDataService;
 
 internal class Implementation()
 {
-    private static Db.PgDbContext GetDbContext(string connectionString)
+    private static Db.PostgresDbContext GetDbContext(string connectionString)
     {
-        var options = new DbContextOptionsBuilder<Db.PgDbContext>()
+        var options = new DbContextOptionsBuilder<Db.PostgresDbContext>()
             .UseNpgsql(connectionString, options =>
             {
                 options.EnableRetryOnFailure(
@@ -18,7 +18,7 @@ internal class Implementation()
                     errorCodesToAdd: null);
             })
             .Options;
-        return new Db.PgDbContext(options);
+        return new Db.PostgresDbContext(options);
     }
 
     internal async Task<JsonObject> GetDataOneAsync(string connectionString)
@@ -36,7 +36,7 @@ internal class Implementation()
                     .Where(x => x.SetupMasterId == setupMasterId)
                     .Distinct()
                     .ToDictionary(x => x.SetupDetailId, x => x.SetupDetailName);
-        var gsts = await dbContext.Gsts.ToListAsync();
+        var gsts = await dbContext.GSTs.ToListAsync();
 
         foreach (var item in cities)
         {
@@ -131,7 +131,7 @@ internal class Implementation()
             {
                 ["CityName"] = item.CityName,
                 ["Branches"] = branchesJsonArray,
-                ["Tax"] = gsts.FirstOrDefault(x => x.CityId == item.CityId)?.Gstpercentage ?? 0.00
+                ["Tax"] = gsts.FirstOrDefault(x => x.CityId == item.CityId)?.GSTPercentage ?? 0.00
             };
             pickup[item.CityId.ToString()] = cityObj2;
         }

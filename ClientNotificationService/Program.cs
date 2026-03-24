@@ -1,7 +1,7 @@
 using ClientNotificationService;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using PointofSaleModels.PGDatabaseModels;
+using PointofSaleModels.DatabaseContexts;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 
@@ -21,7 +21,7 @@ var dbConnectionString =
 var rabbitMqSection = builder.Configuration.GetSection("RABBITMQ");
 
 builder.Services
-    .AddDbContextFactory<RestaurantsContext>(
+    .AddDbContextFactory<RestaurantsDbContext>(
         options => options.UseNpgsql(
             dbConnectionString,
             npgsqlOptions =>
@@ -40,7 +40,7 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
-app.MapGet("/health", async ([FromServices] IDbContextFactory<RestaurantsContext> contextFactory) =>
+app.MapGet("/health", async ([FromServices] IDbContextFactory<RestaurantsDbContext> contextFactory) =>
 {
     var restaurantsContext = await contextFactory.CreateDbContextAsync();
     if (!await restaurantsContext.Database.CanConnectAsync())

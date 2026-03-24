@@ -2,12 +2,12 @@
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using Db = PointofSaleModels.PGDatabaseModels;
+using Db = PointofSaleModels.DatabaseContexts;
 
 namespace ClientNotificationService
 {
     public class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, IRabbitMqPublisher publisher,
-        IDbContextFactory<Db.RestaurantsContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
+        IDbContextFactory<Db.RestaurantsDbContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
     {
         public override string QueueName() => RabbitMqQueues.ClientNotificationRequestQueue;
         public override async Task OnMessage(string payload)
@@ -38,9 +38,9 @@ namespace ClientNotificationService
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
             return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
         }
-        private static Db.PgDbContext GetDbContext(string connectionString)
+        private static Db.PostgresDbContext GetDbContext(string connectionString)
         {
-            var options = new DbContextOptionsBuilder<Db.PgDbContext>()
+            var options = new DbContextOptionsBuilder<Db.PostgresDbContext>()
                 .UseNpgsql(connectionString, options =>
                 {
                     options.EnableRetryOnFailure(
@@ -49,7 +49,7 @@ namespace ClientNotificationService
                         errorCodesToAdd: null);
                 })
                 .Options;
-            return new Db.PgDbContext(options);
+            return new Db.PostgresDbContext(options);
         }
     }
 }

@@ -1,14 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Application;
-using Db = PointofSaleModels.PGDatabaseModels;
+using Db = PointofSaleModels.Entities;
+using PointofSaleModels.DatabaseContexts;
 
 namespace OrderHistoryService;
 
 public class Implementation()
 {
-    private static Db.PgDbContext GetDbContext(string connectionString)
+    private static PostgresDbContext GetDbContext(string connectionString)
     {
-        var options = new DbContextOptionsBuilder<Db.PgDbContext>()
+        var options = new DbContextOptionsBuilder<PostgresDbContext>()
             .UseNpgsql(connectionString, options =>
             {
                 options.EnableRetryOnFailure(
@@ -17,7 +18,7 @@ public class Implementation()
                     errorCodesToAdd: null);
             })
             .Options;
-        return new Db.PgDbContext(options);
+        return new PostgresDbContext(options);
     }
 
     internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int? userId = null, string? orderToken = null)
@@ -163,7 +164,7 @@ public class Implementation()
         return await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
     }
 
-    private async IAsyncEnumerable<MenuItem> GetOrderItemsAsync(Db.PgDbContext dbContext, int orderMasterId, List<Db.ProductDetail> productDetails, List<Db.DealItemDetail> dealItems, List<Db.Product> products, Dictionary<int, Db.Flavour> flavours, Dictionary<int, Db.ProductSize> sizes, List<Db.DealDescription> dealDescriptions, Dictionary<int, Db.Discount> discounts)
+    private async IAsyncEnumerable<MenuItem> GetOrderItemsAsync(PostgresDbContext dbContext, int orderMasterId, List<Db.ProductDetail> productDetails, List<Db.DealItemDetail> dealItems, List<Db.Product> products, Dictionary<int, Db.Flavour> flavours, Dictionary<int, Db.ProductSize> sizes, List<Db.DealDescription> dealDescriptions, Dictionary<int, Db.Discount> discounts)
     {
         var orderDetails = await dbContext.OrderDetails
             .Where(x => x.OrderMasterId == orderMasterId && x.IsActive == true)

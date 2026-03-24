@@ -1,6 +1,6 @@
-﻿using ExportService.Data;
-using ExportService.Interfaces;
+﻿using ExportService.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using PointofSaleModels.DatabaseContexts;
 
 namespace ExportService.Services
 {

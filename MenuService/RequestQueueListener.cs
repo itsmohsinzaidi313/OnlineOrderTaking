@@ -3,11 +3,10 @@ using PointofSaleModels.Services;
 using PointofSaleModels.Application;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Settings;
-using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace MenuService
 {
-    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher, IDbContextFactory<Db.RestaurantsContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
+    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher, IDbContextFactory<PointofSaleModels.DatabaseContexts.RestaurantsDbContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
     {
         public override string QueueName() => RabbitMqQueues.MenuRequestQueue;
 

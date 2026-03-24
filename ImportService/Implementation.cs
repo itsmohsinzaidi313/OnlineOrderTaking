@@ -1,6 +1,6 @@
-﻿using ImportService.Data;
-using ImportService.Interfaces;
+﻿using ImportService.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using PointofSaleModels.DatabaseContexts;
 
 namespace ImportService
 {
@@ -92,7 +92,7 @@ namespace ImportService
             if (restaurant == null)
             {
                 var dbname = domain.Split(".")[0];
-                restaurant = new Entities.Restaurants
+                restaurant = new PointofSaleModels.Entities.Restaurants
                 {
                     DomainName = domain,
                     ConnectionString = $"Host=haproxy;Port=5433;Database={dbname};Username=postgres;Password=postgrespass",

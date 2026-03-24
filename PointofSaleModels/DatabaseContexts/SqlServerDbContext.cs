@@ -42,6 +42,8 @@ namespace PointofSaleModels.DatabaseContexts
         public DbSet<UserBranchMapping> UserBranchMappings => Set<UserBranchMapping>();
         public DbSet<OrderStatus> OrderStatuses => Set<OrderStatus>();
         public DbSet<Rider> Riders => Set<Rider>();
+        public DbSet<OrderMaster> OrderMasters => Set<OrderMaster>();
+        public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -250,6 +252,14 @@ namespace PointofSaleModels.DatabaseContexts
             modelBuilder.Entity<Rider>()
                 .ToTable("Rider")
                 .HasKey(x => x.RiderId);
+
+            modelBuilder.Entity<OrderMaster>()
+                .ToTable("OrderMaster")
+                .HasKey(x => x.OrderMasterId);
+
+            modelBuilder.Entity<OrderDetail>()
+                .ToTable("OrderDetail")
+                .HasKey(x => x.OrderDetailId);
         }
     }
 }
