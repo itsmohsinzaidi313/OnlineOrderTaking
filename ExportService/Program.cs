@@ -20,6 +20,8 @@ var sqlServerConnectionString =
     builder.Configuration.GetConnectionString("SqlServer")
     ?? throw new InvalidOperationException("SqlServer connection string is not configured.");
 
+var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres")
+    ?? throw new InvalidOperationException("Postgres connection string is not configured.");
 // Services
 builder.Services
     .AddDbContextFactory<SqlServerDbContext>(options =>
@@ -33,14 +35,13 @@ builder.Services
                     errorNumbersToAdd: null);
             }))
     .AddDbContextFactory<RestaurantsDbContext>(options =>
-        options.UseNpgsql(
-            $"Host=85.190.242.39;Port=5433;Database=restaurants;Username=postgres;Password=postgrespass", options =>
-            {
-                options.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorCodesToAdd: null);
-            }))
+        options.UseNpgsql(postgresConnectionString, options =>
+        {
+            options.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorCodesToAdd: null);
+        }))
     .AddScoped<ICustomerExportService, CustomerExportService>()
     .AddScoped<IOrderMasterExportService, OrderMasterExportService>()
     .AddScoped<IOrderDetailExportService, OrderDetailExportService>()
