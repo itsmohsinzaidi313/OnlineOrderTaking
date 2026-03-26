@@ -53,16 +53,15 @@ namespace GatewayService
 
         public async Task DeliveryAndPickupRequest(string domainName, int branchId, string responseKey)
         {
-            Console.WriteLine(domainName);
-            var db = redis.GetDatabase();
-            var response = await db.StringGetAsync($"{domainName}:{branchId}:dandp");
-            if (!response.IsNull)
-            {
-                var payload = JsonSerializer.Deserialize<DataServicePayload>(response.ToString());
-                await Clients.Caller.SendAsync("Ack", new { status = "cached" });
-                await Clients.Caller.SendAsync(responseKey, payload);
-                return;
-            }
+            //var db = redis.GetDatabase();
+            //var response = await db.StringGetAsync($"{domainName}:{branchId}:dandp");
+            //if (!response.IsNull)
+            //{
+            //    var payload = JsonSerializer.Deserialize<DataServicePayload>(response.ToString());
+            //    await Clients.Caller.SendAsync("Ack", new { status = "cached" });
+            //    await Clients.Caller.SendAsync(responseKey, payload);
+            //    return;
+            //}
             var obj = new DataServicePayload
             {
                 DomainName = domainName,
