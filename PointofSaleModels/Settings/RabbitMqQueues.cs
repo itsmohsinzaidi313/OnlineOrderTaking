@@ -12,6 +12,7 @@ namespace PointofSaleModels.Settings
         public const string ClientNotificationService = "clientnotification";
         public const string PushNotificationService = "pushnotification";
         public const string ImportService = "import";
+        public const string ExportService = "export";
         public const string CustomerOrderHistoryService = "customerorderhistory";
         public const string Request = "request";
         public const string Response = "response";
@@ -27,6 +28,7 @@ namespace PointofSaleModels.Settings
         public const string GatewayResponseQueue = $"{Services}.{GatewayService}.{Response}";
         public const string ImportResponseQueue = $"{Services}.{ImportService}.{Response}";
         public const string ImportRequestQueue = $"{Services}.{ImportService}.{Request}";
+        public const string ExportRequestQueue = $"{Services}.{ExportService}.{Request}";
         public const string SettingRequestQueue = $"{Services}.{SettingService}.{Request}";
         public const string SettingResponseQueue = $"{Services}.{SettingService}.{Response}";
         public const string MenuRequestQueue = $"{Services}.{MenuService}.{Request}";
