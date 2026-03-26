@@ -62,18 +62,27 @@ builder.Services
 var app = builder.Build();
 
 // Optional: minimal endpoint (useful for health checks)
-app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Implementation impl, [FromServices] IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory, HttpContext httpContext, [FromQuery] bool checkOrders = true) =>
+app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogger<Program> logger, [FromServices] Implementation impl, [FromServices] IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory, HttpContext httpContext, [FromQuery] string selection = "") =>
 {
+    List<string> list = ["all", "setupCompany", "setupMaster", "setupMasterDetail", "city", "area", "branchMaster", "productSize", "flavour", "menu", "paymentMode", "setupCompanySettings", "discount", "customerData", "gst", "userLogin", "riders"];
+
+    if (string.IsNullOrEmpty(selection) || !list.Contains(selection))
+    {
+        logger.LogWarning("Invalid selection provided: {Selection}. No migration will be performed.", selection);
+        return Results.BadRequest($"Invalid selection: {selection}");
+    }
     using var sqlServerDbContext = sqlServerDbContextFactory.CreateDbContext();
     var company = await sqlServerDbContext.SetupCompanies.FirstOrDefaultAsync(x => x.CompanyId == companyId, httpContext.RequestAborted);
     if (company == null)
     {
+        logger.LogWarning("Company not found: {CompanyId}", companyId);
         return Results.NotFound("Company not found");
     }
 
     var url = company.WebsiteUrl;
     if (url == null)
     {
+        logger.LogWarning("Company website URL not found for CompanyId: {CompanyId}", companyId);
         return Results.NotFound("Company website URL not found");
     }
     var domain = url
@@ -81,7 +90,7 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] Imple
                 .Replace("https://", "")
                 .Replace("www.", "")
                 .Split('/')[0];
-    var response = await impl.Import(companyId, domain, checkOrders, httpContext.RequestAborted);
+    var response = await impl.Import(companyId, domain, selection, httpContext.RequestAborted);
     try
     {
         var httpClient = new HttpClient
