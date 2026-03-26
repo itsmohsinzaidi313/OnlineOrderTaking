@@ -9,15 +9,6 @@ namespace ExportService.Entities
         public int? CompanyId { get; set; }
         
         public bool IsActive { get; set; }
-        public ProductSize CopyWith(ProductSize instance)
-        {
-            return new ProductSize
-            {
-                SizeId = instance.SizeId,
-                SizeName = instance.SizeName,
-                CompanyId = instance.CompanyId,
-                IsActive = instance.IsActive
-            };
-        }
+        
     }
 }

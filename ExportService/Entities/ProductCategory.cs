@@ -28,25 +28,5 @@ namespace ExportService.Entities
 
         public string? CategoryIcon { get; set; }
 
-        public ProductCategory CopyWith(ProductCategory instance)
-        {
-            return new ProductCategory
-            {
-                CategoryId = instance.CategoryId,
-                CategoryName = instance.CategoryName,
-                CompanyId = instance.CompanyId,
-                CategoryBgColor = instance.CategoryBgColor,
-                CategoryForeColor = instance.CategoryForeColor,
-                IsActive = instance.IsActive,
-                IsEnable = instance.IsEnable,
-                IsInventoryCategory = instance.IsInventoryCategory,
-                DepartmentId = instance.DepartmentId,
-                CategoryImage = instance.CategoryImage,
-                SortOrder = instance.SortOrder,
-                ProductCardStyle = instance.ProductCardStyle,
-                CategoryIcon = instance.CategoryIcon
-            };
-        }
-
     }
 }

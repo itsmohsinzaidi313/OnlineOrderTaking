@@ -13,17 +13,6 @@ namespace ExportService.Entities
         public TimeSpan? EndTime { get; set; }
 
         public bool? IsActive { get; set; }
-        public ProductDetailAvailability CopyWith(ProductDetailAvailability instance)
-        {
-            return new ProductDetailAvailability
-            {
-                ProductDetailAvailableId = instance.ProductDetailAvailableId,
-                ProductBranchId = instance.ProductBranchId,
-                DayId = instance.DayId,
-                StartTime = instance.StartTime,
-                EndTime = instance.EndTime,
-                IsActive = instance.IsActive
-            };
-        }
+        
     }
 }

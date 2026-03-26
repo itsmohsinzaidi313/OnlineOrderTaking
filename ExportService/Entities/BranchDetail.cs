@@ -26,23 +26,5 @@
 
         
         public bool IsActive { get; set; } = true;
-        public BranchDetail CopyWith(BranchDetail instance)
-        {
-            return new BranchDetail
-            {
-                BranchDetailId = instance.BranchDetailId,
-                BranchId = instance.BranchId,
-                AreaId = instance.AreaId,
-                AreaName = instance.AreaName,
-                AreaStartTime = instance.AreaStartTime,
-                AreaEndTime = instance.AreaEndTime,
-                DeliveryTime = instance.DeliveryTime,
-                MinimumOrder = instance.MinimumOrder,
-                DeliveryCharges = instance.DeliveryCharges,
-                IsEnabled = instance.IsEnabled,
-                DeliveryChargesWaiveOffLimit = instance.DeliveryChargesWaiveOffLimit,
-                IsActive = instance.IsActive
-            };
-        }
     }
 }

@@ -47,29 +47,5 @@ namespace ExportService.Entities
         public int? ProductTagId { get; set; }
 
         public bool IsDealPackage { get; set; }
-        public Product CopyWith(Product instance)
-        {
-            return new Product
-            {
-                ProductId = instance.ProductId,
-                ProductName = instance.ProductName,
-                ProductCategoryId = instance.ProductCategoryId,
-                IsActive = instance.IsActive,
-                IsEnable = instance.IsEnable,
-                DisplayInPos = instance.DisplayInPos,
-                DisplayInWeb = instance.DisplayInWeb,
-                DisplayInOdms = instance.DisplayInOdms,
-                DisplayInMobile = instance.DisplayInMobile,
-                IsDeal = instance.IsDeal,
-                ProductImage = instance.ProductImage,
-                IsExpiryMandatory = instance.IsExpiryMandatory,
-                CommisionValue = instance.CommisionValue,
-                CommisionTypeId = instance.CommisionTypeId,
-                ProductDescription = instance.ProductDescription,
-                SortOrder = instance.SortOrder,
-                ProductTagId = instance.ProductTagId,
-                IsDealPackage = instance.IsDealPackage
-            };
-        }
     }
 }

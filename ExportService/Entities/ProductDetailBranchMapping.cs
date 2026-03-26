@@ -15,18 +15,6 @@ namespace ExportService.Entities
         public bool IsEnable { get; set; }
 
         public string? RemoteId { get; set; }
-        public ProductDetailBranchMapping CopyWith(ProductDetailBranchMapping instance)
-        {
-            return new ProductDetailBranchMapping
-            {
-                ProductDetailBranchMappingId = instance.ProductDetailBranchMappingId,
-                ProductDetailId = instance.ProductDetailId,
-                BranchId = instance.BranchId,
-                IsActive = instance.IsActive,
-                IsDayWise = instance.IsDayWise,
-                IsEnable = instance.IsEnable,
-                RemoteId = instance.RemoteId
-            };
-        }
+        
     }
 }

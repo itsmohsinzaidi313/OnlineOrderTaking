@@ -21,21 +21,5 @@ namespace ExportService.Entities
         public int? TempDealItemId { get; set; }
 
         public int? MaxQuantity { get; set; }
-        public DealItemDetail CopyWith(DealItemDetail instance)
-        {
-            return new DealItemDetail
-            {
-                DealItemId = instance.DealItemId,
-                DealOptionName = instance.DealOptionName,
-                ProductDetailId = instance.ProductDetailId,
-                Quantity = instance.Quantity,
-                IsToppingAllowed = instance.IsToppingAllowed,
-                SizeId = instance.SizeId,
-                IsActive = instance.IsActive,
-                SortOrder = instance.SortOrder,
-                TempDealItemId = instance.TempDealItemId,
-                MaxQuantity = instance.MaxQuantity
-            };
-        }
     }
 }

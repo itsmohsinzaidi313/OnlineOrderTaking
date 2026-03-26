@@ -63,43 +63,5 @@
         public string? VocherCodeStart { get; set; }
 
         public string? VocherCodeEnd { get; set; }
-        
-        public Discount CopyWith(Discount instance)
-        {
-            return new Discount
-            {
-                DiscountId = instance.DiscountId,
-                DiscountPercent = instance.DiscountPercent,
-                DiscountTimeStart = instance.DiscountTimeStart,
-                DiscountTimeEnd = instance.DiscountTimeEnd,
-                IsActive = instance.IsActive,
-                DiscountName = instance.DiscountName,
-                IsOpen = instance.IsOpen,
-                IsActiveInWeb = instance.IsActiveInWeb,
-                StartDate = instance.StartDate,
-                EndDate = instance.EndDate,
-                IsAreaWise = instance.IsAreaWise,
-                IsDayWise = instance.IsDayWise,
-                Priority = instance.Priority,
-                IsActiveInPOS = instance.IsActiveInPOS,
-                DiscountTypeId = instance.DiscountTypeId,
-                CompanyId = instance.CompanyId,
-                IsActiveInMobile = instance.IsActiveInMobile,
-                IsActiveInODMS = instance.IsActiveInODMS,
-                IsPercentage = instance.IsPercentage,
-                IsAutoDiscount = instance.IsAutoDiscount,
-                DiscountCapStart = instance.DiscountCapStart,
-                DiscountCapEnd = instance.DiscountCapEnd,
-                IsVoucher = instance.IsVoucher,
-                FirstTimeUserOnly = instance.FirstTimeUserOnly,
-                DeliveryChangesWaiveOff = instance.DeliveryChangesWaiveOff,
-                MaxCount = instance.MaxCount,
-                MaxCountPerUser = instance.MaxCountPerUser,
-                MinOrderAmount = instance.MinOrderAmount,
-                ApplyWithOtherDiscounts = instance.ApplyWithOtherDiscounts,
-                VocherCodeStart = instance.VocherCodeStart,
-                VocherCodeEnd = instance.VocherCodeEnd
-            };
-        }
     }
 }

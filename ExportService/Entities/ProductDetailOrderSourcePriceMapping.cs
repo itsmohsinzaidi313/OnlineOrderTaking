@@ -18,20 +18,6 @@
 
         public int? BranchId { get; set; }
     
-        public ProductDetailOrderSourcePriceMapping CopyWith(ProductDetailOrderSourcePriceMapping instance)
-        {
-            return new ProductDetailOrderSourcePriceMapping
-            {
-                MapId = instance.MapId,
-                OrderSourceId = instance.OrderSourceId,
-                ProductDetailId = instance.ProductDetailId,
-                Price = instance.Price,
-                IsActive = instance.IsActive,
-                FuturePrice = instance.FuturePrice,
-                PreviousPrice = instance.PreviousPrice,
-                BranchId = instance.BranchId
-            };
-        }
     }
 }
 
