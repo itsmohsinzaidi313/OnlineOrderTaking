@@ -222,18 +222,13 @@ internal class Implementation()
         };
 
         var settings = await dbContext.SetupMasterDetails
-            .Where(x => keys.Contains(x.Flex1))
-            .ToDictionaryAsync(x => x.Flex1, x => x.SetupDetailId);
-        var setupDetailIds = settings.Values.ToList();
-        var settingsDetail = await dbContext.SetupCompanySettings.Where(x => setupDetailIds.Contains(x.SetupDetailId ?? 0)).ToDictionaryAsync(x => x.SettingId, x => x.SettingValue);
+            .Join(dbContext.SetupCompanySettings, a => a.SetupDetailId, b => b.SetupDetailId, (a, b) => new { Key = a.Flex1 ?? "", Value = b.SettingValue ?? "" })
+            .Where(x => keys.Contains(x.Key))
+            .ToDictionaryAsync(x => x.Key, x => x.Value);
 
-        var uploadLogoId = settings.GetValueOrDefault("UPLOAD_LOGO", 0);
-        var uploadSplashBannerId = settings.GetValueOrDefault("UPLOAD_SPLASH_BANNER", 0);
-        var uploadBackgroundId = settings.GetValueOrDefault("UPLOAD_BACKGROUND", 0);
-
-        var restaurantLogo = settingsDetail.GetValueOrDefault(uploadLogoId, string.Empty);
-        var splashBanner = settingsDetail.GetValueOrDefault(uploadSplashBannerId, string.Empty);
-        var websiteBackgroundImage = settingsDetail.GetValueOrDefault(uploadBackgroundId, string.Empty);
+        var restaurantLogo = settings.GetValueOrDefault("UPLOAD_LOGO", string.Empty);
+        var splashBanner = settings.GetValueOrDefault("UPLOAD_SPLASH_BANNER", string.Empty);
+        var websiteBackgroundImage = settings.GetValueOrDefault("UPLOAD_BACKGROUND", string.Empty);
 
         settingsData["RESTAURANT_LOGO"] = restaurantLogo;
         settingsData["SPLASH_BANNER"] = splashBanner;
