@@ -13,6 +13,7 @@ namespace ImportService.Services
                                                      .Where(x => x.CompanyId == companyId)
                                                      .ToListAsync(cancellationToken: ct);
 
+            await pgDb.UserLogins.ExecuteDeleteAsync(cancellationToken: ct);
             pgDb.UserLogins.AddRange(userLogins.Select(x => new Entities.UserLogin
             {
                 UserId = x.UserId,
@@ -26,6 +27,7 @@ namespace ImportService.Services
                 EmailAddress = x.EmailAddress ?? string.Empty,
             }));
 
+            await pgDb.UserRoles.ExecuteDeleteAsync(cancellationToken: ct);
             var userRoles = await sqlServerDbContext.UserRoles
                                                     .AsNoTracking()
                                                     .Where(x => x.CompanyId == companyId)
@@ -40,6 +42,7 @@ namespace ImportService.Services
                     IsActive = x.IsActive ?? false,
                 }));
 
+            await pgDb.UserBranchMappings.ExecuteDeleteAsync(cancellationToken: ct);
             var userBranchMappings = await sqlServerDbContext.UserBranchMappings
                                                             .AsNoTracking()
                                                             .Join(sqlServerDbContext.BranchMasters, a => a.BranchId, b => b.BranchId, (a, b) => new { Mappings = a, Branch = b })
