@@ -2,6 +2,10 @@ FROM node:24-alpine
 RUN apk add --no-cache git openssh-client
 WORKDIR /tmp
 
+# Set up SSH for GitHub
+RUN mkdir -p /root/.ssh && \
+    ssh-keyscan github.com >> /root/.ssh/known_hosts
+
 # Clone repository
 RUN git clone git@github.com:Samad-Developer/web-ordering.git
 RUN mv web-ordering/* . && rm -rf web-ordering
