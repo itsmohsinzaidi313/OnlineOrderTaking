@@ -255,6 +255,7 @@ internal class Implementation()
         var orderStatuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
         settingsData["OrderStatuses"] = JsonValue.Create(orderStatuses);
         settingsData["WebsiteConfig"] = await GetSeoData(dbContext);
+        settingsData["RestaurantName"] = await dbContext.SetupCompanies.Select(x => x.CompanyName).FirstOrDefaultAsync() ?? string.Empty;
         return settingsData;
     }
 
