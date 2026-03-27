@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using PointofSaleModels.Application;
 using System.Text.Json.Nodes;
 using Db = PointofSaleModels.PGDatabaseModels;
 
@@ -255,6 +254,68 @@ internal class Implementation()
 
         var orderStatuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
         settingsData["OrderStatuses"] = JsonValue.Create(orderStatuses);
+        settingsData["WebsiteConfig"] = await GetSeoData(dbContext);
         return settingsData;
+    }
+
+    private static async Task<JsonObject> GetSeoData(Db.PgDbContext dbContext)
+    {
+        var data = new JsonObject();
+        var generalSeo = new JsonArray();
+        var externalLinks = new JsonArray();
+
+        var generalSeoKeys = new List<string>()
+        {
+            "WEBSITE_META_TITLE",
+            "HOMEPAGE_META_TITLE",
+            "HOMEPAGE_META_DESCRIPTION",
+            "H1_META",
+            "BODY_CONTENT"
+        };
+
+        var externalLinksKeys = new List<string>()
+        {
+            "FACEBOOK",
+            "INSTAGRAM",
+            "TIKTOK",
+            "ANDROID_APP",
+            "IOS_APP"
+        };
+
+        var allKeys = new List<string>();
+        allKeys.AddRange(generalSeoKeys);
+        allKeys.AddRange(externalLinksKeys);
+
+        var settings = await dbContext.SetupMasterDetails
+            .Join(dbContext.SetupCompanySettings, a => a.SetupDetailId, b => b.SetupDetailId, (a, b) => new { Id = a.SetupDetailId, Key = a.Flex1 ?? "", Value = b.SettingValue ?? "" })
+            .Where(x => allKeys.Contains(x.Key))
+            .ToListAsync();
+
+        foreach (var key in generalSeoKeys)
+        {
+            var obj = new JsonObject
+            {
+                ["Id"] = settings.FirstOrDefault(x => x.Key == key)?.Id ?? 0,
+                ["Value"] = settings.FirstOrDefault(x => x.Key == key)?.Value ?? string.Empty,
+                ["Name"] = key
+            };
+            generalSeo.Add(obj);
+        }
+
+        foreach (var key in externalLinksKeys)
+        {
+            var obj = new JsonObject
+            {
+                ["Id"] = settings.FirstOrDefault(x => x.Key == key)?.Id ?? 0,
+                ["Value"] = settings.FirstOrDefault(x => x.Key == key)?.Value ?? string.Empty,
+                ["Name"] = key
+            };
+            externalLinks.Add(obj);
+        }
+
+        data["GeneralSEO"] = generalSeo;
+        data["ExternalLinks"] = externalLinks;
+
+        return data;
     }
 }
