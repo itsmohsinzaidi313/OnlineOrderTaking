@@ -54,6 +54,10 @@ namespace CreateOrderService
                 DataPayload = response
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.OrderResponseQueue, response);
+            await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
+            {
+                OrderToken = requestPayload.Order?.OrderToken ?? string.Empty,
+            });
         }
 
         private async Task SaveToken(string domainName, string orderToken)
