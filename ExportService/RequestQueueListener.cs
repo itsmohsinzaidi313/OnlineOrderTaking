@@ -1,5 +1,6 @@
 ﻿using ExportService.DatabaseContexts;
 using Microsoft.EntityFrameworkCore;
+using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 
@@ -9,10 +10,14 @@ namespace ExportService
     {
         public override string QueueName() => RabbitMqQueues.ExportRequestQueue;
 
-        public override Task OnMessage(string payload)
+        public async override Task OnMessage(string payload)
         {
-            throw new NotImplementedException();
+            var request = System.Text.Json.JsonSerializer.Deserialize<ExportServicePayload>(payload);
+            if (request == null)
+            {
+                logger.LogError("Failed to deserialize payload: {Payload}", payload);
+                return;
+            }
         }
-
     }
 }
