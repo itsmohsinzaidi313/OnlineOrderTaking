@@ -12,7 +12,8 @@ services:
     networks:
       - patroni-net
     volumes:
-      - ~/.ssh:/root/.ssh:ro
+      - ~/.ssh/id_rsa:/root/.ssh/id_rsa:ro
+      - ~/.ssh/id_rsa.pub:/root/.ssh/id_rsa.pub:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
