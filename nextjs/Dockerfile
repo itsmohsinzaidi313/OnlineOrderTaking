@@ -1,17 +1,12 @@
 FROM node:24-alpine
 
-RUN apk add --no-cache unzip
+WORKDIR /tmp
+
+# Clone repository
+RUN git clone git@github.com:Samad-Developer/web-ordering.git
+RUN mv web-ordering/* . && rm -rf web-ordering
 
 WORKDIR /app
-
-# Extract zip file
-COPY nextjsprojectcode.zip /tmp/
-RUN unzip /tmp/nextjsprojectcode.zip && \
-    # Move files if nested in a single directory
-    if [ -d "nextjsprojectcode" ]; then \
-        mv nextjsprojectcode/* . && \
-        rm -rf nextjsprojectcode; \
-    fi
 
 # Install dependencies
 RUN npm install
