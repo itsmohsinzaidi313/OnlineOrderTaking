@@ -4,6 +4,6 @@ namespace PointofSaleModels.ServicePayloads
 {
     public class ExportServicePayload : ServicePayload
     {
-        public CustomerOrder Order { get; set; }
+        public string OrderToken { get; set; }
     }
 }

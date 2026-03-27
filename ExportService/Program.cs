@@ -1,7 +1,4 @@
-using ExportService;
-using ExportService.Data;
-using ExportService.Interfaces;
-using ExportService.Services;
+using ExportService.DatabaseContexts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -41,11 +38,7 @@ builder.Services
                 maxRetryCount: 5,
                 maxRetryDelay: TimeSpan.FromSeconds(5),
                 errorCodesToAdd: null);
-        }))
-    .AddScoped<ICustomerExportService, CustomerExportService>()
-    .AddScoped<IOrderMasterExportService, OrderMasterExportService>()
-    .AddScoped<IOrderDetailExportService, OrderDetailExportService>()
-    .AddScoped<Implementation>();
+        }));
 
 app.MapGet("/health", ([FromServices] SqlServerDbContext sqlServerDb, [FromServices] RestaurantsDbContext restaurantsDb) =>
 {

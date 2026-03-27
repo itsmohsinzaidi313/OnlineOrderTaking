@@ -127,6 +127,8 @@
 
         public int? PartyCustomerId { get; set; }
 
+        public bool Exported { get; set; }
+
         public List<OrderDetail> OrderDetails { get; set; } = [];
     }
 }
