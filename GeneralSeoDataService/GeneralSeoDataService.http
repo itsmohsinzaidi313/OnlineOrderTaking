@@ -1,0 +1,6 @@
+@GeneralSeoDataService_HostAddress = http://localhost:5191
+
+GET {{GeneralSeoDataService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

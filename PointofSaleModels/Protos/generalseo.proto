@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option csharp_namespace = "PointofSaleModels.Protos";
+
+service GeneralSeoDataService {
+	rpc GetSeoData(Domain) returns (SeoDataList);
+}
+
+message Domain {
+	string domainName = 1;
+}
+
+message SeoData {
+	int32 id = 1;
+	string name = 2;
+	string value = 3;
+}
+
+message SeoDataList {
+	repeated SeoData items = 1;
+}

@@ -9,17 +9,27 @@ using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using App = PointofSaleModels.Application;
-using static PointofSaleModels.Protos.PushNotificationService;
+using static PointofSaleModels.Protos.GeneralSeoDataService;
 using static PointofSaleModels.Protos.OrderHistoryService;
+using static PointofSaleModels.Protos.PushNotificationService;
+using App = PointofSaleModels.Application;
 
 namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient, GeneralSeoDataServiceClient seoDataClient) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
+
+        [HttpGet("seo")]
+        public async Task<IActionResult> GetSeoData([FromQuery] string domain)
+        {
+            if (string.IsNullOrEmpty(domain))
+                return BadRequest(new { error = "Domain is required." });
+            var list = await seoDataClient.GetSeoDataAsync(new Domain { DomainName = domain }, cancellationToken: HttpContext.RequestAborted);
+            return Ok(list);
+        }
 
         [HttpGet("myorder")]
         public async Task<IActionResult> GetMyOrder([FromQuery] string orderNumber)
