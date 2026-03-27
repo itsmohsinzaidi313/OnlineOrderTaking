@@ -15,7 +15,7 @@ namespace GeneralSeoDataService
 
             await foreach (var seoData in FetchSeoData(connectionString))
             {
-                list.Items.Add(seoData);
+                list.GeneralSeo.Add(seoData);
             }
             return list;
         }

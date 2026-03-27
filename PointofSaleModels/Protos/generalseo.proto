@@ -17,5 +17,5 @@ message SeoData {
 }
 
 message SeoDataList {
-	repeated SeoData items = 1;
+	repeated SeoData generalSeo = 1;
 }
