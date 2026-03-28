@@ -4,13 +4,13 @@ RUN apk add --no-cache unzip
 
 WORKDIR /app
 
-# Extract zip file
-COPY nextjsprojectcode.zip /tmp/
-RUN unzip /tmp/nextjsprojectcode.zip && \
+# Extract tar file
+COPY website.tar.gz /tmp/
+RUN tar -xzf /tmp/website.tar.gz -C /tmp/ && \
     # Move files if nested in a single directory
-    if [ -d "nextjsprojectcode" ]; then \
-        mv nextjsprojectcode/* . && \
-        rm -rf nextjsprojectcode; \
+    if [ -d "/tmp/" ]; then \
+        mv /tmp//* . && \
+        rm -rf /tmp/; \
     fi
 
 # Install dependencies
