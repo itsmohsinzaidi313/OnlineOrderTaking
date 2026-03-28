@@ -4,9 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-var app = builder.Build();
+// Add services to the container
 // Configuration
 builder.Configuration
     .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
@@ -40,6 +38,7 @@ builder.Services
                 errorCodesToAdd: null);
         }));
 
+var app = builder.Build();
 app.MapGet("/health", ([FromServices] SqlServerDbContext sqlServerDb, [FromServices] RestaurantsDbContext restaurantsDb) =>
 {
     if (!sqlServerDb.Database.CanConnect())
