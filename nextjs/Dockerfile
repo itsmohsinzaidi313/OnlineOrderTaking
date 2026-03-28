@@ -4,14 +4,11 @@ RUN apk add --no-cache unzip
 
 WORKDIR /app
 
-# Extract tar file
-COPY web-ordering/* /tmp/
-
 # Install dependencies
 RUN npm install
 
 # Fix next binary permissions
-RUN chmod +x node_modules/.bin/next
+# RUN chmod +x node_modules/.bin/next
 
 # Build the application
 RUN npm run build
