@@ -8,9 +8,9 @@ WORKDIR /app
 COPY website.tar.gz /tmp/
 RUN tar -xzf /tmp/website.tar.gz -C /tmp && \
     # Move files if nested in a single directory
-    if [ -d "/tmp/website" ]; then \
-        mv /tmp/website/* . && \
-        rm -rf /tmp/website; \
+    if [ -d "/tmp/" ]; then \
+        mv /tmp//* . && \
+        rm -rf /tmp/; \
     fi
 
 # Install dependencies
