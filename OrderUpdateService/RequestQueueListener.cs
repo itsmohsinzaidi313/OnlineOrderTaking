@@ -67,6 +67,13 @@ namespace OrderUpdateService
                                                             Id = x.OrderStatusId,
                                                             CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc)),
                                                         });
+                        if (orderStatusName == "Delivered")
+                        {
+                            await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
+                            {
+                                OrderToken = requestPayload.OrderToken ?? string.Empty,
+                            });
+                        }
                     }
 
                     if (requestPayload.RiderId != null)
