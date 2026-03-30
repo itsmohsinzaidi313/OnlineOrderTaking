@@ -71,7 +71,7 @@ namespace ImportService
                 await postgresDbContext.SaveChangesAsync(cancellationToken);
 
                 logger.LogInformation("Data import completed successfully for database: {DbName}", dbname);
-                return Results.Ok("Import completed successfully");
+                return Results.Ok($"Import completed successfully for {dbname}");
             }
             catch (Exception ex)
             {

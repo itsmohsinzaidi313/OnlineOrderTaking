@@ -177,7 +177,7 @@ namespace GatewayService.Controllers
                 return StatusCode((int)response.StatusCode, $"Import service failed for companyId: {companyId}");
             }
 
-            return Ok($"Import completed successfully for companyId: {companyId}");
+            return Ok(await response.Content.ReadAsStringAsync());
         }
 
         [HttpPost("generate-token")]

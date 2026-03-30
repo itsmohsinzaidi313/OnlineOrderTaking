@@ -115,7 +115,7 @@ internal class Implementation()
                                             join b in dbContext.DiscountProductDetailMappings on a.DiscountId equals b.DiscountId
                                             join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
                                             join d in dbContext.DiscountBranchMappings on a.DiscountId equals d.DiscountId
-                                            where dbProductDetailBranchMapping.Contains(c.ProductDetailId) && d.BranchId == bid
+                                            where dbProductDetailBranchMapping.Contains(c.ProductDetailId) && d.BranchId == bid && (a.IsActiveInWeb ?? false) == true
                                             select a).Distinct()]);
             }),
             Task.Run(() =>
