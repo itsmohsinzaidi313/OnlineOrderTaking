@@ -32,7 +32,7 @@ namespace ImportService.Services
             var products = await (
                     from p in SqlDb.Products.AsNoTracking()
                     join c in SqlDb.ProductCategories.AsNoTracking() on p.ProductCategoryId equals c.CategoryId
-                    where (p.IsActive == true && p.DisplayInWeb == true) && c.CompanyId == companyId
+                    where p.IsActive == true && c.CompanyId == companyId
                     select p)
                 .ToListAsync(ct);
 
