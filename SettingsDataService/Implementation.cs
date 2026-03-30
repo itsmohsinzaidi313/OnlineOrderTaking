@@ -23,6 +23,9 @@ internal class Implementation()
     internal async Task<JsonObject> GetDataOneAsync(string connectionString)
     {
         using var dbContext = GetDbContext(connectionString);
+        var orderModesList = await (from a in dbContext.SetupMasters
+                                    join b in dbContext.SetupMasterDetails on a.SetupMasterId equals b.SetupMasterId
+                                    select b.Flex1).ToListAsync();
         var orderModes = new JsonObject();
         var delivery = new JsonObject();
         var pickup = new JsonObject();
@@ -31,6 +34,7 @@ internal class Implementation()
         var branches = await dbContext.BranchMasters.ToListAsync();
         var branchDetails = await dbContext.BranchDetails.ToListAsync();
         var setupMasterId = await dbContext.SetupMasters.Where(x => x.SetupMasterName == "Day").Select(x => x.SetupMasterId).FirstOrDefaultAsync();
+        var paymentModes = await dbContext.PaymentModes.ToDictionaryAsync(x => x.PaymentModeId, x => x.PaymentMode1);
         var days = dbContext.SetupMasterDetails
                     .Where(x => x.SetupMasterId == setupMasterId)
                     .Distinct()
@@ -126,16 +130,30 @@ internal class Implementation()
                 branchesJsonArray.Add(item2);
             }
 
+            var taxJson = new JsonArray();
+            foreach (var tax in gsts)
+            {
+                paymentModes.TryGetValue(tax.PaymentModeId ?? 0, out var pmValue);
+                if (pmValue == null) continue;
+                var taxObj = new JsonObject
+                {
+                    ["PaymentMode"] = pmValue,
+                    ["Percentage"] = tax.Gstpercentage,
+                    ["Gst"] = tax.Gstname,
+                };
+                taxJson.Add(taxObj);
+            }
             var cityObj2 = new JsonObject
             {
                 ["CityName"] = item.CityName,
                 ["Branches"] = branchesJsonArray,
-                ["Tax"] = gsts.FirstOrDefault(x => x.CityId == item.CityId)?.Gstpercentage ?? 0.00
+                ["Tax"] = taxJson,
             };
             pickup[item.CityId.ToString()] = cityObj2;
         }
-        orderModes["Delivery"] = delivery;
-        orderModes["Pickup"] = pickup;
+
+        orderModes["Delivery"] = orderModesList.Contains("DELIVERY") ? delivery : null;
+        orderModes["Pickup"] = orderModesList.Contains("TAKE AWAY") ? pickup : null;
         var themeData = new JsonObject
         {
             ["Colors"] = await GetThemeDataAsync(connectionString),

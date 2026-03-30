@@ -70,6 +70,7 @@ internal class Implementation()
                 dbProducts.AddRange(await (from a in dbContext.Products
                                        join b in dbContext.ProductDetails on a.ProductId equals b.ProductId
                                        where dbProductDetailBranchMapping.Contains(b.ProductDetailId)
+                                       orderby a.SortOrder ascending
                                        select a).Distinct().ToListAsync());
             }),
             Task.Run(() =>
