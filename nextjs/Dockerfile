@@ -1,7 +1,5 @@
 FROM node:24-alpine
 
-RUN apk add --no-cache unzip
-
 WORKDIR /app
 
 # Install dependencies
