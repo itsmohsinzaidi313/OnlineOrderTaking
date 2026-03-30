@@ -8,5 +8,6 @@
         public double Value { get; set; } = 0.0;
         public double MaxCap { get; set; }
         public double MinCap { get; set; }
+        public string OrderType { get; set; } = string.Empty;
     }
 }

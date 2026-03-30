@@ -43,6 +43,8 @@ internal class Implementation()
         var dbDepartments = new Dictionary<int, string>();
         var dbItemDiscounts = new List<Db.Discount>();
         var dbItemDiscountsMapping = new List<Db.DiscountProductDetailMapping>();
+        var dbOrderModeDiscountMapping = new List<Db.DiscountOrderModeMapping>();
+        var dbOrderModes = new List<Db.SetupMasterDetail>();
         var dbProductDetailBranchMapping = new List<int>();
         {
             using var dbContext = GetDbContext(connectionString);
@@ -112,7 +114,8 @@ internal class Implementation()
                 dbItemDiscounts.AddRange([.. (from a in dbContext.Discounts
                                             join b in dbContext.DiscountProductDetailMappings on a.DiscountId equals b.DiscountId
                                             join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
-                                            where dbProductDetailBranchMapping.Contains(c.ProductDetailId)
+                                            join d in dbContext.DiscountBranchMappings on a.DiscountId equals d.DiscountId
+                                            where dbProductDetailBranchMapping.Contains(c.ProductDetailId) && d.BranchId == bid
                                             select a).Distinct()]);
             }),
             Task.Run(() =>
@@ -122,11 +125,26 @@ internal class Implementation()
                                                 join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
                                                 where dbProductDetailBranchMapping.Contains(b.ProductDetailId)
                                                 select a).Distinct()]);
-            })
+            }),
+            Task.Run(() =>             {
+                using var dbContext = GetDbContext(connectionString);
+                dbOrderModeDiscountMapping.AddRange([.. (from a in dbContext.DiscountOrderModeMappings
+                                                        join b in dbContext.Discounts on a.DiscountId equals b.DiscountId
+                                                        join c in dbContext.DiscountBranchMappings on b.DiscountId equals c.DiscountId
+                                                        where  c.BranchId == bid
+                                                        select a).Distinct()]);
+             }),
+            Task.Run(() =>
+            {
+                using var dbContext = GetDbContext(connectionString);
+                dbOrderModes.AddRange([.. from a in dbContext.SetupMasterDetails
+                                        where a.SetupMasterId == 4
+                                        select a]);
+             }),
         };
 
         await Task.WhenAll(tasks);
-        return new DbMenuData(dbSizes, dbFlavours, dbProducts, dbProductDetails, dbDepartments, dbDealItemDetails, dbDealDescription, dbItemDiscounts, dbItemDiscountsMapping);
+        return new DbMenuData(dbSizes, dbFlavours, dbProducts, dbProductDetails, dbDepartments, dbDealItemDetails, dbDealDescription, dbItemDiscounts, dbItemDiscountsMapping, dbOrderModeDiscountMapping, dbOrderModes);
     }
 
     internal async IAsyncEnumerable<Category> GetMenuAsync(string connectionString, int branchId)
@@ -166,6 +184,8 @@ internal class Implementation()
                 };
                 foreach (var dbProductDetail in dbMenuData.ProductDetails.Where(x => x.ProductId == dbProduct.ProductId))
                 {
+                    var orderMode = dbMenuData.OrderModes.Join(dbMenuData.OrderModeDiscountMappings, a => a.SetupDetailId, b => b.OrderModeId, (a, b) => new { OrderMode = a.Flex1, b.DiscountId })
+                                        .ToDictionary(x => x.DiscountId, x => x.OrderMode);
                     var itemDiscount = dbMenuData.ItemDiscounts.Join(
                                         dbMenuData.DiscountMappings,
                                         a => a.DiscountId,
@@ -179,7 +199,8 @@ internal class Implementation()
                                         MaxCap = decimal.ToDouble(x.Discount.DiscountCapEnd),
                                         MinCap = decimal.ToDouble(x.Discount.DiscountCapStart),
                                         Type = x.Discount.IsPercentage ? PointofSaleModels.Application.ValueType.Percentage.ToString() : PointofSaleModels.Application.ValueType.Amount.ToString(),
-                                        Value = x.Discount.DiscountPercent
+                                        Value = x.Discount.DiscountPercent,
+                                        OrderType = orderMode[x.Discount.DiscountId]
                                     })
                                     .FirstOrDefault();
 
@@ -248,5 +269,5 @@ internal class Implementation()
         }
     }
 
-    private record DbMenuData(List<Db.ProductSize> ProductSizes, List<Db.Flavour> Flavours, List<Db.Product> Products, List<Db.ProductDetail> ProductDetails, Dictionary<int, string> Departments, List<Db.DealItemDetail> DealItemDetails, List<Db.DealDescription> DealDescriptions, List<Db.Discount> ItemDiscounts, List<Db.DiscountProductDetailMapping> DiscountMappings);
+    private record DbMenuData(List<Db.ProductSize> ProductSizes, List<Db.Flavour> Flavours, List<Db.Product> Products, List<Db.ProductDetail> ProductDetails, Dictionary<int, string> Departments, List<Db.DealItemDetail> DealItemDetails, List<Db.DealDescription> DealDescriptions, List<Db.Discount> ItemDiscounts, List<Db.DiscountProductDetailMapping> DiscountMappings, List<Db.DiscountOrderModeMapping> OrderModeDiscountMappings, List<Db.SetupMasterDetail> OrderModes);
 }
