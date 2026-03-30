@@ -44,7 +44,7 @@ namespace ImportService.Services
                     from d in SqlDb.ProductDetails.AsNoTracking()
                     join p in SqlDb.Products.AsNoTracking() on d.ProductId equals p.ProductId
                     join c in SqlDb.ProductCategories.AsNoTracking() on p.ProductCategoryId equals c.CategoryId
-                    where d.IsActive == true && (p.IsActive == true && p.DisplayInWeb == true) && c.IsActive == true && c.CompanyId == companyId
+                    where d.IsActive == true && p.IsActive == true && c.IsActive == true && c.CompanyId == companyId
                     select d)
                 .ToListAsync(ct);
 
