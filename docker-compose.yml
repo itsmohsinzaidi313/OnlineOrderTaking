@@ -379,6 +379,17 @@ services:
       - redis_data:/data
     networks:
       - patroni-net
+ 
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=${REDIS_HOST}:${REDIS_PORT}
+    depends_on:
+      - redis
+    restart: unless-stopped
 
   # RabbitMQ broker with management UI
   rabbitmq:
