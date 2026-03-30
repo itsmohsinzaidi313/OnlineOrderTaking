@@ -29,7 +29,8 @@ namespace GeneralSeoDataService
             "HOMEPAGE_META_TITLE",
             "HOMEPAGE_META_DESCRIPTION",
             "H1_META",
-            "BODY_CONTENT"
+            "BODY_CONTENT",
+            "UPLOAD_LOGO",
         };
             var settings = await dbContext.SetupMasterDetails
             .Join(dbContext.SetupCompanySettings, a => a.SetupDetailId, b => b.SetupDetailId, (a, b) => new { Id = a.SetupDetailId, Key = a.Flex1 ?? "", Value = b.SettingValue ?? "" })
@@ -41,7 +42,7 @@ namespace GeneralSeoDataService
                 {
                     Id = entry.Id,
                     Name = entry.Key,
-                    Value = entry.Value
+                    Value = entry.Value == "UPLOAD_LOGO" ? "RESTAURANT_LOGO" : entry.Value
                 };
             }
         }
