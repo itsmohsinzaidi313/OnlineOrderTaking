@@ -25,6 +25,8 @@ internal class Implementation()
         using var dbContext = GetDbContext(connectionString);
         var orderModesList = await (from a in dbContext.SetupMasters
                                     join b in dbContext.SetupMasterDetails on a.SetupMasterId equals b.SetupMasterId
+                                    join c in dbContext.OrderModeCompanyMappings on b.SetupDetailId equals c.OrderModeId
+                                    where a.SetupMasterName == "OrderMode" && c.IsActive == true
                                     select b.Flex1).ToListAsync();
         var orderModes = new JsonObject();
         var delivery = new JsonObject();

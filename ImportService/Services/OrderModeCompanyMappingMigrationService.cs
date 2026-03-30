@@ -9,7 +9,7 @@ namespace ImportService.Services
         public async Task MigrateAsync( PostgresDbContext pgDb, int companyId = 0, CancellationToken ct = default)
         {
             var source = await sqlDb.OrderModeCompanyMappings
-                .Where(x => x.CompanyId == companyId && x.IsActive == true)
+                .Where(x => x.CompanyId == companyId)
                 .AsNoTracking()
                 .ToListAsync(ct);
 

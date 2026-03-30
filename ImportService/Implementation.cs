@@ -22,7 +22,8 @@ namespace ImportService
         ICustomerDataImportService customerData,
         IGSTMigrationService gst,
         IUserLoginMigrationService userLogin,
-        IRidersMigrationService riders)
+        IRidersMigrationService riders,
+        IOrderModeCompanyMappingMigrationService omcm)
     {
         private const string PostgresHost = "haproxy";
         public async Task<IResult?> Import(int companyId, string domainName, string selection, CancellationToken cancellationToken = default)
@@ -52,7 +53,8 @@ namespace ImportService
                     { "customerData", customerData },
                     { "gst", gst },
                     { "userLogin", userLogin },
-                    { "riders", riders }
+                    { "riders", riders },
+                    { "omcm", omcm  }
                 };
 
                 if (selection == "all")
