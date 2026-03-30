@@ -25,14 +25,13 @@ namespace ImportService
         IRidersMigrationService riders,
         IOrderModeCompanyMappingMigrationService omcm)
     {
-        private const string PostgresHost = "haproxy";
         public async Task<IResult?> Import(int companyId, string domainName, string selection, CancellationToken cancellationToken = default)
         {
             try
             {
                 var isNewRestaurant = await RestaurantCreated(domainName, cancellationToken);
                 var dbname = domainName.Split(".")[0];
-                using var postgresDbContext = GetPgDbContext($"Host={PostgresHost};Port=5433;Database={dbname};Username=postgres;Password=postgrespass");
+                using var postgresDbContext = GetPgDbContext($"Host=haproxy;Port=5433;Database={dbname};Username=postgres;Password=postgrespass");
 
                 await postgresDbContext.Database.EnsureCreatedAsync(cancellationToken);
 
@@ -54,7 +53,7 @@ namespace ImportService
                     { "gst", gst },
                     { "userLogin", userLogin },
                     { "riders", riders },
-                    { "omcm", omcm  }
+                    { "orderMode", omcm  }
                 };
 
                 if (selection == "all")

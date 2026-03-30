@@ -64,7 +64,7 @@ var app = builder.Build();
 // Optional: minimal endpoint (useful for health checks)
 app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogger<Program> logger, [FromServices] Implementation impl, [FromServices] IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory, HttpContext httpContext, [FromQuery] string selection = "") =>
 {
-    List<string> list = ["all", "setupCompany", "setupMaster", "setupMasterDetail", "city", "area", "branchMaster", "productSize", "flavour", "menu", "paymentMode", "setupCompanySettings", "discount", "customerData", "gst", "userLogin", "riders", "omcm"];
+    List<string> list = ["all", "setupCompany", "setupMaster", "setupMasterDetail", "city", "area", "branchMaster", "productSize", "flavour", "menu", "paymentMode", "setupCompanySettings", "discount", "customerData", "gst", "userLogin", "riders", "orderMode"];
 
     if (string.IsNullOrEmpty(selection) || !list.Contains(selection))
     {
