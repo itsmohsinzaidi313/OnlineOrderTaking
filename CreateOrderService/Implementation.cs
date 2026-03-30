@@ -131,6 +131,7 @@ public class Implementation()
             DiscountAmount = 0.00,
             OrderToken = await GetUniqueTokenAsync(dbContext),
             ChangeAmount = order.CustomerDetails.ChangeAmount,
+            Exported = false,
         };
 
         if (areaId.HasValue)
