@@ -11,7 +11,7 @@ namespace ImportService.Services
         {
             // 1) Migrate main Discount records for this company
             var discounts = await sqlDb.Discounts
-                .Where(x => x.IsActiveInWeb == true && x.CompanyId == companyId)
+                .Where(x => x.IsActive == true && x.CompanyId == companyId)
                 .AsNoTracking()
                 .ToListAsync(ct);
 
