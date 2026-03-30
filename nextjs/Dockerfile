@@ -11,10 +11,6 @@ RUN npm install
 # Copy the rest of the Next.js application
 COPY web-ordering/ .
 
-# Debug: List files to verify
-RUN echo "Files in /app:" && ls -la
-RUN echo "Checking if .next exists:" && ls -la .next 2>/dev/null || echo ".next not found"
-
 # Build the application
 RUN npm run build
 

@@ -184,8 +184,8 @@ internal class Implementation()
                 };
                 foreach (var dbProductDetail in dbMenuData.ProductDetails.Where(x => x.ProductId == dbProduct.ProductId))
                 {
-                    var orderMode = dbMenuData.OrderModes.Join(dbMenuData.OrderModeDiscountMappings, a => a.SetupDetailId, b => b.OrderModeId, (a, b) => new { OrderMode = a.Flex1, b.DiscountId })
-                                        .ToDictionary(x => x.DiscountId, x => x.OrderMode);
+                    //var orderMode = dbMenuData.OrderModes.Join(dbMenuData.OrderModeDiscountMappings, a => a.SetupDetailId, b => b.OrderModeId, (a, b) => new { OrderMode = a.Flex1, b.DiscountId })
+                                        //.ToDictionary(x => x.DiscountId, x => x.OrderMode);
                     var itemDiscount = dbMenuData.ItemDiscounts.Join(
                                         dbMenuData.DiscountMappings,
                                         a => a.DiscountId,
@@ -200,7 +200,7 @@ internal class Implementation()
                                         MinCap = decimal.ToDouble(x.Discount.DiscountCapStart),
                                         Type = x.Discount.IsPercentage ? PointofSaleModels.Application.ValueType.Percentage.ToString() : PointofSaleModels.Application.ValueType.Amount.ToString(),
                                         Value = x.Discount.DiscountPercent,
-                                        OrderType = orderMode[x.Discount.DiscountId]
+                                        //OrderType = orderMode[x.Discount.DiscountId]
                                     })
                                     .FirstOrDefault();
 
