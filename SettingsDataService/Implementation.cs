@@ -23,11 +23,6 @@ internal class Implementation()
     internal async Task<JsonObject> GetDataOneAsync(string connectionString)
     {
         using var dbContext = GetDbContext(connectionString);
-        var orderModesList = await (from a in dbContext.SetupMasters
-                                    join b in dbContext.SetupMasterDetails on a.SetupMasterId equals b.SetupMasterId
-                                    join c in dbContext.OrderModeCompanyMappings on b.SetupDetailId equals c.OrderModeId
-                                    where a.SetupMasterName == "OrderMode" && c.IsActive == true
-                                    select b.Flex1).ToListAsync();
         var orderModes = new JsonObject();
         var delivery = new JsonObject();
         var pickup = new JsonObject();
@@ -154,8 +149,8 @@ internal class Implementation()
             pickup[item.CityId.ToString()] = cityObj2;
         }
 
-        orderModes["Delivery"] = orderModesList.Contains("DELIVERY") ? delivery : null;
-        orderModes["Pickup"] = orderModesList.Contains("TAKE AWAY") ? pickup : null;
+        orderModes["Delivery"] = delivery;
+        orderModes["Pickup"] = pickup;
         var themeData = new JsonObject
         {
             ["Colors"] = await GetThemeDataAsync(connectionString),
@@ -271,6 +266,15 @@ internal class Implementation()
         settingsData["USER_LOGIN_ICON"] = false;
         settingsData["HAMBURGER_MENU"] = false;
         settingsData["ABOUT_US"] = false;
+
+        var orderModesList = await (from a in dbContext.SetupMasters
+                                    join b in dbContext.SetupMasterDetails on a.SetupMasterId equals b.SetupMasterId
+                                    join c in dbContext.OrderModeCompanyMappings on b.SetupDetailId equals c.OrderModeId
+                                    where a.SetupMasterName == "OrderMode" && c.IsActive == true
+                                    select b.Flex1).ToListAsync();
+
+        settingsData["IS_DELIVERY_ENABLED"] = orderModesList.Contains("DELIVERY");
+        settingsData["IS_PICKUP_ENABLED"] = orderModesList.Contains("TAKE AWAY");
 
         var orderStatuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
         settingsData["OrderStatuses"] = JsonValue.Create(orderStatuses);
