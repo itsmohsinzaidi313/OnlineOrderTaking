@@ -117,6 +117,7 @@ app.MapGet("health", ([FromServices] ILogger<Program> logger, [FromServices] IDb
     using var sqlServerDbContext = sqlDbContextFactory.CreateDbContext();
     if (sqlServerDbContext.Database.CanConnect() == false)
     {
+        sqlServerDbContext.Areas.ToList(); // Try to query to confirm connectivity
         logger.LogError("SQL Server Database connection failed");
         return Results.Problem(statusCode: 503);
     }
