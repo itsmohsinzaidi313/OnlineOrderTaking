@@ -112,18 +112,20 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogg
     return response;
 });
 
-app.MapGet("health", ([FromServices] IDbContextFactory<SqlServerDbContext> sqlDbContextFactory, IDbContextFactory<RestaurantsDbContext> restaurantDbContextFactory) =>
+app.MapGet("health", ([FromServices] ILogger<Program> logger, [FromServices] IDbContextFactory<SqlServerDbContext> sqlDbContextFactory, [FromServices] IDbContextFactory<RestaurantsDbContext> restaurantDbContextFactory) =>
 {
     using var sqlServerDbContext = sqlDbContextFactory.CreateDbContext();
     if (sqlServerDbContext.Database.CanConnect() == false)
     {
-        return Results.Problem("Sql Database connection failed", statusCode: 503);
+        logger.LogError("SQL Server Database connection failed");
+        return Results.Problem(statusCode: 503);
     }
 
     using var restaurantDbContext = restaurantDbContextFactory.CreateDbContext();
     if (restaurantDbContext.Database.CanConnect() == false)
     {
-        return Results.Problem("Postgres Database connection failed", statusCode: 503);
+        logger.LogError("Postgres Database connection failed");
+        return Results.Problem(statusCode: 503);
     }
     return Results.Ok("Service is healthy");
 });
