@@ -67,7 +67,7 @@ namespace OrderUpdateService
                                                             Id = x.OrderStatusId,
                                                             CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc)),
                                                         });
-                        if (orderStatusName == "Delivered")
+                        if (orderStatusName?.Equals("Delivered", StringComparison.CurrentCultureIgnoreCase) ?? false)
                         {
                             await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
                             {
