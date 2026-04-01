@@ -100,6 +100,11 @@ namespace GatewayService
 
         public async Task PlaceOrder(CustomerOrder order, string responseKey)
         {
+            if (order.Items.Count == 0)
+            {
+                await Clients.Caller.SendAsync(responseKey, new { Success = false, Message = "Order must contain at least one item." });
+                return;
+            }
             var obj = new OrderServicePayload
             {
                 Order = order,
