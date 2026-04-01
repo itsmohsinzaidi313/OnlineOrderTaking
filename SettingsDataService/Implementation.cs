@@ -83,7 +83,6 @@ internal class Implementation()
                 var branchId = item2["BranchId"]?.GetValue<int>();
                 var businessDaysMapping = await dbContext.BranchDayMappings.Where(x => x.BranchId == branchId).ToListAsync();
                 var todayDow = DateTime.Today.DayOfWeek.ToString();
-                var isBranchOpen = false;
                 var bussinessDays = new JsonArray();
                 foreach (var dayMapping in businessDaysMapping)
                 {
@@ -94,37 +93,37 @@ internal class Implementation()
                         ["EndTime"] = dayMapping.EndTime.ToString(),
                     };
                     bussinessDays.Add(businessday);
-                    var value = days[dayMapping.DayId]?.ToString() ?? string.Empty;
-                    if (value == todayDow)
-                    {
-                        var startTime = dayMapping.StartTime;
-                        var endTime = dayMapping.EndTime;
-                        var timeOfDay = DateTime.Now.TimeOfDay;
-                        if (startTime > endTime)
-                        {
-                            var maybeOpen = startTime > timeOfDay;
-                            if (maybeOpen)
-                            {
-                                isBranchOpen = true;
-                            }
-                            else
-                            {
-                                isBranchOpen = timeOfDay > endTime;
-                            }
-                        }
-                        else if (startTime < endTime)
-                        {
-                            if (timeOfDay >= startTime && timeOfDay <= endTime)
-                            {
-                                isBranchOpen = true;
-                            }
-                        }
-                        item2["IsBranchOpen"] = isBranchOpen;
-                        break;
-                    }
+                    //var value = days[dayMapping.DayId]?.ToString() ?? string.Empty;
+                    //if (value == todayDow)
+                    //{
+                    //    var startTime = dayMapping.StartTime;
+                    //    var endTime = dayMapping.EndTime;
+                    //    var timeOfDay = DateTime.Now.TimeOfDay;
+                    //    if (startTime > endTime)
+                    //    {
+                    //        var maybeOpen = startTime > timeOfDay;
+                    //        if (maybeOpen)
+                    //        {
+                    //            isBranchOpen = true;
+                    //        }
+                    //        else
+                    //        {
+                    //            isBranchOpen = timeOfDay > endTime;
+                    //        }
+                    //    }
+                    //    else if (startTime < endTime)
+                    //    {
+                    //        if (timeOfDay >= startTime && timeOfDay <= endTime)
+                    //        {
+                    //            isBranchOpen = true;
+                    //        }
+                    //    }
+                    //    item2["IsBranchOpen"] = isBranchOpen;
+                    //    break;
+                    //}
                 }
                 item2["BusinessDays"] = bussinessDays;
-                item2["IsBranchOpen"] = isBranchOpen;
+                item2["IsBranchOpen"] = false;
 
                 var branchDetail = branchDetails.FirstOrDefault(bd => bd.BranchId == branchId);
                 if (branchDetail != null)
