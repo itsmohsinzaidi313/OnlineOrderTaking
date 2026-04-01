@@ -7,6 +7,8 @@
         public int OrderStatusId { get; set; }
         public string Description { get; set; } = string.Empty;
         public int CompanyId { get; set; }
-        public DateTime CreatedDateTime { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public int CreatedBy { get; set; }
+        public bool IsActive { get; set; }
     }
 }

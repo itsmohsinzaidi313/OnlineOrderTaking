@@ -41,6 +41,7 @@ namespace ExportService.DatabaseContexts
         public DbSet<UserRole> UserRoles => Set<UserRole>();
         public DbSet<UserBranchMapping> UserBranchMappings => Set<UserBranchMapping>();
         public DbSet<OrderStatus> OrderStatuses => Set<OrderStatus>();
+        public DbSet<OrderStatusLog> OrderStatusLogs => Set<OrderStatusLog>();
         public DbSet<Rider> Riders => Set<Rider>();
         public DbSet<OrderMaster> OrderMasters => Set<OrderMaster>();
         public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
@@ -236,6 +237,10 @@ namespace ExportService.DatabaseContexts
             modelBuilder.Entity<OrderDetail>()
                 .ToTable("OrderDetail")
                 .HasKey(x => x.OrderDetailId);
+
+            modelBuilder.Entity<OrderStatusLog>()
+                .ToTable("OrderStatusLog")
+                .HasKey(x => x.OrderStatusLogId);
 
             modelBuilder.Entity<OrderMaster>()
                 .Ignore(o => o.Exported)

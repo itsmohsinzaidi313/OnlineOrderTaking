@@ -43,6 +43,11 @@ namespace CreateOrderService
                     {
                         CustomerOrder = requestPayload.Order!,
                     });
+                await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
+                {
+                    ExportType = "NewOrder",
+                    OrderToken = orderToken ?? string.Empty,
+                });
             }
             catch (Exception ex)
             {

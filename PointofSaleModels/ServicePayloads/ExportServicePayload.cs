@@ -16,7 +16,7 @@ namespace PointofSaleModels.ServicePayloads
         public ExportServicePayload(ExportServicePayload payload) : base(payload)
         {
         }
-
+        public string ExportType { get; set; }
         public string OrderToken { get; set; }
     }
 }

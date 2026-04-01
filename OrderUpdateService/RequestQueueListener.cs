@@ -27,6 +27,11 @@ namespace OrderUpdateService
                         await dbContext.OrderMasters
                             .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
                             .ExecuteUpdateAsync(x => x.SetProperty(x => x.BranchId, requestPayload.BranchTransferId.Value));
+                        await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
+                        {
+                            ExportType = "BranchTransfer",
+                            OrderToken = requestPayload.OrderToken ?? string.Empty,
+                        });
                     }
 
                     if (requestPayload.OrderStatusId != null)
@@ -67,10 +72,11 @@ namespace OrderUpdateService
                                                             Id = x.OrderStatusId,
                                                             CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc)),
                                                         });
-                        if (orderStatusName?.Equals("Delivered", StringComparison.CurrentCultureIgnoreCase) ?? false)
+                        if (new[] { "Delivered", "Cancel" }.Any(x => x.Equals(orderStatusName, StringComparison.CurrentCultureIgnoreCase)))
                         {
                             await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
                             {
+                                ExportType = "OrderStatusUpdate",
                                 OrderToken = requestPayload.OrderToken ?? string.Empty,
                             });
                         }
@@ -81,6 +87,11 @@ namespace OrderUpdateService
                         await dbContext.OrderMasters
                             .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
                             .ExecuteUpdateAsync(x => x.SetProperty(x => x.RiderId, requestPayload.RiderId));
+                        await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
+                        {
+                            ExportType = "RiderAssignment",
+                            OrderToken = requestPayload.OrderToken ?? string.Empty,
+                        });
                     }
 
                     int? deliveryTime = requestPayload.DeliveryTime;

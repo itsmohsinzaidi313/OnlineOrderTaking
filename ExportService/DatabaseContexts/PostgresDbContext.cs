@@ -277,6 +277,11 @@ namespace ExportService.DatabaseContexts
             modelBuilder.Entity<Rider>()
                 .ToTable("rider")
                 .HasKey(x => x.RiderId);
+
+            modelBuilder.Entity<OrderStatusLog>()
+                .Ignore(x => x.CreatedDate)
+                .Ignore(x => x.CreatedBy)
+                .Ignore(x => x.IsActive);
         }
 
     }

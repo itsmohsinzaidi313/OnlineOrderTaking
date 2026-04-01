@@ -20,8 +20,94 @@ namespace ExportService
                 return;
             }
             var connectionString = await GetConnectionString(request.DomainName);
-            await Export(request.OrderToken, connectionString);
-            await MarkAsExported(request.OrderToken, connectionString);
+            var orderExists = await CheckIfOrderExists(request.OrderToken, connectionString);
+
+            if (!orderExists)
+            {
+                var exported = await Export(request.OrderToken, connectionString);
+                if (exported)
+                {
+                    await MarkAsExported(request.OrderToken, connectionString);
+                }
+            }
+            else
+            {
+                if(request.ExportType == "BranchTransfer")
+                {
+                    await UpdateBranch(request.OrderToken, connectionString);
+                }
+                if(request.ExportType == "OrderStatusUpdate")
+                {
+                    await UpdateOrderStatus(request.OrderToken, connectionString);
+                }
+                if(request.ExportType == "RiderAssignment")
+                {
+                    await UpdateRider(request.OrderToken, connectionString);
+                }
+            }
+        }
+
+        private async Task UpdateBranch(string orderToken, string connectionString)
+        {
+            using var postgresContext = GetDbContext(connectionString);
+            using var sqlContext = sqlContextFactory.CreateDbContext();
+            var pgOrderMaster = await postgresContext.OrderMasters.FirstOrDefaultAsync(om => om.OrderToken == orderToken);
+            await sqlContext.OrderMasters
+                .Where(x => x.OrderNumber == pgOrderMaster.OrderNumber)
+                .ExecuteUpdateAsync(x => x.SetProperty(x => x.BranchId, pgOrderMaster.BranchId));
+        }
+
+        private async Task UpdateRider(string orderToken, string connectionString)
+        {
+            using var sqlContext = sqlContextFactory.CreateDbContext();
+            using var postgresContext = GetDbContext(connectionString);
+            var pgOrderMaster = await postgresContext.OrderMasters.FirstOrDefaultAsync(om => om.OrderToken == orderToken);
+            var sqlOrderMaster = await sqlContext.OrderMasters.FirstOrDefaultAsync(om => om.OrderNumber == pgOrderMaster.OrderNumber);
+            if (pgOrderMaster != null && sqlOrderMaster != null)
+            {
+                await sqlContext.OrderMasters
+                    .Where(x => x.OrderMasterId == sqlOrderMaster.OrderMasterId)
+                    .ExecuteUpdateAsync(x => x.SetProperty(x => x.RiderId, pgOrderMaster.RiderId));
+            }
+        }
+
+        private async Task UpdateOrderStatus(string orderToken, string connectionString)
+        {
+            using var sqlContext = sqlContextFactory.CreateDbContext();
+            using var postgresContext = GetDbContext(connectionString);
+
+            var pgOrderMaster = await postgresContext.OrderMasters.FirstOrDefaultAsync(om => om.OrderToken == orderToken);
+            var orderStatusLogs = await postgresContext.OrderStatusLogs.Where(os => os.OrderMasterId == pgOrderMaster.OrderMasterId).ToListAsync();
+
+
+            var sqlOrderMaster = await sqlContext.OrderMasters.FirstOrDefaultAsync(om => om.OrderNumber == pgOrderMaster.OrderNumber);
+
+            var sqlOrderStatusLogs = await sqlContext.OrderStatusLogs.Where(os => os.OrderMasterId == sqlOrderMaster.OrderMasterId).ToListAsync();
+            var pgOrderStatusLogs = await postgresContext.OrderStatusLogs.Where(os => os.OrderMasterId == pgOrderMaster.OrderMasterId).ToListAsync();
+            var createdBy = postgresContext.UserLogins.FirstOrDefault()?.UserId ?? 0;
+            foreach (var pgLog in pgOrderStatusLogs)
+            {
+                if (!sqlOrderStatusLogs.Any(sqlLog => sqlLog.OrderStatusId == pgLog.OrderStatusId))
+                {
+                    var newSqlLog = new OrderStatusLog
+                    {
+                        OrderMasterId = sqlOrderMaster.OrderMasterId,
+                        OrderStatusId = pgLog.OrderStatusId,
+                        CompanyId = pgLog.CompanyId,
+                        Description = pgLog.Description,
+                        CreatedDate = DateTime.Now,
+                        CreatedBy = createdBy,
+                    };
+                    await sqlContext.OrderStatusLogs.AddAsync(newSqlLog);
+                }
+            }
+            await sqlContext.SaveChangesAsync();
+        }
+
+        private async Task<bool> CheckIfOrderExists(string orderToken, string connectionString)
+        {
+            using var dbContext = GetDbContext(connectionString);
+            return await dbContext.OrderMasters.AnyAsync(om => om.OrderToken == orderToken);
         }
 
         private async Task<string> GetConnectionString(string domainName)
@@ -51,24 +137,18 @@ namespace ExportService
             await dbContext.OrderMasters.ExecuteUpdateAsync(x => x.SetProperty(x => x.Exported, true));
         }
 
-        private async Task Export(string orderToken, string connectionString)
+        private async Task<bool> Export(string orderToken, string connectionString)
         {
             using var postgresContext = GetDbContext(connectionString);
             using var sqlContext = sqlContextFactory.CreateDbContext();
             var orderMaster = await postgresContext.OrderMasters.FirstOrDefaultAsync(o => o.OrderToken == orderToken);
             var area = sqlContext.Areas.FirstOrDefault(a => a.AreaId == orderMaster.AreaId);
             var strategy = sqlContext.Database.CreateExecutionStrategy();
-            await strategy.ExecuteAsync(async () =>
+            return await strategy.ExecuteAsync<bool>(async () =>
             {
                 using var transaction = await sqlContext.Database.BeginTransactionAsync();
                 try
                 {
-                    if (orderMaster == null)
-                    {
-                        logger.LogError("Order not found for token: {OrderToken}", orderToken);
-                        return;
-                    }
-
                     var pgOrderMaster = await postgresContext.OrderMasters.FirstOrDefaultAsync(o => o.OrderToken == orderToken);
                     var pgOrderDetails = await postgresContext.OrderDetails.Where(od => od.OrderMasterId == pgOrderMaster.OrderMasterId).ToListAsync();
                     var pgCustomerPhone = await postgresContext.CustomerPhones.FirstOrDefaultAsync(cp => cp.PhoneId == pgOrderMaster.PhoneId);
@@ -128,12 +208,24 @@ namespace ExportService
 
                     await sqlContext.SaveChangesAsync();
 
+                    var pgOrderStatuses = await postgresContext.OrderStatusLogs.Where(os => os.OrderMasterId == pgOrderMaster.OrderMasterId).ToListAsync();
+                    pgOrderStatuses.ForEach(x =>
+                    {
+                        x.OrderStatusLogId = 0;
+                        x.OrderMasterId = sqlOrderMaster.OrderMasterId;
+                    });
+
+                    await sqlContext.OrderStatusLogs.AddRangeAsync(pgOrderStatuses);
+                    await sqlContext.SaveChangesAsync();
+
                     await transaction.CommitAsync();
+                    return true;
                 }
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Error exporting order with token: {OrderToken}", orderToken);
                     await transaction.RollbackAsync();
+                    return false;
                 }
             });
         }
