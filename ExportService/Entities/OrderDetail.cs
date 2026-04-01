@@ -48,5 +48,9 @@ public partial class OrderDetail
 
     public int? DiscountId { get; set; }
 
+    public int CreatedBy { get; set; }
+
+    public DateTime CreatedDate { get; set; }
+
     public OrderMaster OrderMaster { get; set; } = new();
 }

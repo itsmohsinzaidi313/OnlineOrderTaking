@@ -55,60 +55,87 @@ namespace ExportService
         {
             using var postgresContext = GetDbContext(connectionString);
             using var sqlContext = sqlContextFactory.CreateDbContext();
-            using var transaction = await sqlContext.Database.BeginTransactionAsync();
-            try
+            var orderMaster = await postgresContext.OrderMasters.FirstOrDefaultAsync(o => o.OrderToken == orderToken);
+            var area = sqlContext.Areas.FirstOrDefault(a => a.AreaId == orderMaster.AreaId);
+            var strategy = sqlContext.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                var orderMaster = await postgresContext.OrderMasters.FirstOrDefaultAsync(o => o.OrderToken == orderToken);
-
-                if (orderMaster == null)
+                using var transaction = await sqlContext.Database.BeginTransactionAsync();
+                try
                 {
-                    logger.LogError("Order not found for token: {OrderToken}", orderToken);
-                    return;
-                }
+                    if (orderMaster == null)
+                    {
+                        logger.LogError("Order not found for token: {OrderToken}", orderToken);
+                        return;
+                    }
 
-                var pgOrderMaster = await postgresContext.OrderMasters.FirstOrDefaultAsync(o => o.OrderToken == orderToken);
-                var pgOrderDetails = await postgresContext.OrderDetails.Where(od => od.OrderMasterId == pgOrderMaster.OrderMasterId).ToListAsync();
-                var pgCustomerPhone = await postgresContext.CustomerPhones.FirstOrDefaultAsync(cp => cp.PhoneId == pgOrderMaster.PhoneId);
-                var pgCustomer = await postgresContext.Customers.FirstOrDefaultAsync(c => c.CustomerId == pgOrderMaster.CustomerId);
-                var pgCustomerAddress = await postgresContext.CustomerAddressDetails.FirstOrDefaultAsync(ca => ca.CustomerAddressId == pgOrderMaster.CustomerAddressId);
+                    var pgOrderMaster = await postgresContext.OrderMasters.FirstOrDefaultAsync(o => o.OrderToken == orderToken);
+                    var pgOrderDetails = await postgresContext.OrderDetails.Where(od => od.OrderMasterId == pgOrderMaster.OrderMasterId).ToListAsync();
+                    var pgCustomerPhone = await postgresContext.CustomerPhones.FirstOrDefaultAsync(cp => cp.PhoneId == pgOrderMaster.PhoneId);
+                    var pgCustomer = await postgresContext.Customers.FirstOrDefaultAsync(c => c.CustomerId == pgOrderMaster.CustomerId);
+                    var pgCustomerAddress = await postgresContext.CustomerAddressDetails.FirstOrDefaultAsync(ca => ca.CustomerAddressId == pgOrderMaster.CustomerAddressId);
 
-                var sqlOrderMaster = MapToOrderMaster(pgOrderMaster);
+                    var createdBy = postgresContext.UserLogins.FirstOrDefault()?.UserId ?? 0;
+                    var createdDate = DateTime.Now;
 
-                sqlContext.OrderMasters.Add(sqlOrderMaster);
-                await sqlContext.SaveChangesAsync();
+                    var existingPhone = await sqlContext.CustomerPhones.FirstOrDefaultAsync(cp => cp.PhoneNumber == pgCustomerPhone.PhoneNumber);
+                    if (existingPhone == null)
+                    {
+                        pgCustomerPhone.PhoneId = 0;
+                        pgCustomerPhone.CreatedBy = createdBy;
+                        pgCustomerPhone.CreatedDate = createdDate;
+                        await sqlContext.CustomerPhones.AddAsync(pgCustomerPhone);
+                        await sqlContext.SaveChangesAsync();
+                    }
 
-                await sqlContext.OrderDetails.AddRangeAsync(pgOrderDetails);
+                    var existingCustomer = await sqlContext.Customers.FirstOrDefaultAsync(c => c.CustomerId == pgCustomer.CustomerId);
+                    if (existingCustomer == null)
+                    {
+                        pgCustomer.CustomerId = 0;
+                        pgCustomer.PhoneId = existingPhone?.PhoneId ?? pgCustomerPhone.PhoneId;
+                        await sqlContext.Customers.AddAsync(pgCustomer);
+                        await sqlContext.SaveChangesAsync();
+                    }
+                    if (pgCustomerAddress != null)
+                    {
+                        var existingAddress = await sqlContext.CustomerAddressDetails.FirstOrDefaultAsync(ca => ca.CompleteAddress == pgCustomerAddress.CompleteAddress);
+                        if (existingAddress == null)
+                        {
+                            pgCustomerAddress.CustomerAddressId = 0;
+                            pgCustomerAddress.PhoneId = existingPhone?.PhoneId ?? pgCustomerPhone.PhoneId;
+                            pgCustomerAddress.CreatedBy = createdBy;
+                            pgCustomerAddress.CreatedDate = createdDate;
+                            pgCustomerAddress.Area = area;
+                            await sqlContext.CustomerAddressDetails.AddAsync(pgCustomerAddress);
+                            await sqlContext.SaveChangesAsync();
+                        }
+                    }
 
-                await sqlContext.SaveChangesAsync();
-
-                var phoneExists = await sqlContext.CustomerPhones.AnyAsync(cp => cp.PhoneId == pgCustomerPhone.PhoneId);
-                if (!phoneExists)
-                {
-                    await sqlContext.CustomerPhones.AddAsync(pgCustomerPhone);
+                    var sqlOrderMaster = MapToOrderMaster(pgOrderMaster);
+                    sqlOrderMaster.CustomerAddressId = pgCustomerAddress.CustomerAddressId;
+                    sqlOrderMaster.CustomerId = pgCustomer.CustomerId;
+                    sqlOrderMaster.PhoneId = existingPhone?.PhoneId ?? pgCustomerPhone.PhoneId;
+                    sqlContext.OrderMasters.Add(sqlOrderMaster);
                     await sqlContext.SaveChangesAsync();
-                }
+                    pgOrderDetails.ForEach(x =>
+                    {
+                        x.OrderMaster = sqlOrderMaster;
+                        x.OrderDetailId = 0;
+                        x.CreatedBy = createdBy;
+                        x.CreatedDate = createdDate;
+                    });
+                    await sqlContext.OrderDetails.AddRangeAsync(pgOrderDetails);
 
-                var customerExists = await sqlContext.Customers.AnyAsync(c => c.CustomerId == pgCustomer.CustomerId);
-                if (!customerExists)
-                {
-                    await sqlContext.Customers.AddAsync(pgCustomer);
                     await sqlContext.SaveChangesAsync();
-                }
 
-                var addressExists = await sqlContext.CustomerAddressDetails.AnyAsync(ca => ca.CustomerAddressId == pgCustomerAddress.CustomerAddressId);
-                if (!addressExists)
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
                 {
-                    await sqlContext.CustomerAddressDetails.AddAsync(pgCustomerAddress);
-                    await sqlContext.SaveChangesAsync();
+                    logger.LogError(ex, "Error exporting order with token: {OrderToken}", orderToken);
+                    await transaction.RollbackAsync();
                 }
-
-                await transaction.CommitAsync();
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error exporting order with token: {OrderToken}", orderToken);
-                await transaction.RollbackAsync();
-            }
+            });
         }
 
         private static OrderMaster MapToOrderMaster(OrderMaster pgOrderMaster)
@@ -118,11 +145,9 @@ namespace ExportService
                 CompanyId = pgOrderMaster.CompanyId,
                 OrderNumber = pgOrderMaster.OrderNumber,
                 CreatedBy = pgOrderMaster.CreatedBy,
+                CreatedDate = DateTime.Now,
                 BranchId = pgOrderMaster.BranchId,
                 AreaId = pgOrderMaster.AreaId,
-                CustomerId = pgOrderMaster.CustomerId,
-                PhoneId = pgOrderMaster.PhoneId,
-                CustomerAddressId = pgOrderMaster.CustomerAddressId,
                 RiderId = pgOrderMaster.RiderId,
                 OrderStatusId = pgOrderMaster.OrderStatusId,
                 IsAdvanceOrder = pgOrderMaster.IsAdvanceOrder,
@@ -176,7 +201,6 @@ namespace ExportService
                 CardNumber = pgOrderMaster.CardNumber,
                 PartyPhoneId = pgOrderMaster.PartyPhoneId,
                 PartyCustomerId = pgOrderMaster.PartyCustomerId,
-
                 OrderDetails = []
             };
         }

@@ -197,21 +197,17 @@ namespace ExportService.DatabaseContexts
                 .ToTable("customer_address_detail")
                 .HasKey(x => x.CustomerAddressId);
 
+            modelBuilder.Entity<CustomerAddressDetail>()
+                .Ignore(x => x.CreatedDate)
+                .Ignore(x => x.CreatedBy);
+
             modelBuilder.Entity<CustomerPhone>()
                 .ToTable("customer_phone")
                 .HasKey(x => x.PhoneId);
 
-            modelBuilder.Entity<Customer>()
-                .HasOne(c => c.CustomerPhone)
-                .WithMany(p => p.Customers)
-                .HasForeignKey(c => c.PhoneId)
-                .HasPrincipalKey(p => p.PhoneId);
-
-            modelBuilder.Entity<CustomerAddressDetail>()
-                .HasOne(c => c.CustomerPhone)
-                .WithMany(p => p.CustomerAddressDetails)
-                .HasForeignKey(c => c.PhoneId)
-                .HasPrincipalKey(p => p.PhoneId);
+            modelBuilder.Entity<CustomerPhone>()
+                .Ignore(x => x.CreatedDate)
+                .Ignore(x => x.CreatedBy);
 
             modelBuilder.Entity<OrderMaster>()
                 .ToTable("order_master")
@@ -227,6 +223,10 @@ namespace ExportService.DatabaseContexts
                 .HasForeignKey(od => od.OrderMasterId)
                 .HasPrincipalKey(o => o.OrderMasterId);
 
+            modelBuilder.Entity<OrderDetail>()
+                .Ignore(x => x.CreatedDate)
+                .Ignore(x => x.CreatedBy);
+
             modelBuilder.Entity<OrderMaster>()
                 .Property(o => o.OrderDate)
                 .HasColumnType("timestamp without time zone");
@@ -234,6 +234,9 @@ namespace ExportService.DatabaseContexts
             modelBuilder.Entity<OrderMaster>()
                 .Property(o => o.AdvanceOrderDate)
                 .HasColumnType("timestamp without time zone");
+
+            modelBuilder.Entity<OrderMaster>()
+                .Ignore(x => x.CreatedDate);
 
             modelBuilder.Entity<OrderDetail>()
                 .ToTable("order_detail")
