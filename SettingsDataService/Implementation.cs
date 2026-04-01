@@ -93,34 +93,35 @@ internal class Implementation()
                         ["EndTime"] = dayMapping.EndTime.ToString(),
                     };
                     bussinessDays.Add(businessday);
-                    //var value = days[dayMapping.DayId]?.ToString() ?? string.Empty;
-                    //if (value == todayDow)
-                    //{
-                    //    var startTime = dayMapping.StartTime;
-                    //    var endTime = dayMapping.EndTime;
-                    //    var timeOfDay = DateTime.Now.TimeOfDay;
-                    //    if (startTime > endTime)
-                    //    {
-                    //        var maybeOpen = startTime > timeOfDay;
-                    //        if (maybeOpen)
-                    //        {
-                    //            isBranchOpen = true;
-                    //        }
-                    //        else
-                    //        {
-                    //            isBranchOpen = timeOfDay > endTime;
-                    //        }
-                    //    }
-                    //    else if (startTime < endTime)
-                    //    {
-                    //        if (timeOfDay >= startTime && timeOfDay <= endTime)
-                    //        {
-                    //            isBranchOpen = true;
-                    //        }
-                    //    }
-                    //    item2["IsBranchOpen"] = isBranchOpen;
-                    //    break;
-                    //}
+                    var isBranchOpen = false;
+                    var value = days[dayMapping.DayId]?.ToString() ?? string.Empty;
+                    if (value == todayDow)
+                    {
+                        var startTime = dayMapping.StartTime;
+                        var endTime = dayMapping.EndTime;
+                        var timeOfDay = DateTime.Now.TimeOfDay;
+                        if (startTime > endTime)
+                        {
+                            var maybeOpen = startTime > timeOfDay;
+                            if (maybeOpen)
+                            {
+                                isBranchOpen = true;
+                            }
+                            else
+                            {
+                                isBranchOpen = timeOfDay > endTime;
+                            }
+                        }
+                        else if (startTime < endTime)
+                        {
+                            if (timeOfDay >= startTime && timeOfDay <= endTime)
+                            {
+                                isBranchOpen = true;
+                            }
+                        }
+                        item2["IsBranchOpen"] = isBranchOpen;
+                        break;
+                    }
                 }
                 item2["BusinessDays"] = bussinessDays;
                 item2["IsBranchOpen"] = false;
