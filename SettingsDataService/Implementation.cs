@@ -78,16 +78,22 @@ internal class Implementation()
                     ["BranchName"] = x.BranchName,
                     ["BranchAddress"] = x.BranchAddress,
                     ["BranchPhoneNumber"] = x.BranchPhoneNumber,
-                    ["BusinessStartTime"] = x.BusinessDayStartTime.ToString(),
-                    ["BusinessEndTime"] = x.BusinessDayEndTime.ToString(),
                 }))
             {
                 var branchId = item2["BranchId"]?.GetValue<int>();
                 var businessDaysMapping = await dbContext.BranchDayMappings.Where(x => x.BranchId == branchId).ToListAsync();
                 var todayDow = DateTime.Today.DayOfWeek.ToString();
                 var isBranchOpen = false;
+                var bussinessDays = new JsonArray();
                 foreach (var dayMapping in businessDaysMapping)
                 {
+                    var businessday = new JsonObject
+                    {
+                        ["Day"] = days[dayMapping.DayId] ?? string.Empty,
+                        ["StartTime"] = dayMapping.StartTime.ToString(),
+                        ["EndTime"] = dayMapping.EndTime.ToString(),
+                    };
+                    bussinessDays.Add(businessday);
                     var value = days[dayMapping.DayId]?.ToString() ?? string.Empty;
                     if (value == todayDow)
                     {
@@ -117,6 +123,7 @@ internal class Implementation()
                         break;
                     }
                 }
+                item2["BusinessDays"] = bussinessDays;
                 item2["IsBranchOpen"] = isBranchOpen;
 
                 var branchDetail = branchDetails.FirstOrDefault(bd => bd.BranchId == branchId);
