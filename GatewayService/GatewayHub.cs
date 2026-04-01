@@ -200,44 +200,41 @@ namespace GatewayService
             }
 
             var now = DateTime.Now;
-            var currentDay = now.DayOfWeek.ToString();
-            var currentTime = now.TimeOfDay;
+            var currentDay = now.DayOfWeek;
+            var businessTimeNode = businessTimes.FirstOrDefault(x => x["Day"]?.GetValue<string>()?.Equals(currentDay.ToString(), StringComparison.OrdinalIgnoreCase) == true);
 
-            foreach (var businessTimeNode in businessTimes)
+            if (businessTimeNode is not JsonObject businessTime)
+                return false;
+
+            var day = businessTime["Day"]?.GetValue<string>();
+            if (!Enum.TryParse<DayOfWeek>(day, true, out var businessDay))
+                return false;
+
+            if (!TryParseTime(businessTime["StartTime"], out var startTime) || !TryParseTime(businessTime["EndTime"], out var endTime))
+                return false;
+
+            var isBranchOpen = false;
+            var timeOfDay = DateTime.Now.TimeOfDay;
+            if (startTime > endTime)
             {
-                if (businessTimeNode is not JsonObject businessTime)
+                var maybeOpen = startTime > timeOfDay;
+                if (maybeOpen)
                 {
-                    continue;
-                }
-
-                var day = businessTime["Day"]?.GetValue<string>();
-                if (!string.Equals(day, currentDay, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                if (!TryParseTime(businessTime["StartTime"], out var startTime) || !TryParseTime(businessTime["EndTime"], out var endTime))
-                {
-                    continue;
-                }
-
-                if (startTime <= endTime)
-                {
-                    if (currentTime >= startTime && currentTime <= endTime)
-                    {
-                        return true;
-                    }
+                    isBranchOpen = true;
                 }
                 else
                 {
-                    if (currentTime >= startTime || currentTime <= endTime)
-                    {
-                        return true;
-                    }
+                    isBranchOpen = timeOfDay > endTime;
                 }
             }
-
-            return false;
+            else if (startTime < endTime)
+            {
+                if (timeOfDay >= startTime && timeOfDay <= endTime)
+                {
+                    isBranchOpen = true;
+                }
+            }
+            return isBranchOpen;
         }
 
         private static bool TryParseTime(JsonNode? timeNode, out TimeSpan time)
