@@ -25,8 +25,8 @@ services:
       context: .
       dockerfile: ./ExportService/Dockerfile
     environment:
-      - ConnectionStrings__SqlServer=${MSSQLCONNECTION}
-      - ConnectionStrings__Postgres=${RWSQLCONNECTION}
+      - ConnectionStrings__SqlServer=${MSSQLCONNECTIONTESTING}
+      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
