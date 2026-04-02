@@ -44,6 +44,7 @@ builder.Services
         }))
     .Configure<RabbitMqSettings>(rabbitMqSection)
     .AddSingleton<RabbitMqConnection>()
+    .AddSingleton<OrderExportService>()
     .AddHostedService<RequestQueueListener>();
 
 var app = builder.Build();

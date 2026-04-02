@@ -18,7 +18,26 @@ services:
       retries: 3
       start_period: 40s
     volumes:
-      - /var/www/web-ordering/web-ordering:/app:ro 
+      - /var/www/web-ordering/web-ordering:/app:ro
+  
+  exportservice:
+    build:
+      context: .
+      dockerfile: ./ExportService/Dockerfile
+    environment:
+      - ConnectionStrings__SqlServer=${MSSQLCONNECTION}
+      - ConnectionStrings__Postgres=${RWSQLCONNECTION}
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - patroni-net
+    depends_on:
+      haproxy:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   generalseodataservice:
     build:

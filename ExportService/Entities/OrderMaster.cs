@@ -23,6 +23,7 @@
         public int? CustomerAddressId { get; set; }
 
         public int? RiderId { get; set; }
+        public Rider? Rider { get; set; }
 
         public int OrderStatusId { get; set; }
 
