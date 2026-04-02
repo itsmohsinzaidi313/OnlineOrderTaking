@@ -8,40 +8,43 @@ namespace ExportService
     {
         protected async override Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            try
+            while (!stoppingToken.IsCancellationRequested)
             {
-                var restaurantsContext = await restaurantsContextFactory.CreateDbContextAsync(stoppingToken);
-                var restaurants = await restaurantsContext.Restaurants.ToListAsync(stoppingToken);
-                foreach (var restaurant in restaurants)
+                try
                 {
-                    var connectionString = restaurant.ConnectionString;
-                    var pgContext = exportService.GetDbContext(connectionString);
-                    var orderNumbers = await pgContext.OrderMasters
-                                            .Where(x => x.Exported == false)
-                                            .Select(o => o.OrderNumber)
-                                            .ToListAsync(stoppingToken);
-
-                    foreach (var orderNumber in orderNumbers)
+                    var restaurantsContext = await restaurantsContextFactory.CreateDbContextAsync(stoppingToken);
+                    var restaurants = await restaurantsContext.Restaurants.ToListAsync(stoppingToken);
+                    foreach (var restaurant in restaurants)
                     {
-                        try
+                        var connectionString = restaurant.ConnectionString;
+                        var pgContext = exportService.GetDbContext(connectionString);
+                        var orderNumbers = await pgContext.OrderMasters
+                                                .Where(x => x.Exported == false)
+                                                .Select(o => o.OrderNumber)
+                                                .ToListAsync(stoppingToken);
+
+                        foreach (var orderNumber in orderNumbers)
                         {
-                            var payload = new ExportServicePayload
+                            try
                             {
-                                DomainName = restaurant.DomainName,
-                                OrderNumber = orderNumber,
-                                ExportType = "NewOrder"
-                            };
-                            await exportService.OnMessageHandler(payload, connectionString);
+                                var payload = new ExportServicePayload
+                                {
+                                    DomainName = restaurant.DomainName,
+                                    OrderNumber = orderNumber,
+                                    ExportType = "NewOrder"
+                                };
+                                await exportService.OnMessageHandler(payload, connectionString);
+                            }
+                            catch (Exception ex) { logger.LogError(ex.InnerException?.Message ?? ex.Message); }
+                            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken); // Delay for 1 second between processing each order
                         }
-                        catch (Exception ex) { logger.LogError(ex.InnerException?.Message ?? ex.Message); }
-                        await Task.Delay(1000, stoppingToken); // Delay for 1 second between processing each order
                     }
                 }
-                await Task.Delay(60000, stoppingToken); // Delay for 60 seconds before the next cycle
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "An error occurred while executing the order export cycle.");
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "An error occurred while executing the order export cycle.");
+                }
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
     }
