@@ -97,6 +97,9 @@ namespace ExportService
                 }
             }
             await sqlContext.SaveChangesAsync();
+            var latestStatusId = pgOrderStatusLogs.OrderByDescending(x => x.a.OrderStatusLogId).First().a.OrderStatusId;
+            await sqlContext.OrderMasters.Where(x => x.OrderMasterId == sqlOrderMasterId)
+                .ExecuteUpdateAsync(x => x.SetProperty(x => x.OrderStatusId, latestStatusId));
         }
 
         private async Task<bool> CheckIfOrderExists(string orderNumber, string connectionString)
