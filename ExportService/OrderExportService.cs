@@ -88,12 +88,7 @@ namespace ExportService
 
             var createdBy = postgresContext.UserLogins.FirstOrDefault()?.UserId ?? 0;
 
-            var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
-            Func<DateTime, DateTime> convertToPkTime = (dateTime) =>
-            {
-                return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
-            };
-            foreach (var pgLog in pgOrderStatusLogs.Select(x => { x.CreatedDate = convertToPkTime(x.CreatedDate); return x; }))
+            foreach (var pgLog in pgOrderStatusLogs)
             {
                 if (!sqlOrderStatusLogs.Any(sqlLog => sqlLog.OrderStatusId == pgLog.OrderStatusId))
                 {
@@ -103,7 +98,7 @@ namespace ExportService
                         OrderStatusId = pgLog.OrderStatusId,
                         CompanyId = pgLog.CompanyId,
                         Description = pgLog.Description,
-                        CreatedDate = convertToPkTime(DateTime.SpecifyKind(pgLog.CreatedDate, DateTimeKind.Utc)),
+                        CreatedDate = pgLog.CreatedDate,
                         CreatedBy = createdBy,
                     };
                     await sqlContext.OrderStatusLogs.AddAsync(newSqlLog);
