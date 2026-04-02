@@ -72,14 +72,11 @@ namespace OrderUpdateService
                                                             Id = x.OrderStatusId,
                                                             CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc)),
                                                         });
-                        if (new[] { "Delivered", "Cancel" }.Any(x => x.Equals(orderStatusName, StringComparison.CurrentCultureIgnoreCase)))
+                        await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
                         {
-                            await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
-                            {
-                                ExportType = "OrderStatusUpdate",
-                                OrderToken = requestPayload.OrderToken ?? string.Empty,
-                            });
-                        }
+                            ExportType = "OrderStatusUpdate",
+                            OrderToken = requestPayload.OrderToken ?? string.Empty,
+                        });
                     }
 
                     if (requestPayload.RiderId != null)
