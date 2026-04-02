@@ -81,7 +81,7 @@ public class Implementation()
                 {
                     Id = x.OrderStatusId,
                     CreatedAt = TimeZoneInfo.ConvertTimeFromUtc(
-                        DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc),
+                        DateTime.SpecifyKind(x.CreatedDate, DateTimeKind.Utc),
                         karachiTz
                     ),
                 }).ToList(),

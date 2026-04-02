@@ -72,7 +72,7 @@ public class Implementation()
             CompanyId = orderMaster.CompanyId,
             OrderMasterId = orderMaster.OrderMasterId,
             OrderStatusId = orderMaster.OrderStatusId,
-            CreatedDateTime = DateTime.UtcNow,
+            CreatedDate = DateTime.UtcNow,
             Description = string.Empty,
         });
         await dbContext.SaveChangesAsync();
@@ -340,7 +340,7 @@ public class Implementation()
         {
             Id = x.OrderStatusId,
             CreatedAt = TimeZoneInfo.ConvertTimeFromUtc(
-                            DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc),
+                            DateTime.SpecifyKind(x.CreatedDate, DateTimeKind.Utc),
                             karachiTz
                         ),
         });

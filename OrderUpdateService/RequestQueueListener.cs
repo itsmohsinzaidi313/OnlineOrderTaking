@@ -51,7 +51,7 @@ namespace OrderUpdateService
                                 OrderStatusId = requestPayload.OrderStatusId.Value,
                                 CompanyId = orderMaster.CompanyId,
                                 Description = string.Empty,
-                                CreatedDateTime = DateTime.UtcNow,
+                                CreatedDate = DateTime.UtcNow,
                             });
                             await dbContext.SaveChangesAsync();
                         }
@@ -70,7 +70,7 @@ namespace OrderUpdateService
                                                         .Select(x => new
                                                         {
                                                             Id = x.OrderStatusId,
-                                                            CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc)),
+                                                            CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDate, DateTimeKind.Utc)),
                                                         });
                         await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
                         {
