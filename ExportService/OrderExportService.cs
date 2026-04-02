@@ -90,7 +90,7 @@ namespace ExportService
                         OrderStatusId = pgLog.a.OrderStatusId,
                         CompanyId = pgLog.a.CompanyId,
                         Description = pgLog.a.Description,
-                        CreatedDate = DateTime.Now,
+                        CreatedDate = pgLog.a.CreatedDate,
                         CreatedBy = createdBy,
                     };
                     await sqlContext.OrderStatusLogs.AddAsync(newSqlLog);
