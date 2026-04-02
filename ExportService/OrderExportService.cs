@@ -182,15 +182,17 @@ namespace ExportService
                         await sqlContext.Customers.AddAsync(pgCustomer);
                         await sqlContext.SaveChangesAsync();
                         sqlOrderMaster.CustomerId = pgCustomer.CustomerId;
-
-                        pgCustomerAddress.CustomerAddressId = 0;
-                        pgCustomerAddress.PhoneId = pgCustomerPhone.PhoneId;
-                        pgCustomerAddress.CreatedBy = createdBy;
-                        pgCustomerAddress.CreatedDate = createdDate;
-                        pgCustomerAddress.Area = area;
-                        await sqlContext.CustomerAddressDetails.AddAsync(pgCustomerAddress);
-                        await sqlContext.SaveChangesAsync();
-                        sqlOrderMaster.CustomerAddressId = pgCustomerAddress.CustomerAddressId;
+                        if (pgCustomerAddress != null)
+                        {
+                            pgCustomerAddress.CustomerAddressId = 0;
+                            pgCustomerAddress.PhoneId = pgCustomerPhone.PhoneId;
+                            pgCustomerAddress.CreatedBy = createdBy;
+                            pgCustomerAddress.CreatedDate = createdDate;
+                            pgCustomerAddress.Area = area;
+                            await sqlContext.CustomerAddressDetails.AddAsync(pgCustomerAddress);
+                            await sqlContext.SaveChangesAsync();
+                            sqlOrderMaster.CustomerAddressId = pgCustomerAddress.CustomerAddressId;
+                        }
                     }
                     else
                     {
