@@ -18,7 +18,7 @@ services:
       retries: 3
       start_period: 40s
     volumes:
-      - /var/www/web-ordering/web-ordering:/app:ro
+      - website_data
   
   exportservice:
     build:
@@ -435,6 +435,7 @@ volumes:
   etcd_data:
   redis_data:
   rabbitmq_data:
+  website_data:
 
 networks:
   patroni-net:
