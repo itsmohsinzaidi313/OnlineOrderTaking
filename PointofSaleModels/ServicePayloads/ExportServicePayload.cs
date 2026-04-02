@@ -17,6 +17,6 @@ namespace PointofSaleModels.ServicePayloads
         {
         }
         public string ExportType { get; set; }
-        public string OrderToken { get; set; }
+        public string OrderNumber { get; set; }
     }
 }

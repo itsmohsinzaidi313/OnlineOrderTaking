@@ -30,7 +30,7 @@ namespace OrderUpdateService
                         await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
                         {
                             ExportType = "BranchTransfer",
-                            OrderToken = requestPayload.OrderToken ?? string.Empty,
+                            OrderNumber = orderMaster.OrderNumber ?? string.Empty,
                         });
                     }
 
@@ -75,7 +75,7 @@ namespace OrderUpdateService
                         await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
                         {
                             ExportType = "OrderStatusUpdate",
-                            OrderToken = requestPayload.OrderToken ?? string.Empty,
+                            OrderNumber = orderMaster.OrderNumber ?? string.Empty,
                         });
                     }
 
@@ -87,7 +87,7 @@ namespace OrderUpdateService
                         await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
                         {
                             ExportType = "RiderAssignment",
-                            OrderToken = requestPayload.OrderToken ?? string.Empty,
+                            OrderNumber = orderMaster.OrderNumber ?? string.Empty,
                         });
                     }
 
