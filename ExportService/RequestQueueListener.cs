@@ -30,20 +30,17 @@ namespace ExportService
                     await MarkAsExported(request.OrderToken, connectionString);
                 }
             }
-            else
+            if (request.ExportType == "BranchTransfer")
             {
-                if(request.ExportType == "BranchTransfer")
-                {
-                    await UpdateBranch(request.OrderToken, connectionString);
-                }
-                if(request.ExportType == "OrderStatusUpdate")
-                {
-                    await UpdateOrderStatus(request.OrderToken, connectionString);
-                }
-                if(request.ExportType == "RiderAssignment")
-                {
-                    await UpdateRider(request.OrderToken, connectionString);
-                }
+                await UpdateBranch(request.OrderToken, connectionString);
+            }
+            if (request.ExportType == "OrderStatusUpdate")
+            {
+                await UpdateOrderStatus(request.OrderToken, connectionString);
+            }
+            if (request.ExportType == "RiderAssignment")
+            {
+                await UpdateRider(request.OrderToken, connectionString);
             }
         }
 
@@ -106,15 +103,17 @@ namespace ExportService
 
         private async Task<bool> CheckIfOrderExists(string orderToken, string connectionString)
         {
-            using var dbContext = GetDbContext(connectionString);
-            return await dbContext.OrderMasters.AnyAsync(om => om.OrderToken == orderToken);
+            using var postgresContext = GetDbContext(connectionString);
+            using var sqlContext = sqlContextFactory.CreateDbContext();
+            var orderNumber  = await postgresContext.OrderMasters.Where(om => om.OrderToken == orderToken).Select(om => om.OrderNumber).FirstOrDefaultAsync();
+            return await sqlContext.OrderMasters.AnyAsync(om => om.OrderNumber == orderNumber);
         }
 
         private async Task<string> GetConnectionString(string domainName)
         {
             using var context = pgContextFactory.CreateDbContext();
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
-            return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
+            return restaurant?.ConnectionString.Replace("haproxy", "127.0.0.1") ?? throw new Exception("Restaurant not found");
         }
 
         private static PostgresDbContext GetDbContext(string connectionString)
@@ -213,6 +212,8 @@ namespace ExportService
                     {
                         x.OrderStatusLogId = 0;
                         x.OrderMasterId = sqlOrderMaster.OrderMasterId;
+                        x.CreatedDate = createdDate;
+                        x.CreatedBy = createdBy;
                     });
 
                     await sqlContext.OrderStatusLogs.AddRangeAsync(pgOrderStatuses);
