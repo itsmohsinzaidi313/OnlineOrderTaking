@@ -45,10 +45,11 @@ namespace ExportService
         {
             using var postgresContext = GetDbContext(connectionString);
             using var sqlContext = sqlContextFactory.CreateDbContext();
-            var branchId = await postgresContext.OrderMasters.Where(x => x.OrderNumber == orderNumber).Select(x => x.BranchId).FirstOrDefaultAsync();
+
+            var orderMaster = await postgresContext.OrderMasters.Where(x => x.OrderNumber == orderNumber).Select(x => new {x.CompanyId, x.BranchId}).FirstOrDefaultAsync();
             await sqlContext.OrderMasters
-                .Where(x => x.OrderNumber == orderNumber)
-                .ExecuteUpdateAsync(x => x.SetProperty(x => x.BranchId, branchId));
+                .Where(x => x.OrderNumber == orderNumber && x.CompanyId == orderMaster.CompanyId)
+                .ExecuteUpdateAsync(x => x.SetProperty(x => x.BranchId, orderMaster.BranchId));
         }
 
         private async Task UpdateRider(string orderNumber, string connectionString)
@@ -56,21 +57,21 @@ namespace ExportService
             using var sqlContext = sqlContextFactory.CreateDbContext();
             using var postgresContext = GetDbContext(connectionString);
 
-            var pgRiderId = await postgresContext.OrderMasters.Where(x => x.OrderNumber == orderNumber).Select(x => x.RiderId).FirstOrDefaultAsync();
+            var orderMaster = await postgresContext.OrderMasters.Where(x => x.OrderNumber == orderNumber).Select(x => new { x.CompanyId, x.RiderId }).FirstOrDefaultAsync();
 
             await sqlContext.OrderMasters
-                .Where(x => x.OrderNumber == orderNumber)
-                .ExecuteUpdateAsync(x => x.SetProperty(x => x.RiderId, pgRiderId));
+                .Where(x => x.OrderNumber == orderNumber && x.CompanyId == orderMaster.CompanyId)
+                .ExecuteUpdateAsync(x => x.SetProperty(x => x.RiderId, orderMaster.RiderId));
         }
 
         private async Task UpdateOrderStatus(string orderNumber, string connectionString)
         {
             using var sqlContext = sqlContextFactory.CreateDbContext();
             using var postgresContext = GetDbContext(connectionString);
-
+            var companyId = await GetCompanyIdAsync(connectionString);
             var sqlOrderStatusLogs = await sqlContext.OrderStatusLogs
                 .Join(sqlContext.OrderMasters, a => a.OrderMasterId, b => b.OrderMasterId, (a, b) => new { a, b })
-                .Where(os => os.b.OrderNumber == orderNumber).ToListAsync();
+                .Where(os => os.b.OrderNumber == orderNumber && os.b.CompanyId == companyId).ToListAsync();
 
             var pgOrderStatusLogs = await postgresContext.OrderStatusLogs
                 .Join(postgresContext.OrderMasters, a => a.OrderMasterId, b => b.OrderMasterId, (a, b) => new { a, b })
@@ -101,11 +102,17 @@ namespace ExportService
             await sqlContext.OrderMasters.Where(x => x.OrderMasterId == sqlOrderMasterId)
                 .ExecuteUpdateAsync(x => x.SetProperty(x => x.OrderStatusId, latestStatusId));
         }
+        private async Task<int> GetCompanyIdAsync(string connectionString)
+        {
+            using var sqlContext = sqlContextFactory.CreateDbContext();
+            return await sqlContext.SetupCompanies.Select(c => c.CompanyId).FirstAsync();
+        }
 
         private async Task<bool> CheckIfOrderExists(string orderNumber, string connectionString)
         {
             using var sqlContext = sqlContextFactory.CreateDbContext();
-            return await sqlContext.OrderMasters.AnyAsync(om => om.OrderNumber == orderNumber);
+            var companyId = await GetCompanyIdAsync(connectionString);
+            return await sqlContext.OrderMasters.AnyAsync(om => om.OrderNumber == orderNumber && om.CompanyId == companyId);
         }
 
         internal async Task<string> GetConnectionString(string domainName)
@@ -143,6 +150,7 @@ namespace ExportService
             using var sqlContext = sqlContextFactory.CreateDbContext();
             var pgOrderMaster = await postgresContext.OrderMasters.FirstOrDefaultAsync(o => o.OrderNumber == orderNumber);
             var area = sqlContext.Areas.FirstOrDefault(a => a.AreaId == pgOrderMaster.AreaId);
+            var companyId = pgOrderMaster.CompanyId;
             var strategy = sqlContext.Database.CreateExecutionStrategy();
             return await strategy.ExecuteAsync<bool>(async () =>
             {

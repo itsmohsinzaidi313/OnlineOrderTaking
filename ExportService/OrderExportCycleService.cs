@@ -37,7 +37,7 @@ namespace ExportService
                         await Task.Delay(1000, stoppingToken); // Delay for 1 second between processing each order
                     }
                 }
-                await Task.Delay(10000, stoppingToken); // Delay for 10 seconds before the next cycle
+                await Task.Delay(60000, stoppingToken); // Delay for 60 seconds before the next cycle
             }
             catch (Exception ex)
             {
