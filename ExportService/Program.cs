@@ -46,7 +46,11 @@ builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<OrderExportService>()
     .AddHostedService<RequestQueueListener>()
-    .AddHostedService<OrderExportCycleService>();
+    .AddHostedService<OrderExportCycleService>()
+    .Configure<HostOptions> (options =>
+    {
+        options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+    });
 
 var app = builder.Build();
 app.MapGet("/health", ([FromServices] SqlServerDbContext sqlServerDb, [FromServices] RestaurantsDbContext restaurantsDb) =>
