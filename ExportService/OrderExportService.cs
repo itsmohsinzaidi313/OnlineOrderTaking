@@ -69,36 +69,48 @@ namespace ExportService
             using var sqlContext = sqlContextFactory.CreateDbContext();
             using var postgresContext = GetDbContext(connectionString);
             var companyId = await GetCompanyIdAsync(connectionString);
-            var sqlOrderStatusLogs = await sqlContext.OrderStatusLogs
-                .Join(sqlContext.OrderMasters, a => a.OrderMasterId, b => b.OrderMasterId, (a, b) => new { a, b })
-                .Where(os => os.b.OrderNumber == orderNumber && os.b.CompanyId == companyId).ToListAsync();
+            var pgOrderMasterId = await postgresContext.OrderMasters
+                                            .Where(x => x.OrderNumber == orderNumber)
+                                            .Select(x => x.OrderMasterId)
+                                            .FirstAsync();
+            var sqlOrderMasterId = await sqlContext.OrderMasters
+                                            .Where(x => x.OrderNumber == orderNumber && x.CompanyId == companyId)
+                                            .Select(x => x.OrderMasterId)
+                                            .FirstAsync();
 
             var pgOrderStatusLogs = await postgresContext.OrderStatusLogs
-                .Join(postgresContext.OrderMasters, a => a.OrderMasterId, b => b.OrderMasterId, (a, b) => new { a, b })
-                .Where(os => os.b.OrderNumber == orderNumber).ToListAsync();
+                .Where(x => x.OrderMasterId == pgOrderMasterId)
+                .ToListAsync();
+
+            var sqlOrderStatusLogs = await sqlContext.OrderStatusLogs
+                .Where(os => os.OrderMasterId == sqlOrderMasterId)
+                .ToListAsync();
 
             var createdBy = postgresContext.UserLogins.FirstOrDefault()?.UserId ?? 0;
 
-            var sqlOrderMasterId = sqlOrderStatusLogs.First().b.OrderMasterId;
-
-            foreach (var pgLog in pgOrderStatusLogs)
+            var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+            Func<DateTime, DateTime> convertToPkTime = (dateTime) =>
             {
-                if (!sqlOrderStatusLogs.Any(sqlLog => sqlLog.a.OrderStatusId == pgLog.a.OrderStatusId))
+                return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
+            };
+            foreach (var pgLog in pgOrderStatusLogs.Select(x => { x.CreatedDate = convertToPkTime(x.CreatedDate); return x; }))
+            {
+                if (!sqlOrderStatusLogs.Any(sqlLog => sqlLog.OrderStatusId == pgLog.OrderStatusId))
                 {
                     var newSqlLog = new OrderStatusLog
                     {
                         OrderMasterId = sqlOrderMasterId,
-                        OrderStatusId = pgLog.a.OrderStatusId,
-                        CompanyId = pgLog.a.CompanyId,
-                        Description = pgLog.a.Description,
-                        CreatedDate = pgLog.a.CreatedDate,
+                        OrderStatusId = pgLog.OrderStatusId,
+                        CompanyId = pgLog.CompanyId,
+                        Description = pgLog.Description,
+                        CreatedDate = convertToPkTime(DateTime.SpecifyKind(pgLog.CreatedDate, DateTimeKind.Utc)),
                         CreatedBy = createdBy,
                     };
                     await sqlContext.OrderStatusLogs.AddAsync(newSqlLog);
                 }
             }
             await sqlContext.SaveChangesAsync();
-            var latestStatusId = pgOrderStatusLogs.OrderByDescending(x => x.a.OrderStatusLogId).First().a.OrderStatusId;
+            var latestStatusId = pgOrderStatusLogs.OrderByDescending(x => x.OrderStatusLogId).First().OrderStatusId;
             await sqlContext.OrderMasters.Where(x => x.OrderMasterId == sqlOrderMasterId)
                 .ExecuteUpdateAsync(x => x.SetProperty(x => x.OrderStatusId, latestStatusId));
         }
@@ -120,7 +132,7 @@ namespace ExportService
         {
             using var context = pgContextFactory.CreateDbContext();
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
-            return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
+            return restaurant?.ConnectionString.Replace("haproxy", "127.0.0.1") ?? throw new Exception("Restaurant not found");
         }
 
         public PostgresDbContext GetDbContext(string connectionString)

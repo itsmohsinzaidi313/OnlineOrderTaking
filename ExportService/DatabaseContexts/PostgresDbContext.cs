@@ -279,10 +279,7 @@ namespace ExportService.DatabaseContexts
                 .HasKey(x => x.RiderId);
 
             modelBuilder.Entity<OrderStatusLog>()
-                .Ignore(x => x.CreatedDate)
-                .Ignore(x => x.CreatedBy)
                 .Ignore(x => x.IsActive);
         }
-
     }
 }
