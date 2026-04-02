@@ -109,6 +109,7 @@ public class Implementation()
         order.Status = OrderStatus.Pending.ToString();
         var orderType = await dbContext.SetupMasterDetails.FirstOrDefaultAsync(x => x.SetupDetailName == order.OrderType);
         order.OrderType = orderType.SetupDetailName;
+        order.GstPercentage = gst?.Gstpercentage ?? 0.00;
 
         var orderMaster = new Db.OrderMaster
         {
