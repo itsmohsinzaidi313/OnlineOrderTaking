@@ -104,8 +104,8 @@ namespace ExportService
         }
         private async Task<int> GetCompanyIdAsync(string connectionString)
         {
-            using var sqlContext = sqlContextFactory.CreateDbContext();
-            return await sqlContext.SetupCompanies.Select(c => c.CompanyId).FirstAsync();
+            using var postgresContext = GetDbContext(connectionString);
+            return await postgresContext.SetupCompanies.Select(x => x.CompanyId).FirstAsync();
         }
 
         private async Task<bool> CheckIfOrderExists(string orderNumber, string connectionString)
