@@ -176,7 +176,7 @@ namespace ExportService
 
                         pgCustomer.CustomerId = 0;
                         pgCustomer.PhoneId = pgCustomerPhone.PhoneId;
-                        pgCustomer.IsActive = true;
+
                         await sqlContext.Customers.AddAsync(pgCustomer);
                         await sqlContext.SaveChangesAsync();
                         sqlOrderMaster.CustomerId = pgCustomer.CustomerId;
@@ -200,6 +200,7 @@ namespace ExportService
                         {
                             pgCustomer.CustomerId = 0;
                             pgCustomer.PhoneId = existingPhone.PhoneId;
+                            pgCustomer.IsActive = true;
                             await sqlContext.Customers.AddAsync(pgCustomer);
                             await sqlContext.SaveChangesAsync();
                         }
