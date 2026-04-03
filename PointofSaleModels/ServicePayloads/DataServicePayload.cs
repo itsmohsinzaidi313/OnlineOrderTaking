@@ -12,6 +12,11 @@
         {
             DataRequestType = payload.DataRequestType;
         }
+
+        public DataServicePayload(ServicePayload payload) : base(payload)
+        {
+        }
+
         public string DataRequestType { get; set; } = string.Empty;
         public string? OrderToken { get; set; }
         public object? DataPayload { get; set; }
