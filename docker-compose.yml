@@ -17,8 +17,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    volumes:
-      - website_data:/app
   
   exportservice:
     build:
@@ -435,7 +433,6 @@ volumes:
   etcd_data:
   redis_data:
   rabbitmq_data:
-  website_data:
 
 networks:
   patroni-net:
