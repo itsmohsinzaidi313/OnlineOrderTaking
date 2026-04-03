@@ -54,7 +54,6 @@ builder.Services
     .AddScoped<ICityMigrationService, CityMigrationService>()
     .AddScoped<IAreaMigrationService, AreaMigrationService>()
     .AddScoped<ISetupCompanySettingsMigrationService, SetupCompanySettingsMigrationService>()
-    .AddScoped<ICustomerDataImportService, CustomerDataImportService>()
     .AddScoped<IUserLoginMigrationService, UserLoginMigrationService>()
     .AddScoped<IRidersMigrationService, RidersMigrationService>()
     .AddScoped<Implementation>();
@@ -64,7 +63,7 @@ var app = builder.Build();
 // Optional: minimal endpoint (useful for health checks)
 app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogger<Program> logger, [FromServices] Implementation impl, [FromServices] IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory, HttpContext httpContext, [FromQuery] string selection = "") =>
 {
-    List<string> list = ["all", "setupCompany", "setupMaster", "setupMasterDetail", "city", "area", "branchMaster", "productSize", "flavour", "menu", "paymentMode", "setupCompanySettings", "discount", "customerData", "gst", "userLogin", "riders", "orderMode"];
+    List<string> list = ["all", "setupCompany", "setupMaster", "setupMasterDetail", "city", "area", "branchMaster", "productSize", "flavour", "menu", "paymentMode", "setupCompanySettings", "discount", "gst", "userLogin", "riders", "orderMode"];
 
     if (string.IsNullOrEmpty(selection) || !list.Contains(selection))
     {
@@ -112,18 +111,23 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogg
     return response;
 });
 
-app.MapGet("health", ([FromServices] IDbContextFactory<SqlServerDbContext> sqlDbContextFactory, IDbContextFactory<RestaurantsDbContext> restaurantDbContextFactory) =>
+app.MapGet("health", ([FromServices] ILogger<Program> logger, [FromServices] IDbContextFactory<SqlServerDbContext> sqlDbContextFactory, [FromServices] IDbContextFactory<RestaurantsDbContext> restaurantDbContextFactory) =>
 {
     using var sqlServerDbContext = sqlDbContextFactory.CreateDbContext();
     if (sqlServerDbContext.Database.CanConnect() == false)
     {
-        return Results.Problem("Sql Database connection failed", statusCode: 503);
+        var connectionString = sqlServerDbContext.Database.GetConnectionString();
+        logger.LogError("SQL Server Database connection failed. Connection String: {ConnectionString}", connectionString);
+        sqlServerDbContext.Areas.ToList(); // Try to query to confirm connectivity
+        logger.LogError("SQL Server Database connection failed");
+        return Results.Problem(statusCode: 503);
     }
 
     using var restaurantDbContext = restaurantDbContextFactory.CreateDbContext();
     if (restaurantDbContext.Database.CanConnect() == false)
     {
-        return Results.Problem("Postgres Database connection failed", statusCode: 503);
+        logger.LogError("Postgres Database connection failed");
+        return Results.Problem(statusCode: 503);
     }
     return Results.Ok("Service is healthy");
 });

@@ -78,46 +78,24 @@ internal class Implementation()
                     ["BranchName"] = x.BranchName,
                     ["BranchAddress"] = x.BranchAddress,
                     ["BranchPhoneNumber"] = x.BranchPhoneNumber,
-                    ["BusinessStartTime"] = x.BusinessDayStartTime.ToString(),
-                    ["BusinessEndTime"] = x.BusinessDayEndTime.ToString(),
                 }))
             {
                 var branchId = item2["BranchId"]?.GetValue<int>();
                 var businessDaysMapping = await dbContext.BranchDayMappings.Where(x => x.BranchId == branchId).ToListAsync();
                 var todayDow = DateTime.Today.DayOfWeek.ToString();
-                var isBranchOpen = false;
+                var bussinessDays = new JsonArray();
                 foreach (var dayMapping in businessDaysMapping)
                 {
-                    var value = days[dayMapping.DayId]?.ToString() ?? string.Empty;
-                    if (value == todayDow)
+                    var businessday = new JsonObject
                     {
-                        var startTime = dayMapping.StartTime;
-                        var endTime = dayMapping.EndTime;
-                        var timeOfDay = DateTime.Now.TimeOfDay;
-                        if (startTime > endTime)
-                        {
-                            var maybeOpen = startTime > timeOfDay;
-                            if (maybeOpen)
-                            {
-                                isBranchOpen = true;
-                            }
-                            else
-                            {
-                                isBranchOpen = timeOfDay > endTime;
-                            }
-                        }
-                        else if (startTime < endTime)
-                        {
-                            if (timeOfDay >= startTime && timeOfDay <= endTime)
-                            {
-                                isBranchOpen = true;
-                            }
-                        }
-                        item2["IsBranchOpen"] = isBranchOpen;
-                        break;
-                    }
+                        ["Day"] = days[dayMapping.DayId] ?? string.Empty,
+                        ["StartTime"] = dayMapping.StartTime.ToString(),
+                        ["EndTime"] = dayMapping.EndTime.ToString(),
+                    };
+                    bussinessDays.Add(businessday);
                 }
-                item2["IsBranchOpen"] = isBranchOpen;
+                item2["BusinessDays"] = bussinessDays;
+                item2["IsBranchOpen"] = CalculateBranchOpenStatus(bussinessDays);
 
                 var branchDetail = branchDetails.FirstOrDefault(bd => bd.BranchId == branchId);
                 if (branchDetail != null)
@@ -158,6 +136,63 @@ internal class Implementation()
         };
         orderModes["Theme"] = themeData;
         return orderModes;
+    }
+
+    private static bool CalculateBranchOpenStatus(JsonArray? businessTimes)
+    {
+        if (businessTimes is null || businessTimes.Count == 0)
+        {
+            return false;
+        }
+
+        var now = DateTime.Now;
+        var currentDay = now.DayOfWeek;
+        var businessTimeNode = businessTimes.FirstOrDefault(x => x["Day"]?.GetValue<string>()?.Equals(currentDay.ToString(), StringComparison.OrdinalIgnoreCase) == true);
+
+        if (businessTimeNode is not JsonObject businessTime)
+            return false;
+
+        var day = businessTime["Day"]?.GetValue<string>();
+        if (!Enum.TryParse<DayOfWeek>(day, true, out var businessDay))
+            return false;
+
+        if (!TryParseTime(businessTime["StartTime"], out var startTime) || !TryParseTime(businessTime["EndTime"], out var endTime))
+            return false;
+
+        var isBranchOpen = false;
+        var timeOfDay = DateTime.Now.TimeOfDay;
+        if (startTime > endTime)
+        {
+            var maybeOpen = startTime > timeOfDay;
+            if (maybeOpen)
+            {
+                isBranchOpen = true;
+            }
+            else
+            {
+                isBranchOpen = timeOfDay > endTime;
+            }
+        }
+        else if (startTime < endTime)
+        {
+            if (timeOfDay >= startTime && timeOfDay <= endTime)
+            {
+                isBranchOpen = true;
+            }
+        }
+        return isBranchOpen;
+    }
+
+    private static bool TryParseTime(JsonNode? timeNode, out TimeSpan time)
+    {
+        time = default;
+        if (timeNode is null)
+        {
+            return false;
+        }
+
+        var timeValue = timeNode.GetValue<string>();
+        return TimeSpan.TryParse(timeValue, out time);
     }
 
     private static async Task<JsonObject> GetThemeDataAsync(string connectionString)

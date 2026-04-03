@@ -41,6 +41,7 @@ namespace ExportService.DatabaseContexts
         public DbSet<UserRole> UserRoles => Set<UserRole>();
         public DbSet<UserBranchMapping> UserBranchMappings => Set<UserBranchMapping>();
         public DbSet<OrderStatus> OrderStatuses => Set<OrderStatus>();
+        public DbSet<OrderStatusLog> OrderStatusLogs => Set<OrderStatusLog>();
         public DbSet<Rider> Riders => Set<Rider>();
         public DbSet<OrderMaster> OrderMasters => Set<OrderMaster>();
         public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
@@ -197,30 +198,6 @@ namespace ExportService.DatabaseContexts
                 .ToTable("CustomerAddressDetail")
                 .HasKey(x => x.CustomerAddressId);
 
-            modelBuilder.Entity<CustomerPhone>()
-                .HasMany(c => c.Customers)
-                .WithOne(p => p.CustomerPhone)
-                .HasPrincipalKey(p => p.PhoneId)
-                .HasForeignKey(x => x.PhoneId);
-
-            modelBuilder.Entity<CustomerPhone>()
-                .HasMany(x => x.CustomerAddressDetails)
-                .WithOne(x => x.CustomerPhone)
-                .HasPrincipalKey(x => x.PhoneId)
-                .HasForeignKey(x => x.PhoneId);
-
-            modelBuilder.Entity<Customer>()
-                .HasOne(c => c.CustomerPhone)
-                .WithMany(p => p.Customers)
-                .HasForeignKey(c => c.PhoneId)
-                .HasPrincipalKey(p => p.PhoneId);
-
-            modelBuilder.Entity<CustomerAddressDetail>()
-                .HasOne(c => c.CustomerPhone)
-                .WithMany(p => p.CustomerAddressDetails)
-                .HasForeignKey(c => c.PhoneId)
-                .HasPrincipalKey(p => p.PhoneId);
-
             modelBuilder.Entity<UserLogin>()
                 .ToTable("UserLogin")
                 .HasKey(x => x.UserId);
@@ -260,6 +237,14 @@ namespace ExportService.DatabaseContexts
             modelBuilder.Entity<OrderDetail>()
                 .ToTable("OrderDetail")
                 .HasKey(x => x.OrderDetailId);
+
+            modelBuilder.Entity<OrderStatusLog>()
+                .ToTable("OrderStatusLog")
+                .HasKey(x => x.OrderStatusLogId);
+
+            modelBuilder.Entity<OrderMaster>()
+                .Ignore(o => o.Exported)
+                .Ignore(o => o.OrderToken);
         }
     }
 }

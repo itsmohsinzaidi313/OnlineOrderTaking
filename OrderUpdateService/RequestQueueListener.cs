@@ -27,6 +27,11 @@ namespace OrderUpdateService
                         await dbContext.OrderMasters
                             .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
                             .ExecuteUpdateAsync(x => x.SetProperty(x => x.BranchId, requestPayload.BranchTransferId.Value));
+                        await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
+                        {
+                            ExportType = "BranchTransfer",
+                            OrderNumber = orderMaster.OrderNumber ?? string.Empty,
+                        });
                     }
 
                     if (requestPayload.OrderStatusId != null)
@@ -46,7 +51,7 @@ namespace OrderUpdateService
                                 OrderStatusId = requestPayload.OrderStatusId.Value,
                                 CompanyId = orderMaster.CompanyId,
                                 Description = string.Empty,
-                                CreatedDateTime = DateTime.UtcNow,
+                                CreatedDate = DateTime.UtcNow,
                             });
                             await dbContext.SaveChangesAsync();
                         }
@@ -65,15 +70,13 @@ namespace OrderUpdateService
                                                         .Select(x => new
                                                         {
                                                             Id = x.OrderStatusId,
-                                                            CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDateTime, DateTimeKind.Utc)),
+                                                            CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDate, DateTimeKind.Utc)),
                                                         });
-                        if (orderStatusName == "Delivered")
+                        await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
                         {
-                            await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
-                            {
-                                OrderToken = requestPayload.OrderToken ?? string.Empty,
-                            });
-                        }
+                            ExportType = "OrderStatusUpdate",
+                            OrderNumber = orderMaster.OrderNumber ?? string.Empty,
+                        });
                     }
 
                     if (requestPayload.RiderId != null)
@@ -81,6 +84,11 @@ namespace OrderUpdateService
                         await dbContext.OrderMasters
                             .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
                             .ExecuteUpdateAsync(x => x.SetProperty(x => x.RiderId, requestPayload.RiderId));
+                        await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
+                        {
+                            ExportType = "RiderAssignment",
+                            OrderNumber = orderMaster.OrderNumber ?? string.Empty,
+                        });
                     }
 
                     int? deliveryTime = requestPayload.DeliveryTime;
@@ -90,6 +98,12 @@ namespace OrderUpdateService
                         await dbContext.OrderMasters
                             .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
                             .ExecuteUpdateAsync(x => x.SetProperty(x => x.DeliveryTime, deliveryTime));
+
+                        await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
+                        {
+                            ExportType = "DeliveryTimeUpdate",
+                            OrderNumber = orderMaster.OrderNumber ?? string.Empty,
+                        });
                     }
                     payload = new
                     {

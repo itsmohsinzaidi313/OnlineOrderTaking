@@ -2,7 +2,9 @@
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
+using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace GatewayService.ServiceResponseListeners
 {

@@ -1,6 +1,9 @@
+using ExportService;
 using ExportService.DatabaseContexts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PointofSaleModels.Services;
+using PointofSaleModels.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +20,8 @@ var sqlServerConnectionString =
 
 var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres")
     ?? throw new InvalidOperationException("Postgres connection string is not configured.");
+var rabbitMqSection = builder.Configuration.GetSection("RABBITMQ") ?? throw new InvalidOperationException("RABBITMQ section is not configured.");
+
 // Services
 builder.Services
     .AddDbContextFactory<SqlServerDbContext>(options =>
@@ -36,7 +41,16 @@ builder.Services
                 maxRetryCount: 5,
                 maxRetryDelay: TimeSpan.FromSeconds(5),
                 errorCodesToAdd: null);
-        }));
+        }))
+    .Configure<RabbitMqSettings>(rabbitMqSection)
+    .AddSingleton<RabbitMqConnection>()
+    .AddSingleton<OrderExportService>()
+    .AddHostedService<RequestQueueListener>()
+    .AddHostedService<OrderExportCycleService>()
+    .Configure<HostOptions>(options =>
+    {
+        options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+    });
 
 var app = builder.Build();
 app.MapGet("/health", ([FromServices] SqlServerDbContext sqlServerDb, [FromServices] RestaurantsDbContext restaurantsDb) =>

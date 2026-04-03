@@ -8,11 +8,16 @@ public partial class CustomerAddressDetail
 
     public int? AddressTypeId { get; set; }
 
+    public int CreatedBy { get; set; }
+
+    public DateTime CreatedDate { get; set; }
+
     public int CompanyId { get; set; }
 
     public int CityId { get; set; }
 
     public int AreaId { get; set; }
+    public Area Area { get; set; }
 
     public string? LandMark { get; set; }
 
@@ -41,6 +46,4 @@ public partial class CustomerAddressDetail
     public int? CaptionId { get; set; }
 
     public string? CompleteAddress { get; set; }
-
-    public CustomerPhone CustomerPhone { get; set; } = null!;
 }
