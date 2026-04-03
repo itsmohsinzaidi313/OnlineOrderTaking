@@ -162,7 +162,7 @@ namespace ExportService
                     var createdDate = DateTime.Now;
 
                     var sqlOrderMaster = MapToOrderMaster(pgOrderMaster);
-                    var existingPhone = await sqlContext.CustomerPhones.FirstOrDefaultAsync(cp => cp.PhoneNumber == pgCustomerPhone.PhoneNumber);
+                    var existingPhone = await sqlContext.CustomerPhones.FirstOrDefaultAsync(cp => cp.PhoneNumber == pgCustomerPhone.PhoneNumber && cp.CompanyId == companyId);
                     if (existingPhone == null)
                     {
                         pgCustomerPhone.PhoneId = 0;
@@ -191,7 +191,7 @@ namespace ExportService
                     }
                     else
                     {
-                        var existingCustomer = await sqlContext.Customers.FirstOrDefaultAsync(c => c.PhoneId == existingPhone.PhoneId && c.CustomerName == pgCustomer.CustomerName);
+                        var existingCustomer = await sqlContext.Customers.FirstOrDefaultAsync(c => c.PhoneId == existingPhone.PhoneId && c.CustomerName == pgCustomer.CustomerName && c.CompanyId == companyId);
                         if (existingCustomer == null)
                         {
                             pgCustomer.CustomerId = 0;
