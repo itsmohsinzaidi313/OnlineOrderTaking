@@ -57,11 +57,14 @@ public class Implementation()
         {
             var orderTime = dbOrder.OrderTime;
             var orderDate = dbOrder.OrderDate;
-            DateTime? orderDateTime = orderDate?.ToDateTime(orderTime);
-            var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == dbOrder.OrderMasterId).ToListAsync();
 
-            // Find Asia/Karachi timezone once per order
             var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+            Func<DateTime, DateTime> convertToPkTime = (dateTime) =>
+            {
+                return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
+            };
+            DateTime orderDateTime = convertToPkTime(orderDate?.ToDateTime(orderTime) ?? DateTime.MinValue);
+            var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == dbOrder.OrderMasterId).ToListAsync();
 
             var order = new CustomerOrder
             {
@@ -75,15 +78,12 @@ public class Implementation()
                 DeliveryCharges = (int?)(dbOrder.DeliveryCharges ?? 0.00),
                 AmountWithoutGst = dbOrder.TotalAmountWithoutGst ?? 0.00,
                 AmountWithGst = dbOrder.TotalAmountWithGst ?? 0.00,
-                OrderTime = orderDateTime ?? DateTime.MinValue,
+                OrderTime = orderDateTime,
                 GstPercentage = dbOrder.Gstpercent,
                 OrderStatusLogs = orderStatusLogs.Select(x => new
                 {
                     Id = x.OrderStatusId,
-                    CreatedAt = TimeZoneInfo.ConvertTimeFromUtc(
-                        DateTime.SpecifyKind(x.CreatedDate, DateTimeKind.Utc),
-                        karachiTz
-                    ),
+                    CreatedAt = convertToPkTime(x.CreatedDate),
                 }).ToList(),
                 Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName ?? string.Empty, Contact = x.Contact1 ?? string.Empty }).FirstOrDefault(x => x.Id == dbOrder.RiderId),
                 DeliveryTime = dbOrder.DeliveryTime ?? 0,

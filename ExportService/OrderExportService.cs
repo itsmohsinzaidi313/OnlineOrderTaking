@@ -155,42 +155,42 @@ namespace ExportService
                 try
                 {
                     var pgOrderDetails = await postgresContext.OrderDetails.Where(od => od.OrderMasterId == pgOrderMaster.OrderMasterId).ToListAsync();
-                    var pgCustomerPhone = await postgresContext.CustomerPhones.FirstOrDefaultAsync(cp => cp.PhoneId == pgOrderMaster.PhoneId);
+                    var pgPhone = await postgresContext.CustomerPhones.FirstOrDefaultAsync(cp => cp.PhoneId == pgOrderMaster.PhoneId);
                     var pgCustomer = await postgresContext.Customers.FirstOrDefaultAsync(c => c.CustomerId == pgOrderMaster.CustomerId);
-                    var pgCustomerAddress = await postgresContext.CustomerAddressDetails.FirstOrDefaultAsync(ca => ca.CustomerAddressId == pgOrderMaster.CustomerAddressId);
+                    var pgAddress = await postgresContext.CustomerAddressDetails.FirstOrDefaultAsync(ca => ca.CustomerAddressId == pgOrderMaster.CustomerAddressId);
 
                     var createdBy = postgresContext.UserLogins.FirstOrDefault()?.UserId ?? 0;
                     var createdDate = DateTime.Now;
 
                     var sqlOrderMaster = MapToOrderMaster(pgOrderMaster);
-                    var existingPhone = await sqlContext.CustomerPhones.FirstOrDefaultAsync(cp => cp.PhoneNumber == pgCustomerPhone.PhoneNumber && cp.CompanyId == companyId);
+                    var existingPhone = await sqlContext.CustomerPhones.FirstOrDefaultAsync(cp => cp.PhoneNumber == pgPhone.PhoneNumber && cp.CompanyId == companyId);
                     if (existingPhone == null)
                     {
-                        pgCustomerPhone.PhoneId = 0;
-                        pgCustomerPhone.CreatedBy = createdBy;
-                        pgCustomerPhone.CreatedDate = createdDate;
-                        pgCustomerPhone.IsActive = true;
-                        await sqlContext.CustomerPhones.AddAsync(pgCustomerPhone);
+                        pgPhone.PhoneId = 0;
+                        pgPhone.CreatedBy = createdBy;
+                        pgPhone.CreatedDate = createdDate;
+                        pgPhone.IsActive = true;
+                        await sqlContext.CustomerPhones.AddAsync(pgPhone);
                         await sqlContext.SaveChangesAsync();
-                        sqlOrderMaster.PhoneId = pgCustomerPhone.PhoneId;
+                        sqlOrderMaster.PhoneId = pgPhone.PhoneId;
 
                         pgCustomer.CustomerId = 0;
-                        pgCustomer.PhoneId = pgCustomerPhone.PhoneId;
+                        pgCustomer.PhoneId = pgPhone.PhoneId;
 
                         await sqlContext.Customers.AddAsync(pgCustomer);
                         await sqlContext.SaveChangesAsync();
                         sqlOrderMaster.CustomerId = pgCustomer.CustomerId;
-                        if (pgCustomerAddress != null)
+                        if (pgAddress != null)
                         {
-                            pgCustomerAddress.CustomerAddressId = 0;
-                            pgCustomerAddress.PhoneId = pgCustomerPhone.PhoneId;
-                            pgCustomerAddress.CreatedBy = createdBy;
-                            pgCustomerAddress.CreatedDate = createdDate;
-                            pgCustomerAddress.Area = area;
-                            pgCustomerAddress.IsActive = true;
-                            await sqlContext.CustomerAddressDetails.AddAsync(pgCustomerAddress);
+                            pgAddress.CustomerAddressId = 0;
+                            pgAddress.PhoneId = pgPhone.PhoneId;
+                            pgAddress.CreatedBy = createdBy;
+                            pgAddress.CreatedDate = createdDate;
+                            pgAddress.Area = area;
+                            pgAddress.IsActive = true;
+                            await sqlContext.CustomerAddressDetails.AddAsync(pgAddress);
                             await sqlContext.SaveChangesAsync();
-                            sqlOrderMaster.CustomerAddressId = pgCustomerAddress.CustomerAddressId;
+                            sqlOrderMaster.CustomerAddressId = pgAddress.CustomerAddressId;
                         }
                     }
                     else
@@ -205,24 +205,24 @@ namespace ExportService
                             await sqlContext.SaveChangesAsync();
                         }
                         sqlOrderMaster.CustomerId = existingCustomer?.CustomerId ?? pgCustomer.CustomerId;
-                        if (pgCustomerAddress != null)
+                        if (pgAddress != null)
                         {
-                            var existingAddress = await sqlContext.CustomerAddressDetails.FirstOrDefaultAsync(ca => ca.CompleteAddress == pgCustomerAddress.CompleteAddress && ca.PhoneId == existingPhone.PhoneId);
+                            var existingAddress = await sqlContext.CustomerAddressDetails.FirstOrDefaultAsync(ca => ca.CompleteAddress == pgAddress.CompleteAddress && ca.PhoneId == existingPhone.PhoneId);
                             if (existingAddress == null)
                             {
-                                pgCustomerAddress.CustomerAddressId = 0;
-                                pgCustomerAddress.PhoneId = existingPhone.PhoneId;
-                                pgCustomerAddress.CreatedBy = createdBy;
-                                pgCustomerAddress.CreatedDate = createdDate;
-                                pgCustomerAddress.Area = area;
-                                pgCustomerAddress.IsActive = true;
-                                await sqlContext.CustomerAddressDetails.AddAsync(pgCustomerAddress);
+                                pgAddress.CustomerAddressId = 0;
+                                pgAddress.PhoneId = existingPhone.PhoneId;
+                                pgAddress.CreatedBy = createdBy;
+                                pgAddress.CreatedDate = createdDate;
+                                pgAddress.Area = area;
+                                pgAddress.IsActive = true;
+                                await sqlContext.CustomerAddressDetails.AddAsync(pgAddress);
                                 await sqlContext.SaveChangesAsync();
                             }
-                            sqlOrderMaster.CustomerAddressId = existingAddress?.CustomerAddressId ?? pgCustomerAddress.CustomerAddressId;
+                            sqlOrderMaster.CustomerAddressId = existingAddress?.CustomerAddressId ?? pgAddress.CustomerAddressId;
                         }
                     }
-                    var phoneId = existingPhone?.PhoneId ?? pgCustomerPhone.PhoneId;
+                    var phoneId = existingPhone?.PhoneId ?? pgPhone.PhoneId;
                     
                     sqlOrderMaster.PhoneId = phoneId;
                     if (pgOrderMaster.RiderId != null)
