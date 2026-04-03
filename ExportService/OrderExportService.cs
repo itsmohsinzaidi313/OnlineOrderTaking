@@ -162,18 +162,20 @@ namespace ExportService
                     var createdDate = DateTime.Now;
 
                     var sqlOrderMaster = MapToOrderMaster(pgOrderMaster);
-                    var existingPhone = await sqlContext.CustomerPhones.FirstOrDefaultAsync(cp => cp.PhoneNumber == pgCustomerPhone.PhoneNumber);
+                    var existingPhone = await sqlContext.CustomerPhones.FirstOrDefaultAsync(cp => cp.PhoneNumber == pgCustomerPhone.PhoneNumber && cp.CompanyId == companyId);
                     if (existingPhone == null)
                     {
                         pgCustomerPhone.PhoneId = 0;
                         pgCustomerPhone.CreatedBy = createdBy;
                         pgCustomerPhone.CreatedDate = createdDate;
+                        pgCustomerPhone.IsActive = true;
                         await sqlContext.CustomerPhones.AddAsync(pgCustomerPhone);
                         await sqlContext.SaveChangesAsync();
                         sqlOrderMaster.PhoneId = pgCustomerPhone.PhoneId;
 
                         pgCustomer.CustomerId = 0;
                         pgCustomer.PhoneId = pgCustomerPhone.PhoneId;
+                        pgCustomer.IsActive = true;
                         await sqlContext.Customers.AddAsync(pgCustomer);
                         await sqlContext.SaveChangesAsync();
                         sqlOrderMaster.CustomerId = pgCustomer.CustomerId;
@@ -184,6 +186,7 @@ namespace ExportService
                             pgCustomerAddress.CreatedBy = createdBy;
                             pgCustomerAddress.CreatedDate = createdDate;
                             pgCustomerAddress.Area = area;
+                            pgCustomerAddress.IsActive = true;
                             await sqlContext.CustomerAddressDetails.AddAsync(pgCustomerAddress);
                             await sqlContext.SaveChangesAsync();
                             sqlOrderMaster.CustomerAddressId = pgCustomerAddress.CustomerAddressId;
@@ -191,7 +194,7 @@ namespace ExportService
                     }
                     else
                     {
-                        var existingCustomer = await sqlContext.Customers.FirstOrDefaultAsync(c => c.PhoneId == existingPhone.PhoneId && c.CustomerName == pgCustomer.CustomerName);
+                        var existingCustomer = await sqlContext.Customers.FirstOrDefaultAsync(c => c.PhoneId == existingPhone.PhoneId && c.CustomerName == pgCustomer.CustomerName && c.CompanyId == companyId);
                         if (existingCustomer == null)
                         {
                             pgCustomer.CustomerId = 0;
@@ -210,6 +213,7 @@ namespace ExportService
                                 pgCustomerAddress.CreatedBy = createdBy;
                                 pgCustomerAddress.CreatedDate = createdDate;
                                 pgCustomerAddress.Area = area;
+                                pgCustomerAddress.IsActive = true;
                                 await sqlContext.CustomerAddressDetails.AddAsync(pgCustomerAddress);
                                 await sqlContext.SaveChangesAsync();
                             }
@@ -240,16 +244,17 @@ namespace ExportService
 
                     await sqlContext.SaveChangesAsync();
 
-                    var pgOrderStatuses = await postgresContext.OrderStatusLogs.Where(os => os.OrderMasterId == pgOrderMaster.OrderMasterId).ToListAsync();
-                    pgOrderStatuses.ForEach(x =>
+                    var pgOrderStatusLogs = await postgresContext.OrderStatusLogs.Where(os => os.OrderMasterId == pgOrderMaster.OrderMasterId).ToListAsync();
+                    pgOrderStatusLogs.ForEach(x =>
                     {
                         x.OrderStatusLogId = 0;
                         x.OrderMasterId = sqlOrderMaster.OrderMasterId;
                         x.CreatedDate = createdDate;
                         x.CreatedBy = createdBy;
+                        x.IsActive = true;
                     });
 
-                    await sqlContext.OrderStatusLogs.AddRangeAsync(pgOrderStatuses);
+                    await sqlContext.OrderStatusLogs.AddRangeAsync(pgOrderStatusLogs);
                     await sqlContext.SaveChangesAsync();
 
 

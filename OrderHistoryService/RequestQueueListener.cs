@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PointofSaleModels.Application;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
@@ -19,14 +18,27 @@ namespace OrderHistoryService
             try
             {
                 var connectionString = await GetConnectionString(requestPayload.DomainName);
-                if (!requestPayload.OrderUserId.HasValue) throw new Exception("UserId missing for userwise orders list");
 
-                var orders = await impl.GetOrdersAsync(connectionString, requestPayload.OrderUserId.Value).ToListAsync();
-                var orderStatuses = await impl.GetOrderStatusesAsync(connectionString);
-                var riders = await impl.GetRidersAsync(requestPayload.OrderUserId.Value, connectionString);
-                var branches = await impl.GetBranchesAsync(connectionString);
-                payload = new { Orders = orders, OrderStatuses = orderStatuses, Riders = riders, Branches = branches };
-                success = true;
+                if (string.IsNullOrEmpty(requestPayload.OrderToken))
+                {
+                    if (!requestPayload.OrderUserId.HasValue) throw new Exception("UserId missing for userwise orders list");
+                    var orders = await impl.GetOrdersAsync(connectionString, requestPayload.OrderUserId.Value).ToListAsync();
+                    var orderStatuses = await impl.GetOrderStatusesAsync(connectionString);
+                    var riders = await impl.GetRidersAsync(requestPayload.OrderUserId.Value, connectionString);
+                    var branches = await impl.GetBranchesAsync(connectionString);
+                    payload = new { Orders = orders, OrderStatuses = orderStatuses, Riders = riders, Branches = branches };
+                    success = true;
+                }
+                else
+                {
+                    var orders = await impl.GetOrdersAsync(connectionString, orderToken: requestPayload.OrderToken).ToListAsync();
+                    if (orders == null || orders.Count == 0) throw new Exception("Order not found");
+                    await publisher.PublishToQueueAsync(RabbitMqQueues.ClientNotificationRequestQueue,
+                    new ClientNotificationServicePayload(requestPayload)
+                    {
+                        CustomerOrder = orders.First(),
+                    });
+                }
             }
             catch (Exception ex)
             {

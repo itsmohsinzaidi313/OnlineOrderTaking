@@ -38,11 +38,11 @@ namespace CreateOrderService
                     });
 
                 }
-                await publisher.PublishToQueueAsync(RabbitMqQueues.ClientNotificationRequestQueue,
-                    new ClientNotificationServicePayload(requestPayload)
-                    {
-                        CustomerOrder = requestPayload.Order!,
-                    });
+                await publisher.PublishToQueueAsync(RabbitMqQueues.OrderHistoryRequestQueue,
+                   new DataServicePayload(requestPayload)
+                   {
+                       OrderToken = requestPayload.Order.OrderToken
+                   });
                 await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
                 {
                     ExportType = "NewOrder",
