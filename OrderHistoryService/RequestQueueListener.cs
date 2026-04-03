@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PointofSaleModels.Application;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
@@ -19,10 +18,10 @@ namespace OrderHistoryService
             try
             {
                 var connectionString = await GetConnectionString(requestPayload.DomainName);
-                if (!requestPayload.OrderUserId.HasValue) throw new Exception("UserId missing for userwise orders list");
 
                 if (string.IsNullOrEmpty(requestPayload.OrderToken))
                 {
+                    if (!requestPayload.OrderUserId.HasValue) throw new Exception("UserId missing for userwise orders list");
                     var orders = await impl.GetOrdersAsync(connectionString, requestPayload.OrderUserId.Value).ToListAsync();
                     var orderStatuses = await impl.GetOrderStatusesAsync(connectionString);
                     var riders = await impl.GetRidersAsync(requestPayload.OrderUserId.Value, connectionString);
