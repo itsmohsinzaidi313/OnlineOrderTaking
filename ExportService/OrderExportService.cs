@@ -127,7 +127,7 @@ namespace ExportService
         {
             using var context = pgContextFactory.CreateDbContext();
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
-            return restaurant?.ConnectionString.Replace("haproxy", "127.0.0.1") ?? throw new Exception("Restaurant not found");
+            return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
         }
 
         public PostgresDbContext GetDbContext(string connectionString)
