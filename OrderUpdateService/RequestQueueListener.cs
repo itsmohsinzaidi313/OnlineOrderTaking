@@ -98,6 +98,12 @@ namespace OrderUpdateService
                         await dbContext.OrderMasters
                             .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
                             .ExecuteUpdateAsync(x => x.SetProperty(x => x.DeliveryTime, deliveryTime));
+
+                        await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
+                        {
+                            ExportType = "DeliveryTimeUpdate",
+                            OrderNumber = orderMaster.OrderNumber ?? string.Empty,
+                        });
                     }
                     payload = new
                     {

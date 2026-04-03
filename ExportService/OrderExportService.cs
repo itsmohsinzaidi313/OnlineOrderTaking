@@ -27,41 +27,29 @@ namespace ExportService
                 await MarkAsExported(orderNumber, connectionString);
             }
 
-            if (exportType == "BranchTransfer")
-            {
-                await UpdateBranch(orderNumber, connectionString);
-            }
             if (exportType == "OrderStatusUpdate")
             {
                 await UpdateOrderStatus(orderNumber, connectionString);
             }
-            if (exportType == "RiderAssignment")
+            if (new[] { "DeliveryTimeUpdate", "RiderAssignment", "BranchTransfer" }.Contains(exportType))
             {
-                await UpdateRider(orderNumber, connectionString);
+                await UpdateOrder(orderNumber, connectionString);
             }
         }
 
-        private async Task UpdateBranch(string orderNumber, string connectionString)
+        private async Task UpdateOrder(string orderNumber, string connectionString)
         {
             using var postgresContext = GetDbContext(connectionString);
             using var sqlContext = sqlContextFactory.CreateDbContext();
 
-            var orderMaster = await postgresContext.OrderMasters.Where(x => x.OrderNumber == orderNumber).Select(x => new { x.CompanyId, x.BranchId }).FirstOrDefaultAsync();
-            await sqlContext.OrderMasters
-                .Where(x => x.OrderNumber == orderNumber && x.CompanyId == orderMaster.CompanyId)
-                .ExecuteUpdateAsync(x => x.SetProperty(x => x.BranchId, orderMaster.BranchId));
-        }
-
-        private async Task UpdateRider(string orderNumber, string connectionString)
-        {
-            using var sqlContext = sqlContextFactory.CreateDbContext();
-            using var postgresContext = GetDbContext(connectionString);
-
-            var orderMaster = await postgresContext.OrderMasters.Where(x => x.OrderNumber == orderNumber).Select(x => new { x.CompanyId, x.RiderId }).FirstOrDefaultAsync();
+            var orderMaster = await postgresContext.OrderMasters.Where(x => x.OrderNumber == orderNumber).FirstOrDefaultAsync();
 
             await sqlContext.OrderMasters
                 .Where(x => x.OrderNumber == orderNumber && x.CompanyId == orderMaster.CompanyId)
-                .ExecuteUpdateAsync(x => x.SetProperty(x => x.RiderId, orderMaster.RiderId));
+                .ExecuteUpdateAsync(x =>
+                x.SetProperty(x => x.BranchId, orderMaster.BranchId)
+                .SetProperty(x => x.DeliveryTime, orderMaster.DeliveryTime)
+                .SetProperty(x => x.RiderId, orderMaster.RiderId));
         }
 
         private async Task UpdateOrderStatus(string orderNumber, string connectionString)
