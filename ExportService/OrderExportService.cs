@@ -88,6 +88,7 @@ namespace ExportService
                         Description = pgLog.Description,
                         CreatedDate = pgLog.CreatedDate,
                         CreatedBy = createdBy,
+                        IsActive = true,
                     };
                     await sqlContext.OrderStatusLogs.AddAsync(newSqlLog);
                 }
@@ -221,9 +222,7 @@ namespace ExportService
                         }
                     }
                     var phoneId = existingPhone?.PhoneId ?? pgCustomerPhone.PhoneId;
-
-
-
+                    
                     sqlOrderMaster.PhoneId = phoneId;
                     if (pgOrderMaster.RiderId != null)
                     {
