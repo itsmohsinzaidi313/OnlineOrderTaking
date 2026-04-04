@@ -25,20 +25,6 @@ services:
       - patroni-net
     volumes:
       - website_data:/app/data
-
-  backpanel:
-    build:
-      context: ./backpanel
-      dockerfile: ./Dockerfile
-    ports:
-      - "3001:3000"
-    environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3000}
-    networks:
-      - patroni-net
-    volumes:
-    - backpanel_data:/app/data
   
   exportservice:
     build:
