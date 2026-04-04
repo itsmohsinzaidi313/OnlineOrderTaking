@@ -50,6 +50,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      socks-proxy:
+        condition: service_healthy
 
   generalseodataservice:
     build:
@@ -65,6 +67,8 @@ services:
       haproxy:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      socks-proxy:
         condition: service_healthy
 
   pushnotificationservice:
@@ -91,6 +95,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      socks-proxy:
+        condition: service_healthy
 
   customerorderhistoryservice:
     build:
@@ -111,6 +117,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      socks-proxy:
+        condition: service_healthy
 
   menuservice:
     build:
@@ -130,6 +138,8 @@ services:
       haproxy:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      socks-proxy:
         condition: service_healthy
 
   orderhistoryservice:
@@ -153,6 +163,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      socks-proxy:
+        condition: service_healthy
 
   settingsdataservice:
     build:
@@ -172,6 +184,8 @@ services:
       haproxy:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      socks-proxy:
         condition: service_healthy
 
   clientnotifyservice:
@@ -193,6 +207,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      socks-proxy:
+        condition: service_healthy
 
   orderupdateservice:
     build:
@@ -213,6 +229,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      socks-proxy:
+        condition: service_healthy
 
   importservice:
     build:
@@ -229,6 +247,8 @@ services:
       haproxy:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      socks-proxy:
         condition: service_healthy
 
   createorderservice:
@@ -250,6 +270,8 @@ services:
       haproxy:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      socks-proxy:
         condition: service_healthy
 
   gatewayservice:
@@ -276,6 +298,8 @@ services:
       - patroni-net
     depends_on:
       rabbitmq:
+        condition: service_healthy
+      socks-proxy:
         condition: service_healthy
   
   # etcd for Patroni configuration management
