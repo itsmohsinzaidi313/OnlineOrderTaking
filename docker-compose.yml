@@ -10,6 +10,8 @@ services:
     ports:
       - "1080:1080"
     restart: unless-stopped
+    volumes:
+     - /home/ygen/.ssh:/ssh:ro
   
   website:
     build:
