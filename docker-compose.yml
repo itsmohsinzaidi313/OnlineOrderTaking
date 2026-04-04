@@ -2,8 +2,8 @@ services:
 
   socks-proxy:
     build:
-      context: .
-      dockerfile: ./SocksProxy/Dockerfile
+      context: ./SocksProxy
+      dockerfile: ./Dockerfile
     environment:
       - JUMP_BOX_USER=mohsin
       - JUMP_BOX_HOST=119.73.110.190
