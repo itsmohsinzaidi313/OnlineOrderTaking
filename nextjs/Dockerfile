@@ -11,6 +11,9 @@ RUN npm install
 # Copy the rest of the Next.js application
 COPY web-ordering/ .
 
+# Remove .next directory if it exists
+RUN rm -rf .next
+
 # Build the application
 RUN npm run build
 
