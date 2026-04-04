@@ -1,15 +1,13 @@
 services:
 
   socks-proxy:
-    image: alpine:latest
-    container_name: socks-proxy
-    command: >
-      sh -c "apk add openssh-client && 
-             ssh -D 0.0.0.0:1080 -N -o StrictHostKeyChecking=no itsmohsin@119.73.110.190"
+    build: .
+    domainname: ./SocksProxy/Dockerfile
+    environment:
+      - JUMP_BOX_USER=mohsin
+      - JUMP_BOX_HOST=119.73.110.190
     ports:
       - "1080:1080"
-    volumes:
-      - ~/.ssh:/root/.ssh:ro
     restart: unless-stopped
   
   website:
