@@ -1,4 +1,17 @@
 services:
+
+  socks-proxy:
+    image: alpine:latest
+    command: >
+      sh -c "apk add openssh-client && 
+             ssh -D 0.0.0.0:1080 -N -o StrictHostKeyChecking=no itsmohsin@119.73.110.190"
+    environment:
+      - SSH_PRIVATE_KEY=${SSH_PRIVATE_KEY}
+    ports:
+      - "1080:1080"
+    volumes:
+      - ~/.ssh:/root/.ssh:ro
+    restart: unless-stopped
   
   website:
     build:
@@ -29,6 +42,8 @@ services:
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+      - ALL_PROXY=socks5://socks-proxy:1080
+      - HTTPS_PROXY=socks5://socks-proxy:1080
     networks:
       - patroni-net
     depends_on:
@@ -43,6 +58,8 @@ services:
       dockerfile: ./GeneralSeoDataService/Dockerfile
     environment:
       - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - ALL_PROXY=socks5://socks-proxy:1080
+      - HTTPS_PROXY=socks5://socks-proxy:1080
     networks:
       - patroni-net
     depends_on:
@@ -66,6 +83,8 @@ services:
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+      - ALL_PROXY=socks5://socks-proxy:1080
+      - HTTPS_PROXY=socks5://socks-proxy:1080
     networks:
       - patroni-net
     depends_on:
@@ -84,6 +103,8 @@ services:
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+      - ALL_PROXY=socks5://socks-proxy:1080
+      - HTTPS_PROXY=socks5://socks-proxy:1080
     networks:
       - patroni-net
     depends_on:
@@ -102,6 +123,8 @@ services:
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+      - ALL_PROXY=socks5://socks-proxy:1080
+      - HTTPS_PROXY=socks5://socks-proxy:1080
     networks:
       - patroni-net
     depends_on:
@@ -122,6 +145,8 @@ services:
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+      - ALL_PROXY=socks5://socks-proxy:1080
+      - HTTPS_PROXY=socks5://socks-proxy:1080
     networks:
       - patroni-net
     depends_on:
@@ -140,6 +165,8 @@ services:
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+      - ALL_PROXY=socks5://socks-proxy:1080
+      - HTTPS_PROXY=socks5://socks-proxy:1080
     networks:
       - patroni-net
     depends_on:
@@ -158,6 +185,8 @@ services:
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+      - ALL_PROXY=socks5://socks-proxy:1080
+      - HTTPS_PROXY=socks5://socks-proxy:1080
     networks:
       - patroni-net
     depends_on:
@@ -176,6 +205,8 @@ services:
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+      - ALL_PROXY=socks5://socks-proxy:1080
+      - HTTPS_PROXY=socks5://socks-proxy:1080
     networks:
       - patroni-net
     depends_on:
@@ -191,6 +222,8 @@ services:
     environment:
       - ConnectionStrings__SqlServer=${MSSQLCONNECTION}
       - ConnectionStrings__Postgres=${RWSQLCONNECTION}
+      - ALL_PROXY=socks5://socks-proxy:1080
+      - HTTPS_PROXY=socks5://socks-proxy:1080
     networks:
       - patroni-net
     depends_on:
@@ -210,6 +243,8 @@ services:
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+      - ALL_PROXY=socks5://socks-proxy:1080
+      - HTTPS_PROXY=socks5://socks-proxy:1080
     networks:
       - patroni-net
     depends_on:
@@ -236,6 +271,8 @@ services:
       - JWT__ISSUER=${GATEWAY_JWT_ISSUER}
       - JWT__AUDIENCE=${GATEWAY_JWT_AUDIENCE}
       - JWT__EXPIREMINUTES=${GATEWAY_JWT_EXPIREMINUTES}
+      - ALL_PROXY=socks5://socks-proxy:1080
+      - HTTPS_PROXY=socks5://socks-proxy:1080
     networks:
       - patroni-net
     depends_on:
