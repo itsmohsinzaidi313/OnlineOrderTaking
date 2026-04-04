@@ -23,6 +23,8 @@ services:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3000}
     networks:
       - patroni-net
+    volumes:
+      - website_data:/app/data
 
   backpanel:
     build:
@@ -35,6 +37,8 @@ services:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3000}
     networks:
       - patroni-net
+    volumes:
+    - backpanel_data:/app/data
   
   exportservice:
     build:
@@ -499,6 +503,8 @@ volumes:
   etcd_data:
   redis_data:
   rabbitmq_data:
+  website_data:
+  backpanel_data:
 
 networks:
   patroni-net:
