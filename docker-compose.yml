@@ -11,7 +11,9 @@ services:
       - "1080:1080"
     restart: unless-stopped
     volumes:
-     - /home/ygen/.ssh:/ssh:ro
+     - /home/ygen/.ssh:/ssh-keys:ro
+    networks: 
+     - patroni-net
   
   website:
     build:
