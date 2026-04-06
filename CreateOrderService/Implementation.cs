@@ -133,6 +133,7 @@ public class Implementation()
             OrderToken = await GetUniqueTokenAsync(dbContext),
             ChangeAmount = order.CustomerDetails.ChangeAmount,
             Exported = false,
+            PaymentTypeId = dbPaymentMode.PaymentModeId
         };
 
         if (areaId.HasValue)
