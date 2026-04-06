@@ -104,7 +104,7 @@ public class Implementation()
         var orderNumber = await GenerateOrderNumberAsync(dbContext, branchId);
         var dbPaymentMode = await dbContext.PaymentModes.FirstOrDefaultAsync(x => x.PaymentMode1.ToLower() == order.PaymentType.ToLower());
         var gst = dbPaymentMode != null ? await dbContext.Gsts.FirstOrDefaultAsync(x => x.PaymentModeId == dbPaymentMode.PaymentModeId) : null;
-        var orderSourceId = await dbContext.SetupMasterDetails.Where(x => x.CompanyId == companyId && x.Flex1 == "WEB").Select(x => x.SetupDetailId).FirstOrDefaultAsync();
+        var orderSource = await dbContext.SetupMasterDetails.Where(x => x.CompanyId == companyId && x.Flex1 == "WEB").FirstOrDefaultAsync();
         var orderstatus = await dbContext.OrderStatuses.Where(x => x.OrderStatusName == "Pending").FirstOrDefaultAsync();
         order.Status = OrderStatus.Pending.ToString();
         var orderType = await dbContext.SetupMasterDetails.FirstOrDefaultAsync(x => x.SetupDetailName == order.OrderType);
@@ -113,8 +113,9 @@ public class Implementation()
 
         var orderMaster = new Db.OrderMaster
         {
-            OrderSourceId = orderSourceId,
+            OrderSourceId = orderSource.SetupDetailId,
             OrderStatusId = orderstatus!.OrderStatusId,
+            OrderSourceValue = orderSource.Flex1,
             OrderNumber = orderNumber,
             CompanyId = companyId,
             BranchId = branchId,
