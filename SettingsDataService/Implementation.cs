@@ -310,6 +310,10 @@ internal class Implementation()
 
         settingsData["IS_DELIVERY_ENABLED"] = orderModesList.Contains("DELIVERY");
         settingsData["IS_PICKUP_ENABLED"] = orderModesList.Contains("TAKE AWAY");
+        settingsData["WEBSITE_VERSION"] = (await dbContext.SetupMasterDetails
+                                            .Where(x => x.SetupDetailName == "WebsiteVersion")
+                                            .Select(x => x.Flex1)
+                                            .FirstOrDefaultAsync())?.ToString() ?? "0.0.1";
 
         var orderStatuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
         settingsData["OrderStatuses"] = JsonValue.Create(orderStatuses);
