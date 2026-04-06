@@ -161,6 +161,7 @@ internal class Implementation()
     {
         using var dbContext = GetDbContext(connectionString);
         foreach (var dbCategory in (from x in dbContext.ProductCategories
+                                    where x.IsActive == true && x.IsEnable == true
                                     select x).ToList())
         {
             var category = new Category
