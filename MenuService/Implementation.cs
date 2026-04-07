@@ -72,7 +72,6 @@ internal class Implementation()
                 dbProducts.AddRange(await (from a in dbContext.Products
                                        join b in dbContext.ProductDetails on a.ProductId equals b.ProductId
                                        where dbProductDetailBranchMapping.Contains(b.ProductDetailId) && a.IsEnable && a.DisplayInWeb
-                                       orderby a.SortOrder ascending
                                        select a).Distinct().ToListAsync());
             }),
             Task.Run(() =>
@@ -182,11 +181,12 @@ internal class Implementation()
                     Image = dbProduct.ProductImage ?? "N/A",
                     DepartmentName = dbMenuData.Departments[dbProduct.ProductCategoryId ?? 0] ?? "N/A",
                     Description = dbProduct.ProductDescription ?? "N/A",
+                    SortOrder = dbProduct.SortOrder,
                 };
                 foreach (var dbProductDetail in dbMenuData.ProductDetails.Where(x => x.ProductId == dbProduct.ProductId))
                 {
                     //var orderMode = dbMenuData.OrderModes.Join(dbMenuData.OrderModeDiscountMappings, a => a.SetupDetailId, b => b.OrderModeId, (a, b) => new { OrderMode = a.Flex1, b.DiscountId })
-                                        //.ToDictionary(x => x.DiscountId, x => x.OrderMode);
+                    //.ToDictionary(x => x.DiscountId, x => x.OrderMode);
                     var itemDiscount = dbMenuData.ItemDiscounts.Join(
                                         dbMenuData.DiscountMappings,
                                         a => a.DiscountId,
@@ -265,6 +265,7 @@ internal class Implementation()
             }
             if (category.Items.Count >= 1)
             {
+                category.Items.Sort((a, b) => a.SortOrder.CompareTo(b.SortOrder));
                 yield return category;
             }
         }

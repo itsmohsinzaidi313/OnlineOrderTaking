@@ -4,6 +4,7 @@
     {
         public const long OPEN_FOOD_CODE = 151605140604;
         public int Id { get; set; }
+        public int SortOrder { get; set; }
         public string CategoryId { get; set; } = "0";
         public string Code { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
