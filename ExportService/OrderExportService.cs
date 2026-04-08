@@ -7,6 +7,12 @@ namespace ExportService
 {
     public class OrderExportService(ILogger<OrderExportCycleService> logger, IDbContextFactory<RestaurantsDbContext> pgContextFactory, IDbContextFactory<SqlServerDbContext> sqlContextFactory)
     {
+        readonly TimeZoneInfo karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+        DateTime ConvertToPkTime(DateTime dateTime)
+        {
+            return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
+        }
+
         public async Task OnMessageHandler(ExportServicePayload request, string connectionString)
         {
             var orderNumber = request.OrderNumber;
@@ -160,7 +166,7 @@ namespace ExportService
                     var pgAddress = await postgresContext.CustomerAddressDetails.FirstOrDefaultAsync(ca => ca.CustomerAddressId == pgOrderMaster.CustomerAddressId);
 
                     var createdBy = postgresContext.UserLogins.FirstOrDefault()?.UserId ?? 0;
-                    var createdDate = DateTime.Now;
+                    var createdDate = ConvertToPkTime(DateTime.Now);
 
                     var sqlOrderMaster = MapToOrderMaster(pgOrderMaster);
                     var existingPhone = await sqlContext.CustomerPhones.FirstOrDefaultAsync(cp => cp.PhoneNumber == pgPhone.PhoneNumber && cp.CompanyId == companyId);
@@ -223,7 +229,7 @@ namespace ExportService
                         }
                     }
                     var phoneId = existingPhone?.PhoneId ?? pgPhone.PhoneId;
-                    
+
                     sqlOrderMaster.PhoneId = phoneId;
                     if (pgOrderMaster.RiderId != null)
                     {
@@ -272,20 +278,23 @@ namespace ExportService
 
         private OrderMaster MapToOrderMaster(OrderMaster pgOrderMaster)
         {
+            var orderTime = pgOrderMaster.OrderTime;
+            var orderDate = pgOrderMaster.OrderDate;
+            DateTime orderDateTime = ConvertToPkTime(orderDate?.ToDateTime(orderTime) ?? DateTime.MinValue);
             return new OrderMaster
             {
                 CompanyId = pgOrderMaster.CompanyId,
                 OrderNumber = pgOrderMaster.OrderNumber,
                 CreatedBy = pgOrderMaster.CreatedBy,
-                CreatedDate = DateTime.Now,
+                CreatedDate = ConvertToPkTime(DateTime.Now),
                 BranchId = pgOrderMaster.BranchId,
                 AreaId = pgOrderMaster.AreaId,
                 RiderId = pgOrderMaster.RiderId,
                 OrderStatusId = pgOrderMaster.OrderStatusId,
                 IsAdvanceOrder = pgOrderMaster.IsAdvanceOrder,
                 SpecialInstruction = pgOrderMaster.SpecialInstruction,
-                OrderDate = pgOrderMaster.OrderDate,
-                OrderTime = pgOrderMaster.OrderTime,
+                OrderDate = DateOnly.FromDateTime(orderDateTime),
+                OrderTime = TimeOnly.FromDateTime(orderDateTime),
                 TotalAmountWithoutGst = pgOrderMaster.TotalAmountWithoutGst,
                 Gstid = pgOrderMaster.Gstid,
                 TotalAmountWithGst = pgOrderMaster.TotalAmountWithGst,
