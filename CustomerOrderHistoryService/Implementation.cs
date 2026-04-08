@@ -80,7 +80,11 @@ public class Implementation()
                 AmountWithGst = dbOrder.TotalAmountWithGst ?? 0.00,
                 OrderTime = orderDateTime,
                 GstPercentage = dbOrder.Gstpercent,
-                OrderStatusLogs = orderStatusLogs.ToDictionary(x => x.OrderStatusId, x => convertToPkTime(x.CreatedDate)),
+                OrderStatusLogs = orderStatusLogs.Select(x => new
+                {
+                    Id = x.OrderStatusId,
+                    CreatedAt = convertToPkTime(x.CreatedDate),
+                }).ToList(),
                 Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName ?? string.Empty, Contact = x.Contact1 ?? string.Empty }).FirstOrDefault(x => x.Id == dbOrder.RiderId),
                 DeliveryTime = dbOrder.DeliveryTime ?? 0,
                 TotalDiscount = dbOrder.DiscountAmount ?? 0.00,

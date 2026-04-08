@@ -332,15 +332,19 @@ public class Implementation()
             yield return userId;
     }
 
-    internal async Task<Dictionary<int, DateTime>> OrderStatusLogs(string connectionString, string orderToken)
+    internal async Task<object> OrderStatusLogs(string connectionString, string orderToken)
     {
         var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
         var dbContext = GetDbContext(connectionString);
         var orderMasterId = await dbContext.OrderMasters.Where(x => x.OrderToken == orderToken).Select(x => x.OrderMasterId).FirstOrDefaultAsync();
         var logs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == orderMasterId).ToListAsync();
-        return logs.ToDictionary(x => x.OrderStatusId, y => TimeZoneInfo.ConvertTimeFromUtc(
-                            DateTime.SpecifyKind(y.CreatedDate, DateTimeKind.Utc),
+        return logs.Select(x => new
+        {
+            Id = x.OrderStatusId,
+            CreatedAt = TimeZoneInfo.ConvertTimeFromUtc(
+                            DateTime.SpecifyKind(x.CreatedDate, DateTimeKind.Utc),
                             karachiTz
-                        ));
+                        ),
+        });
     }
 }
