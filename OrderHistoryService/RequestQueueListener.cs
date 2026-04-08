@@ -23,6 +23,7 @@ namespace OrderHistoryService
                 {
                     if (!requestPayload.OrderUserId.HasValue) throw new Exception("UserId missing for userwise orders list");
                     var orders = await impl.GetOrdersAsync(connectionString, requestPayload.OrderUserId.Value).ToListAsync();
+                    orders.Sort((x, y) => y.OrderTime.CompareTo(x.OrderTime));
                     var orderStatuses = await impl.GetOrderStatusesAsync(connectionString);
                     var riders = await impl.GetRidersAsync(requestPayload.OrderUserId.Value, connectionString);
                     var branches = await impl.GetBranchesAsync(connectionString);
