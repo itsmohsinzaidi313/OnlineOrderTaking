@@ -105,7 +105,11 @@ public class Implementation()
                     AmountWithGst = orderMaster.TotalAmountWithGst ?? 0.00,
                     OrderTime = orderDateTime,
                     GstPercentage = orderMaster.Gstpercent,
-                    OrderStatusLogs = orderStatusLogs.ToDictionary(x => x.OrderStatusId, x => convertToPkTime(DateTime.SpecifyKind(x.CreatedDate, DateTimeKind.Utc))),
+                    OrderStatusLogs = orderStatusLogs.Select(x => new
+                    {
+                        Id = x.OrderStatusId,
+                        CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDate, DateTimeKind.Utc)),
+                    }).ToList(),
                     Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName ?? string.Empty, Contact = x.Contact1 ?? string.Empty }).FirstOrDefault(x => x.Id == orderMaster.RiderId),
                     DeliveryTime = orderMaster.DeliveryTime ?? 0,
                     TotalDiscount = orderMaster.DiscountAmount ?? 0.00,

@@ -17,7 +17,7 @@
         public double AmountWithGst { get; set; }
         public double AmountWithoutGst { get; set; }
         public List<MenuItem> Items { get; set; } = [];
-        public Dictionary<int, DateTime>? OrderStatusLogs { get; set; }
+        public object? OrderStatusLogs { get; set; }
         public int DeliveryTime { get; set; }
         public double TotalDiscount { get; set; }
         public double GstPercentage { get; set; }
