@@ -51,6 +51,7 @@ public class Implementation()
         var areas = await dbContext.Areas.ToDictionaryAsync(x => x.AreaId, x => x.AreaName);
         var cities = await dbContext.Cities.ToDictionaryAsync(x => x.CityId, x => x.CityName);
         var areaCityIds = await dbContext.Areas.ToDictionaryAsync(x => x.AreaId, x => x.CityId);
+        var paymentModes = await dbContext.PaymentModes.ToDictionaryAsync(x => x.PaymentModeId, x => x.PaymentMode1);
 
         if (userId.HasValue)
         {
@@ -139,6 +140,7 @@ public class Implementation()
                         EmailAddress = orderMaster.EmailAddress ?? "N/A",
                         Title = customer.Title ?? "N/A",
                         ChangeAmount = orderMaster.ChangeAmount,
+                        PaymentMethod = paymentModes[orderMaster.PaymentTypeId ?? 0],
                     };
                     order.CustomerDetails = customerDetail;
                 }
