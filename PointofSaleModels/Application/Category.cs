@@ -8,5 +8,6 @@
         public string Image { get; set; } = string.Empty;
         public string Icon { get; set; } = string.Empty;
         public List<MenuItem> Items { get; set; } = [];
+        public string Layout { get; set; }
     }
 }

@@ -170,6 +170,7 @@ internal class Implementation()
                 Image = dbCategory.CategoryImage ?? "N/A",
                 Icon = dbCategory.CategoryIcon ?? "N/A",
                 Items = [],
+                Layout = "horizontal-left",
             };
             foreach (var dbProduct in dbMenuData.Products.Where(x => x.ProductCategoryId == dbCategory.CategoryId))
             {
