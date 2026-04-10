@@ -46,11 +46,11 @@ jobs:
 
             # Navigate to nextjs app and pull
             echo "Updating NextJS app..."
-            cd nextjs/web-ordering
+            cd ~/OnlineOrderTaking/nextjs/web-ordering
             git pull
 
-            # Go back to root
-            cd ../../
+            # Navigate to project directory
+            cd ~/OnlineOrderTaking || exit 1
 
             # Stop containers
             echo "Stopping containers..."
