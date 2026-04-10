@@ -20,6 +20,9 @@ jobs:
           script: |
             cd OnlineOrderTaking
             git pull origin main
+            cd nextjs/web-ordering
+            git pull
+            cd ../../
             docker-compose down
             docker-compose build --no-cache
             docker-compose up -d
