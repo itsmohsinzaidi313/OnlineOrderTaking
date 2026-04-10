@@ -8,9 +8,12 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: Deploy to VPS
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Debug SSH Connection
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -18,12 +21,55 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
           script: |
-            cd OnlineOrderTaking
+            echo "Connected successfully"
+            whoami
+            pwd
+            ls -la
+
+      - name: Deploy application
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: true # Stop on first error
+          script: |
+            set -e  # Exit on error
+
+            # Navigate to project directory
+            cd ~/OnlineOrderTaking || exit 1
+
+            # Pull latest changes
+            echo "Pulling latest code..."
             git pull origin main
+
+            # Navigate to nextjs app and pull
+            echo "Updating NextJS app..."
             cd nextjs/web-ordering
             git pull
+
+            # Go back to root
             cd ../../
+
+            # Stop containers
+            echo "Stopping containers..."
             docker-compose down
+
+            # Rebuild without cache
+            echo "Building new images..."
             docker-compose build --no-cache
+
+            # Start containers
+            echo "Starting containers..."
             docker-compose up -d
+
+            # Clean up
+            echo "Cleaning up..."
             docker system prune -f
+
+            # Check container status
+            echo "Container status:"
+            docker-compose ps
+
+            echo "Deployment complete!"
