@@ -2,27 +2,27 @@
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.Protos;
+using PointofSaleModels.Services;
 using static PointofSaleModels.Protos.GeneralSeoDataService;
 
 namespace GeneralSeoDataService
 {
-    public class SeoDataServiceImpl(IDbContextFactory<RestaurantsContext> dbContextFactory) : GeneralSeoDataServiceBase
+    public class SeoDataServiceImpl(IConnectionStringResolver resolver) : GeneralSeoDataServiceBase
     {
         public override async Task<SeoDataList> GetSeoData(Domain request, ServerCallContext context)
         {
-            var connectionString = await GetConnectionString(request.DomainName);
             var list = new SeoDataList();
 
-            await foreach (var seoData in FetchSeoData(connectionString))
+            await foreach (var seoData in FetchSeoData(request.DomainName))
             {
                 list.GeneralSeo.Add(seoData);
             }
             return list;
         }
 
-        private static async IAsyncEnumerable<SeoData> FetchSeoData(string connectionString)
+        private async IAsyncEnumerable<SeoData> FetchSeoData(string domainName)
         {
-            await using var dbContext = GetDbContext(connectionString);
+            await using var dbContext = await resolver.ResolveAndGetReadOnlyDbContextAsync(domainName);
             var generalSeoKeys = new List<string>()
         {
             "WEBSITE_META_TITLE",
@@ -45,27 +45,6 @@ namespace GeneralSeoDataService
                     Value = entry.Value == "UPLOAD_LOGO" ? "RESTAURANT_LOGO" : entry.Value
                 };
             }
-        }
-
-        private async Task<string> GetConnectionString(string domainName)
-        {
-            await using var context = await dbContextFactory.CreateDbContextAsync();
-            var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
-            return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
-        }
-
-        private static PgDbContext GetDbContext(string connectionString)
-        {
-            var options = new DbContextOptionsBuilder<PgDbContext>()
-                .UseNpgsql(connectionString, options =>
-                {
-                    options.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(5),
-                        errorCodesToAdd: null);
-                })
-                .Options;
-            return new PgDbContext(options);
         }
     }
 }

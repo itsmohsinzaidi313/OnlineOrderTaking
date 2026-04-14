@@ -2,6 +2,7 @@ using GeneralSeoDataService;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.PGDatabaseModels;
+using PointofSaleModels.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,7 @@ builder.Services
                     maxRetryDelay: TimeSpan.FromSeconds(5),
                     errorCodesToAdd: null);
             }));
+builder.Services.AddScoped<IConnectionStringResolver, ConnectionStringResolver>();
 builder.Services.AddGrpc();
 builder.WebHost.ConfigureKestrel(options =>
 {

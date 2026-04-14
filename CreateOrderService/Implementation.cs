@@ -1,33 +1,19 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using PointofSaleModels.Application;
+using PointofSaleModels.Services;
 using Db = PointofSaleModels.PGDatabaseModels;
 using ValueType = PointofSaleModels.Application.ValueType;
 
 namespace CreateOrderService;
 
-public class Implementation()
+public class Implementation(IConnectionStringResolver resolver)
 {
-    private static Db.PgDbContext GetDbContext(string connectionString)
-    {
-        var options = new DbContextOptionsBuilder<Db.PgDbContext>()
-            .UseNpgsql(connectionString, options =>
-            {
-                options.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorCodesToAdd: null);
-            })
-            .Options;
-        return new Db.PgDbContext(options);
-    }
-
     internal async Task SaveOrderAsync(string connectionString, CustomerOrder order)
     {
         var branchId = order.BranchId;
         var areaId = order.AreaId;
-        var dbContext = GetDbContext(connectionString);
-
+        var dbContext = resolver.GetWriteDbContext(connectionString);
         order.BranchName = (await dbContext.BranchMasters.FirstOrDefaultAsync(x => x.BranchId == order.BranchId))?.BranchName ?? string.Empty;
         if (areaId.HasValue)
         {
@@ -327,7 +313,7 @@ public class Implementation()
 
     internal async IAsyncEnumerable<int> GetBranchUsersIdsAsync(string connectionString, int branchId)
     {
-        using var dbContext = GetDbContext(connectionString);
+        await using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
         foreach (var userId in await dbContext.UserBranchMappings.Where(x => x.BranchId == branchId).Select(x => x.UserId).ToListAsync())
             yield return userId;
     }
@@ -335,7 +321,7 @@ public class Implementation()
     internal async Task<object> OrderStatusLogs(string connectionString, string orderToken)
     {
         var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
-        var dbContext = GetDbContext(connectionString);
+        var dbContext = resolver.GetReadOnlyDbContext(connectionString);
         var orderMasterId = await dbContext.OrderMasters.Where(x => x.OrderToken == orderToken).Select(x => x.OrderMasterId).FirstOrDefaultAsync();
         var logs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == orderMasterId).ToListAsync();
         return logs.Select(x => new

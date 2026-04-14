@@ -1,32 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Application;
-using System.Text.Json.Nodes;
+using PointofSaleModels.Services;
 using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace MenuService;
 
-internal class Implementation()
+internal class Implementation(IConnectionStringResolver resolver)
 {
-    private static Db.PgDbContext GetDbContext(string connectionString)
-    {
-        var options = new DbContextOptionsBuilder<Db.PgDbContext>()
-            .UseNpgsql(connectionString, options =>
-            {
-                options.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorCodesToAdd: null);
-            })
-            .Options;
-        return new Db.PgDbContext(options);
-    }
-
     private async Task<DbMenuData> GetDbMenuDataAsync(string connectionString, int branchId)
     {
         var bid = branchId;
         if (bid == 0)
         {
-            using var dbContext = GetDbContext(connectionString);
+            using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
             var activeBranch = dbContext.BranchMasters.FirstOrDefault(x => x.IsActive);
             if (activeBranch != null)
                 bid = activeBranch.BranchId;
@@ -47,7 +33,7 @@ internal class Implementation()
         var dbOrderModes = new List<Db.SetupMasterDetail>();
         var dbProductDetailBranchMapping = new List<int>();
         {
-            using var dbContext = GetDbContext(connectionString);
+            using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
             dbProductDetailBranchMapping.AddRange([.. dbContext.ProductDetailBranchMappings.Where(x => x.BranchId == bid).Select(x => x.ProductDetailId ?? 0)]);
         }
 
@@ -55,39 +41,39 @@ internal class Implementation()
         {
             Task.Run(() =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
                 dbSizes.AddRange([.. from a in dbContext.ProductSizes
                                  select a]);
             }),
             Task.Run(() =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
                 dbFlavours.AddRange([.. from a in dbContext.Flavours
                                     select a]);
             }),
-            Task.Run(async () =>
+            Task.Run(() =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
 
-                dbProducts.AddRange(await (from a in dbContext.Products
+                dbProducts.AddRange([.. (from a in dbContext.Products
                                        join b in dbContext.ProductDetails on a.ProductId equals b.ProductId
                                        where dbProductDetailBranchMapping.Contains(b.ProductDetailId) && a.IsEnable && a.DisplayInWeb
-                                       select a).Distinct().ToListAsync());
+                                       select a).Distinct()]);
             }),
             Task.Run(() =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
                 dbDealItemDetails.AddRange([.. from a in dbContext.DealItemDetails
                                            select a]);
             }),
             Task.Run(() =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
                 dbDealDescription.AddRange([.. from x in dbContext.DealDescriptions select x]);
             }),
-            Task.Run(async () =>
+            Task.Run(() =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
                 dbDealDescriptionProducts.AddRange([.. (from a in dbContext.Products
                                                    join b in dbContext.ProductDetails on a.ProductId equals b.ProductId
                                                    join c in dbContext.DealDescriptions on b.ProductDetailId equals c.ProductDetailId
@@ -95,13 +81,13 @@ internal class Implementation()
             }),
             Task.Run(() =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
                 dbDepartments = (from a in dbContext.ProductCategories
                                 select new { a.CategoryId, a.DepartmentId }).ToDictionary(x => x.CategoryId, x => x.DepartmentId.ToString() ?? "N/A");
             }),
             Task.Run(() =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
                 dbProductDetails.AddRange([.. from a in dbContext.ProductDetails
                                             where dbProductDetailBranchMapping.Contains(a.ProductDetailId)
                                             select a]);
@@ -109,7 +95,7 @@ internal class Implementation()
             }),
             Task.Run(() =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
                 dbItemDiscounts.AddRange([.. (from a in dbContext.Discounts
                                             join b in dbContext.DiscountProductDetailMappings on a.DiscountId equals b.DiscountId
                                             join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
@@ -119,14 +105,15 @@ internal class Implementation()
             }),
             Task.Run(() =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
                 dbItemDiscountsMapping.AddRange([.. (from a in dbContext.DiscountProductDetailMappings
                                                 join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
                                                 where dbProductDetailBranchMapping.Contains(b.ProductDetailId)
                                                 select a).Distinct()]);
             }),
-            Task.Run(() =>             {
-                using var dbContext = GetDbContext(connectionString);
+            Task.Run(() =>
+            {
+                using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
                 dbOrderModeDiscountMapping.AddRange([.. (from a in dbContext.DiscountOrderModeMappings
                                                         join b in dbContext.Discounts on a.DiscountId equals b.DiscountId
                                                         join c in dbContext.DiscountBranchMappings on b.DiscountId equals c.DiscountId
@@ -135,7 +122,7 @@ internal class Implementation()
              }),
             Task.Run(() =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
                 dbOrderModes.AddRange([.. from a in dbContext.SetupMasterDetails
                                         where a.SetupMasterId == 4
                                         select a]);
@@ -156,9 +143,9 @@ internal class Implementation()
         }
     }
 
-    private static IEnumerable<Category> GetCategories(string connectionString, DbMenuData dbMenuData)
+    private IEnumerable<Category> GetCategories(string connectionString, DbMenuData dbMenuData)
     {
-        using var dbContext = GetDbContext(connectionString);
+        using var dbContext = resolver.GetReadOnlyDbContext(connectionString);
         foreach (var dbCategory in (from x in dbContext.ProductCategories
                                     where x.IsActive == true && x.IsEnable == true
                                     select x).ToList())

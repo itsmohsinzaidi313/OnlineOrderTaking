@@ -6,7 +6,7 @@ using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace CreateOrderService
 {
-    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher, IDbContextFactory<Db.RestaurantsContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
+    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher, IConnectionStringResolver resolver) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
     {
         public override string QueueName() => RabbitMqQueues.OrderRequestQueue;
         public override async Task OnMessage(string transport)
@@ -20,8 +20,7 @@ namespace CreateOrderService
                     logger.LogWarning("Invalid or missing order payload for company {CompanyId}, branch {BranchId}", requestPayload?.RestaurantId, requestPayload?.BranchId);
                     throw new InvalidOperationException("Invalid order payload");
                 }
-                var connectionString = await GetConnectionString(requestPayload.DomainName);
-                connectionString = connectionString.Replace("5434", "5433");
+                var connectionString = await resolver.ResolveAsync(requestPayload.DomainName);
                 await impl.SaveOrderAsync(connectionString, requestPayload.Order!);
                 var orderToken = requestPayload.Order.OrderToken ?? throw new Exception("Order token not generated");
                 await SaveToken(requestPayload.DomainName, orderToken);
@@ -63,19 +62,12 @@ namespace CreateOrderService
 
         private async Task SaveToken(string domainName, string orderToken)
         {
-            await using var context = await contextFactory.CreateDbContextAsync();
+            await using var context = resolver.GetRestaurantsContext();
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
             var restaurantId = restaurant?.Id ?? throw new Exception("Restaurant not found");
             var tokenEntity = new Db.OrderTokens { OrderToken = orderToken, CreatedAt = DateTime.UtcNow, RestaurantId = restaurantId };
             await context.OrderTokens.AddAsync(tokenEntity);
             await context.SaveChangesAsync();
-        }
-
-        private async Task<string> GetConnectionString(string domainName)
-        {
-            await using var context = await contextFactory.CreateDbContextAsync();
-            var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
-            return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
         }
     }
 }

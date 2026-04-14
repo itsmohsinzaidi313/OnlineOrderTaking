@@ -7,7 +7,7 @@ using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace MenuService
 {
-    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher, IDbContextFactory<Db.RestaurantsContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
+    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher, IConnectionStringResolver resolver) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
     {
         public override string QueueName() => RabbitMqQueues.MenuRequestQueue;
 
@@ -18,7 +18,7 @@ namespace MenuService
             var success = false;
             try
             {
-                var connectionString = await GetConnectionString(requestPayload.DomainName);
+                var connectionString = await resolver.ResolveAsync(requestPayload.DomainName);
                 payload = await GetMenuItemsAsync(connectionString, requestPayload.BranchId).ToListAsync();
                 success = true;
             }
@@ -39,13 +39,7 @@ namespace MenuService
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.MenuResponseQueue, response);
         }
-
-        private async Task<string> GetConnectionString(string domainName)
-        {
-            using var context = contextFactory.CreateDbContext();
-            var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
-            return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
-        }
+        
         private async IAsyncEnumerable<Category> GetMenuItemsAsync(string connectionString, int branchId)
         {
             logger.LogInformation("📂 Fetching menu items from database...");

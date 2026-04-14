@@ -7,7 +7,7 @@ using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace CustomerOrderHistoryService
 {
-    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher, IDbContextFactory<Db.RestaurantsContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
+    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher, IConnectionStringResolver resolver) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
     {
         public override string QueueName() => RabbitMqQueues.CustomerOrderHistoryRequestQueue;
 
@@ -17,10 +17,10 @@ namespace CustomerOrderHistoryService
             object payload = null;
             try
             {
-                var connectionString = await GetConnectionString(requestPayload.DomainName);
                 if (string.IsNullOrEmpty(requestPayload.OrderToken)) throw new Exception("OrderToken missing for userwise orders list");
 
                 var orders = new List<CustomerOrder>();
+                var connectionString = await resolver.ResolveAsync(requestPayload.DomainName);
                 await foreach (var order in impl.GetOrdersAsync(connectionString, requestPayload.OrderToken))
                 {
                     orders.Add(order);
@@ -46,13 +46,6 @@ namespace CustomerOrderHistoryService
                 DataPayload = payload
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.CustomerOrderHistoryResponseQueue, response);
-        }
-
-        private async Task<string> GetConnectionString(string domainName)
-        {
-            using var context = contextFactory.CreateDbContext();
-            var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
-            return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
         }
     }
 }

@@ -6,7 +6,7 @@ using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace OrderHistoryService
 {
-    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher, IDbContextFactory<Db.RestaurantsContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
+    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher, IConnectionStringResolver resolver) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
     {
         public override string QueueName() => RabbitMqQueues.OrderHistoryRequestQueue;
 
@@ -17,7 +17,7 @@ namespace OrderHistoryService
             var success = false;
             try
             {
-                var connectionString = await GetConnectionString(requestPayload.DomainName);
+                var connectionString = await resolver.ResolveAsync(requestPayload.DomainName);
 
                 if (string.IsNullOrEmpty(requestPayload.OrderToken))
                 {
@@ -57,13 +57,6 @@ namespace OrderHistoryService
                 DataPayload = payload
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.OrderHistoryResponseQueue, response);
-        }
-
-        private async Task<string> GetConnectionString(string domainName)
-        {
-            using var context = contextFactory.CreateDbContext();
-            var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
-            return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
         }
     }
 }
