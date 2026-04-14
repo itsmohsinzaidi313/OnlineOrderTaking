@@ -54,15 +54,15 @@ jobs:
 
             # Stop containers
             echo "Stopping containers..."
-            docker-compose down
+            docker compose down
 
             # Rebuild without cache
             echo "Building new images..."
-            docker-compose build --no-cache
+            docker compose build --no-cache
 
             # Start containers
             echo "Starting containers..."
-            docker-compose up -d
+            docker compose up -d
 
             # Clean up
             echo "Cleaning up..."
@@ -70,6 +70,6 @@ jobs:
 
             # Check container status
             echo "Container status:"
-            docker-compose ps
+            docker compose ps
 
             echo "Deployment complete!"
