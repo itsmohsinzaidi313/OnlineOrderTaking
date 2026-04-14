@@ -9,6 +9,7 @@ using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using static PointofSaleModels.Protos.CreateOrderService;
 using static PointofSaleModels.Protos.GeneralSeoDataService;
 using static PointofSaleModels.Protos.OrderHistoryService;
 using static PointofSaleModels.Protos.PushNotificationService;
@@ -18,7 +19,7 @@ namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient, GeneralSeoDataServiceClient seoDataClient) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient, GeneralSeoDataServiceClient seoDataClient, CreateOrderServiceClient createOrderClient) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
 
@@ -29,6 +30,24 @@ namespace GatewayService.Controllers
                 return BadRequest(new { error = "Domain is required." });
             var list = await seoDataClient.GetSeoDataAsync(new Domain { DomainName = domain }, cancellationToken: HttpContext.RequestAborted);
             return Ok(list);
+        }
+
+        [HttpPost("PlaceOrder")]
+        public async Task<IActionResult> PlaceOrder([FromBody] App.CustomerOrder request)
+        {
+            if (request == null || request.Items.Count < 1)
+                return BadRequest(new { error = "Invalid order data." });
+
+            var orderJson = HttpContext.Request.Body.CanSeek ? new StreamReader(HttpContext.Request.Body).ReadToEnd() : System.Text.Json.JsonSerializer.Serialize(request);
+            var orderPayload = new PlaceOrderRequest
+            {
+                OrderJson = orderJson
+            };
+            var response = await createOrderClient.PlaceOrderAsync(orderPayload, cancellationToken: HttpContext.RequestAborted);
+            if (response.Success)
+                return Ok(response);
+            else
+                return BadRequest(response.Message);
         }
 
         [HttpGet("myorder")]

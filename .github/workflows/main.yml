@@ -38,26 +38,49 @@ jobs:
             set -e  # Exit on error
 
             # Navigate to project directory
-            cd ~/OnlineOrderTaking || exit 1
+            cd ~/OnlineOrderTaking
 
             # Pull latest changes
             echo "Pulling latest code..."
             git pull origin main
+
+            # Rebuild without cache
+            echo "Building new images..."
+            docker-compose build --no-cache
+
+            # Start containers
+            echo "Starting containers..."
+            docker-compose up -d
+
+            # Clean up
+            echo "Cleaning up..."
+            docker system prune -f
+
+            # Check container status
+            echo "Container status:"
+            docker-compose ps
+
+            echo "Deployment complete!"
+
+      - name: Deploy Website
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: true # Stop on first error
+          script: |
+            set -e  # Exit on error
 
             # Navigate to nextjs app and pull
             echo "Updating NextJS app..."
             cd ~/OnlineOrderTaking/nextjs/web-ordering
             git pull
 
-            # Navigate to project directory
-            cd ~/OnlineOrderTaking || exit 1
-
-            # Stop containers
-            echo "Stopping containers..."
-            docker-compose down
-
             # Rebuild without cache
             echo "Building new images..."
+            cd ~/OnlineOrderTaking
             docker-compose build --no-cache
 
             # Start containers

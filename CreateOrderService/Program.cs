@@ -37,6 +37,22 @@ builder.Services
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
     .AddHostedService<RequestQueueListener>();
 
+builder.Services.AddGrpc();
+builder.WebHost.ConfigureKestrel(options =>
+{
+    // gRPC endpoint on port 8080
+    options.ListenAnyIP(8080, o =>
+    {
+        o.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
+    });
+
+    // Health check endpoint on port 8081
+    options.ListenAnyIP(8081, o =>
+    {
+        o.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -51,4 +67,5 @@ app.MapGet("/health", async ([FromServices] IDbContextFactory<RestaurantsContext
     return Results.Ok();
 });
 
+app.MapGrpcService<CreateOrderServiceImpl>();
 app.Run();

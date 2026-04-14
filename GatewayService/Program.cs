@@ -10,6 +10,7 @@ using GatewayService.ServiceResponseListeners;
 using static PointofSaleModels.Protos.PushNotificationService;
 using static PointofSaleModels.Protos.OrderHistoryService;
 using static PointofSaleModels.Protos.GeneralSeoDataService;
+using static PointofSaleModels.Protos.CreateOrderService;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -108,6 +109,12 @@ builder.Services.AddGrpcClient<OrderHistoryServiceClient>(x =>
 builder.Services.AddGrpcClient<GeneralSeoDataServiceClient>(x =>
 {
     var address = builder.Configuration["GRPC:GeneralSeoDataHost"] ?? "http://generalseodataservice:8080";
+    x.Address = new Uri(address);
+});
+
+builder.Services.AddGrpcClient<CreateOrderServiceClient>(x =>
+{
+    var address = builder.Configuration["GRPC:CreateOrderHost"] ?? "http://createorderservice:8080";
     x.Address = new Uri(address);
 });
 
