@@ -122,10 +122,19 @@ jobs:
                   username: ${{ env.VPS_USERNAME }}
                   key: ${{ env.VPS_SSH_KEY }}
                   port: ${{ env.VPS_PORT }}
-                  source: |
-                      .env
-                      docker-compose.yml
-                      ${{ matrix.service }}.tar.gz
+                  source: "${{ matrix.service }}.tar.gz"
+                  target: "/home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/"
+                  timeout: "30s"
+                  command_timeout: "10m"
+              
+            - name: Transfer Compose and env for ${{ matrix.service }}
+              uses: appleboy/scp-action@v0.1.7
+              with:
+                  host: ${{ env.VPS_HOST }}
+                  username: ${{ env.VPS_USERNAME }}
+                  key: ${{ env.VPS_SSH_KEY }}
+                  port: ${{ env.VPS_PORT }}
+                  source: "docker-compose.yml,.env"
                   target: "/home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/"
                   timeout: "30s"
                   command_timeout: "10m"
@@ -140,23 +149,11 @@ jobs:
                   script: |
                       cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
                       mkdir -p images
-                      TAR_PATH="images/${{ matrix.service }}.tar.gz"
-                      if [ ! -f "$TAR_PATH" ] && [ -f "images/images/${{ matrix.service }}.tar.gz" ]; then
-                        TAR_PATH="images/images/${{ matrix.service }}.tar.gz"
-                      fi
-                      if [ ! -f "$TAR_PATH" ] && [ -f "${{ matrix.service }}.tar.gz" ]; then
-                        TAR_PATH="${{ matrix.service }}.tar.gz"
-                      fi
-                      if [ ! -f "$TAR_PATH" ]; then
-                        echo "Image archive not found for ${{ matrix.service }}"
-                        find . -maxdepth 3 -name "${{ matrix.service }}.tar.gz" -print || true
-                        exit 1
-                      fi
-                      gunzip -c "$TAR_PATH" | docker load
+                      gunzip -c images/${{ matrix.service }}.tar.gz | docker load
                       docker stop ${{ matrix.service }} 2>/dev/null || true
                       docker rm ${{ matrix.service }} 2>/dev/null || true
-                      docker compose --env-file /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/.env -f /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/docker-compose.yml up -d ${{ matrix.service }}
-                      rm -f images/${{ matrix.service }}.tar.gz images/images/${{ matrix.service }}.tar.gz ${{ matrix.service }}.tar.gz
+                      docker compose up -d ${{ matrix.service }}
+                      rm -f images/${{ matrix.service }}.tar.gz
 
     # Website service (special handling - builds on VPS)
     website:
@@ -221,11 +218,20 @@ jobs:
                   username: ${{ env.VPS_USERNAME }}
                   key: ${{ env.VPS_SSH_KEY }}
                   port: ${{ env.VPS_PORT }}
-                  source: |
-                      .env
-                      docker-compose.yml
-                      ${{ github.event.inputs.service }}.tar.gz
+                  source: "${{ github.event.inputs.service }}.tar.gz"
                   target: "/home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/"
+              
+            - name: Transfer Compose and env for ${{ matrix.service }}
+              uses: appleboy/scp-action@v0.1.7
+              with:
+                  host: ${{ env.VPS_HOST }}
+                  username: ${{ env.VPS_USERNAME }}
+                  key: ${{ env.VPS_SSH_KEY }}
+                  port: ${{ env.VPS_PORT }}
+                  source: "docker-compose.yml,.env"
+                  target: "/home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/"
+                  timeout: "30s"
+                  command_timeout: "10m"
 
             - name: Deploy ${{ github.event.inputs.service }}
               uses: appleboy/ssh-action@v1.0.3
@@ -237,23 +243,11 @@ jobs:
                   script: |
                       cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
                       mkdir -p images
-                      TAR_PATH="images/${{ github.event.inputs.service }}.tar.gz"
-                      if [ ! -f "$TAR_PATH" ] && [ -f "images/images/${{ github.event.inputs.service }}.tar.gz" ]; then
-                        TAR_PATH="images/images/${{ github.event.inputs.service }}.tar.gz"
-                      fi
-                      if [ ! -f "$TAR_PATH" ] && [ -f "${{ github.event.inputs.service }}.tar.gz" ]; then
-                        TAR_PATH="${{ github.event.inputs.service }}.tar.gz"
-                      fi
-                      if [ ! -f "$TAR_PATH" ]; then
-                        echo "Image archive not found for ${{ github.event.inputs.service }}"
-                        find . -maxdepth 3 -name "${{ github.event.inputs.service }}.tar.gz" -print || true
-                        exit 1
-                      fi
-                      gunzip -c "$TAR_PATH" | docker load
+                      gunzip -c images/${{ github.event.inputs.service }}.tar.gz | docker load
                       docker stop ${{ github.event.inputs.service }} 2>/dev/null || true
                       docker rm ${{ github.event.inputs.service }} 2>/dev/null || true
-                      docker compose --env-file /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/.env -f /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/docker-compose.yml up -d ${{ github.event.inputs.service }}
-                      rm -f images/${{ github.event.inputs.service }}.tar.gz images/images/${{ github.event.inputs.service }}.tar.gz ${{ github.event.inputs.service }}.tar.gz
+                      docker compose up -d ${{ github.event.inputs.service }}
+                      rm -f images/${{ github.event.inputs.service }}.tar.gz
 
     # Final health check (only for full deployment)
     health-check:
