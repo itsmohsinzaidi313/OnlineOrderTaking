@@ -62,7 +62,7 @@ jobs:
     needs: infrastructure
     if: github.event.inputs.service == 'all' || github.event_name == 'push'
     strategy:
-      max-parallel: 2 # Limit concurrent transfers
+      max-parallel: 2
       matrix:
         service:
           - exportservice
@@ -85,16 +85,22 @@ jobs:
         run: |
           docker compose build ${{ matrix.service }}
           mkdir -p images
-          docker save ${{ matrix.service }}:latest | gzip > images/${{ matrix.service }}.tar.gz
+          # Get actual image name from docker-compose (e.g., onlineordertaking-exportservice)
+          IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "(${{ matrix.service }}|onlineordertaking-${{ matrix.service }})$" | head -1)
+          if [ -z "$IMAGE_NAME" ]; then
+            IMAGE_NAME="${{ matrix.service }}:latest"
+          fi
+          echo "Saving image: $IMAGE_NAME"
+          docker save "$IMAGE_NAME" | gzip > "images/${{ matrix.service }}.tar.gz"
 
-      - name: Transfer ${{ matrix.service }} (with retry)
+      - name: Transfer ${{ matrix.service }}
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ env.VPS_HOST }}
           username: ${{ env.VPS_USERNAME }}
           key: ${{ env.VPS_SSH_KEY }}
           port: ${{ env.VPS_PORT }}
-          source: "images/${{ matrix.service }}.tar.gz,images/.env"
+          source: "images/${{ matrix.service }}.tar.gz"
           target: "/home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/images/"
           timeout: "30s"
           command_timeout: "10m"
@@ -108,6 +114,7 @@ jobs:
           port: ${{ env.VPS_PORT }}
           script: |
             cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
+            mkdir -p images
             gunzip -c images/${{ matrix.service }}.tar.gz | docker load
             docker stop ${{ matrix.service }} 2>/dev/null || true
             docker rm ${{ matrix.service }} 2>/dev/null || true
@@ -154,7 +161,12 @@ jobs:
         run: |
           docker compose build ${{ github.event.inputs.service }}
           mkdir -p images
-          docker save ${{ github.event.inputs.service }}:latest | gzip > images/${{ github.event.inputs.service }}.tar.gz
+          IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "(${{ github.event.inputs.service }}|onlineordertaking-${{ github.event.inputs.service }})$" | head -1)
+          if [ -z "$IMAGE_NAME" ]; then
+            IMAGE_NAME="${{ github.event.inputs.service }}:latest"
+          fi
+          echo "Saving image: $IMAGE_NAME"
+          docker save "$IMAGE_NAME" | gzip > "images/${{ github.event.inputs.service }}.tar.gz"
 
       - name: Transfer ${{ github.event.inputs.service }}
         uses: appleboy/scp-action@v0.1.7
@@ -163,8 +175,8 @@ jobs:
           username: ${{ env.VPS_USERNAME }}
           key: ${{ env.VPS_SSH_KEY }}
           port: ${{ env.VPS_PORT }}
-          source: "images/${{ github.event.inputs.service }}.tar.gz,images/.env"
-          target: "/home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/"
+          source: "images/${{ github.event.inputs.service }}.tar.gz"
+          target: "/home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/images/"
 
       - name: Deploy ${{ github.event.inputs.service }}
         uses: appleboy/ssh-action@v1.0.3
@@ -175,11 +187,12 @@ jobs:
           port: ${{ env.VPS_PORT }}
           script: |
             cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
+            mkdir -p images
             gunzip -c images/${{ github.event.inputs.service }}.tar.gz | docker load
             docker stop ${{ github.event.inputs.service }} 2>/dev/null || true
             docker rm ${{ github.event.inputs.service }} 2>/dev/null || true
             docker compose up -d ${{ github.event.inputs.service }}
-            rm -rf images/
+            rm -f images/${{ github.event.inputs.service }}.tar.gz
 
   # Final health check (only for full deployment)
   health-check:
