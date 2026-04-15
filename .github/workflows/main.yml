@@ -1,4 +1,4 @@
-name: Deploy to VPS (Direct Build)
+name: Deploy to VPS (Prebuilt Images)
 
 on:
   push:
@@ -8,67 +8,75 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      IMAGE_ARCHIVE: docker-images-${{ github.sha }}.tar.gz
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Debug SSH Connection
+      - name: Build Docker images
+        run: |
+          set -e
+          docker compose build --no-cache
+
+      - name: Create compressed image bundle
+        run: |
+          set -e
+
+          # Export all images referenced by this compose project.
+          docker compose config --images | sort -u > image-list.txt
+          IMAGES=$(tr '\n' ' ' < image-list.txt)
+
+          if [ -z "$IMAGES" ]; then
+            echo "No Docker images found from docker compose config --images"
+            exit 1
+          fi
+
+          echo "Saving images to $IMAGE_ARCHIVE"
+          docker save $IMAGES | gzip -1 > "$IMAGE_ARCHIVE"
+          ls -lh "$IMAGE_ARCHIVE"
+
+      - name: Copy image bundle to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          source: "${{ env.IMAGE_ARCHIVE }},image-list.txt"
+          target: "~/OnlineOrderTaking/deploy-bundle"
+
+      - name: Load images and start containers
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
+          script_stop: true
           script: |
-            echo "Connected successfully"
-            whoami
-            pwd
-            ls -la
+            set -e
 
-      - name: Deploy application
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT }}
-          script_stop: true # Stop on first error
-          script: |
-            set -e  # Exit on error
-
-            # Navigate to project directory
+            echo "Preparing project directory..."
             cd ~/OnlineOrderTaking || exit 1
 
-            # Pull latest changes
-            echo "Pulling latest code..."
+            echo "Pulling latest repository changes..."
             git pull origin main
 
-            # Navigate to nextjs app and pull
-            echo "Updating NextJS app..."
-            cd ~/OnlineOrderTaking/nextjs/web-ordering
-            git pull
-
-            # Navigate to project directory
-            cd ~/OnlineOrderTaking || exit 1
-
-            # Stop containers
-            echo "Stopping containers..."
+            echo "Stopping current containers..."
             docker compose down
 
-            # Rebuild without cache
-            echo "Building new images..."
-            docker compose build --no-cache
+            echo "Loading transferred Docker images..."
+            gzip -dc ~/OnlineOrderTaking/deploy-bundle/${{ env.IMAGE_ARCHIVE }} | docker load
 
-            # Start containers
-            echo "Starting containers..."
-            docker compose up -d
+            echo "Starting containers from prebuilt images..."
+            docker compose up -d --no-build
 
-            # Clean up
-            echo "Cleaning up..."
+            echo "Cleaning up old docker artifacts..."
             docker system prune -f
+            rm -f ~/OnlineOrderTaking/deploy-bundle/${{ env.IMAGE_ARCHIVE }}
 
-            # Check container status
             echo "Container status:"
             docker compose ps
 
