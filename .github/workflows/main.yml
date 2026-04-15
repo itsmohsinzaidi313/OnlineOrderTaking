@@ -97,10 +97,20 @@ jobs:
             - name: Build ${{ matrix.service }}
               run: |
                   docker compose build ${{ matrix.service }}
-                  # Get actual image name (onlineordertaking-xxx or xxx)
-                  IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "(${{ matrix.service }}|onlineordertaking-${{ matrix.service }})$" | head -1)
+                  # Resolve actual image name produced by docker compose build.
+                  IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^((onlineordertaking-)?${{ matrix.service }}):" | head -1)
                   if [ -z "$IMAGE_NAME" ]; then
-                    IMAGE_NAME="${{ matrix.service }}:latest"
+                    for candidate in "onlineordertaking-${{ matrix.service }}:latest" "${{ matrix.service }}:latest"; do
+                      if docker image inspect "$candidate" >/dev/null 2>&1; then
+                        IMAGE_NAME="$candidate"
+                        break
+                      fi
+                    done
+                  fi
+                  if [ -z "$IMAGE_NAME" ]; then
+                    echo "No image found for ${{ matrix.service }} after build."
+                    docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "${{ matrix.service }}|onlineordertaking-${{ matrix.service }}" || true
+                    exit 1
                   fi
                   echo "Saving image: $IMAGE_NAME"
                   docker save "$IMAGE_NAME" | gzip > "${{ matrix.service }}.tar.gz"
@@ -172,9 +182,19 @@ jobs:
             - name: Build ${{ github.event.inputs.service }}
               run: |
                   docker compose build ${{ github.event.inputs.service }}
-                  IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "(${{ github.event.inputs.service }}|onlineordertaking-${{ github.event.inputs.service }})$" | head -1)
+                  IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^((onlineordertaking-)?${{ github.event.inputs.service }}):" | head -1)
                   if [ -z "$IMAGE_NAME" ]; then
-                    IMAGE_NAME="${{ github.event.inputs.service }}:latest"
+                    for candidate in "onlineordertaking-${{ github.event.inputs.service }}:latest" "${{ github.event.inputs.service }}:latest"; do
+                      if docker image inspect "$candidate" >/dev/null 2>&1; then
+                        IMAGE_NAME="$candidate"
+                        break
+                      fi
+                    done
+                  fi
+                  if [ -z "$IMAGE_NAME" ]; then
+                    echo "No image found for ${{ github.event.inputs.service }} after build."
+                    docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "${{ github.event.inputs.service }}|onlineordertaking-${{ github.event.inputs.service }}" || true
+                    exit 1
                   fi
                   echo "Saving image: $IMAGE_NAME"
                   docker save "$IMAGE_NAME" | gzip > "${{ github.event.inputs.service }}.tar.gz"
