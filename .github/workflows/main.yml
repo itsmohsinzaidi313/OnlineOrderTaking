@@ -1,229 +1,227 @@
 name: Parallel Deployment
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-    inputs:
-      service:
-        description: "Service to deploy (or all)"
-        required: false
-        type: choice
-        default: "all"
-        options:
-          - all
-          - exportservice
-          - generalseodataservice
-          - pushnotificationservice
-          - customerorderhistoryservice
-          - menuservice
-          - orderhistoryservice
-          - settingsdataservice
-          - clientnotifyservice
-          - orderupdateservice
-          - importservice
-          - createorderservice
-          - gatewayservice
-          - website
+    push:
+        branches:
+            - main
+    workflow_dispatch:
+        inputs:
+            service:
+                description: "Service to deploy (or all)"
+                required: false
+                type: choice
+                default: "all"
+                options:
+                    - all
+                    - exportservice
+                    - generalseodataservice
+                    - pushnotificationservice
+                    - customerorderhistoryservice
+                    - menuservice
+                    - orderhistoryservice
+                    - settingsdataservice
+                    - clientnotifyservice
+                    - orderupdateservice
+                    - importservice
+                    - createorderservice
+                    - gatewayservice
+                    - website
 
 env:
-  VPS_HOST: ${{ secrets.VPS_HOST }}
-  VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
-  VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-  VPS_PORT: ${{ secrets.VPS_PORT }}
+    VPS_HOST: ${{ secrets.VPS_HOST }}
+    VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+    VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+    VPS_PORT: ${{ secrets.VPS_PORT }}
 
 jobs:
-  # Infrastructure - runs once
-  infrastructure:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    # Infrastructure - runs once
+    infrastructure:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Transfer .env file
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ env.VPS_HOST }}
-          username: ${{ env.VPS_USERNAME }}
-          key: ${{ env.VPS_SSH_KEY }}
-          port: ${{ env.VPS_PORT }}
-          source: ".env"
-          target: "/home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/"
-          # If .env is missing, the step will fail. Ensure .env exists in the repo root.
+            - name: Transfer .env file
+              uses: appleboy/scp-action@v0.1.7
+              with:
+                  host: ${{ env.VPS_HOST }}
+                  username: ${{ env.VPS_USERNAME }}
+                  key: ${{ env.VPS_SSH_KEY }}
+                  port: ${{ env.VPS_PORT }}
+                  source: ".env"
+                  target: "/home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/"
+                  # If .env is missing, the step will fail. Ensure .env exists in the repo root.
 
-      - name: Deploy infrastructure services
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ env.VPS_HOST }}
-          username: ${{ env.VPS_USERNAME }}
-          key: ${{ env.VPS_SSH_KEY }}
-          port: ${{ env.VPS_PORT }}
-          script: |
-            cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
-            # Create images directory if not exists
-            mkdir -p images
-            for service in etcd patroni1 patroni2 patroni3 haproxy rabbitmq redis redis-commander; do
-              if ! docker ps | grep -q $service; then
-                docker compose up -d $service
-              fi
-            done
+            - name: Deploy infrastructure services
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ env.VPS_HOST }}
+                  username: ${{ env.VPS_USERNAME }}
+                  key: ${{ env.VPS_SSH_KEY }}
+                  port: ${{ env.VPS_PORT }}
+                  script: |
+                      cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
+                      # Create images directory if not exists
+                      mkdir -p images
+                      for service in etcd patroni1 patroni2 patroni3 haproxy rabbitmq redis redis-commander; do
+                        if ! docker ps | grep -q $service; then
+                          docker compose up -d $service
+                        fi
+                      done
 
-  # Parallel build, transfer & deploy for all backend services
-  deploy-services:
-    runs-on: ubuntu-latest
-    needs: infrastructure
-    if: github.event.inputs.service == 'all' || github.event_name == 'push'
-    strategy:
-      max-parallel: 2
-      matrix:
-        service:
-          - exportservice
-          - generalseodataservice
-          - pushnotificationservice
-          - customerorderhistoryservice
-          - menuservice
-          - orderhistoryservice
-          - settingsdataservice
-          - clientnotifyservice
-          - orderupdateservice
-          - importservice
-          - createorderservice
-          - gatewayservice
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    # Parallel build, transfer & deploy for all backend services
+    deploy-services:
+        runs-on: ubuntu-latest
+        needs: infrastructure
+        if: github.event.inputs.service == 'all' || github.event_name == 'push'
+        strategy:
+            max-parallel: 2
+            matrix:
+                service:
+                    - exportservice
+                    - generalseodataservice
+                    - pushnotificationservice
+                    - customerorderhistoryservice
+                    - menuservice
+                    - orderhistoryservice
+                    - settingsdataservice
+                    - clientnotifyservice
+                    - orderupdateservice
+                    - importservice
+                    - createorderservice
+                    - gatewayservice
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Build ${{ matrix.service }}
-        run: |
-          docker compose build ${{ matrix.service }}
-          mkdir -p images
-          # Get actual image name (onlineordertaking-xxx or xxx)
-          IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "(${{ matrix.service }}|onlineordertaking-${{ matrix.service }})$" | head -1)
-          if [ -z "$IMAGE_NAME" ]; then
-            IMAGE_NAME="${{ matrix.service }}:latest"
-          fi
-          echo "Saving image: $IMAGE_NAME"
-          docker save "$IMAGE_NAME" | gzip > "images/${{ matrix.service }}.tar.gz"
+            - name: Build ${{ matrix.service }}
+              run: |
+                  docker compose build ${{ matrix.service }}
+                  # Get actual image name (onlineordertaking-xxx or xxx)
+                  IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "(${{ matrix.service }}|onlineordertaking-${{ matrix.service }})$" | head -1)
+                  if [ -z "$IMAGE_NAME" ]; then
+                    IMAGE_NAME="${{ matrix.service }}:latest"
+                  fi
+                  echo "Saving image: $IMAGE_NAME"
+                  docker save "$IMAGE_NAME" | gzip > "${{ matrix.service }}.tar.gz"
 
-      - name: Transfer ${{ matrix.service }}
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ env.VPS_HOST }}
-          username: ${{ env.VPS_USERNAME }}
-          key: ${{ env.VPS_SSH_KEY }}
-          port: ${{ env.VPS_PORT }}
-          source: "images/${{ matrix.service }}.tar.gz"
-          target: "/home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/"
-          timeout: "30s"
-          command_timeout: "10m"
+            - name: Transfer ${{ matrix.service }}
+              uses: appleboy/scp-action@v0.1.7
+              with:
+                  host: ${{ env.VPS_HOST }}
+                  username: ${{ env.VPS_USERNAME }}
+                  key: ${{ env.VPS_SSH_KEY }}
+                  port: ${{ env.VPS_PORT }}
+                  source: "${{ matrix.service }}.tar.gz"
+                  target: "/home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/images/"
+                  timeout: "30s"
+                  command_timeout: "10m"
 
-      - name: Deploy ${{ matrix.service }}
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ env.VPS_HOST }}
-          username: ${{ env.VPS_USERNAME }}
-          key: ${{ env.VPS_SSH_KEY }}
-          port: ${{ env.VPS_PORT }}
-          script: |
-            cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
-            mkdir -p images
-            gunzip -c images/${{ matrix.service }}.tar.gz | docker load
-            docker stop ${{ matrix.service }} 2>/dev/null || true
-            docker rm ${{ matrix.service }} 2>/dev/null || true
-            docker compose up -d ${{ matrix.service }}
-            rm -f images/${{ matrix.service }}.tar.gz
+            - name: Deploy ${{ matrix.service }}
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ env.VPS_HOST }}
+                  username: ${{ env.VPS_USERNAME }}
+                  key: ${{ env.VPS_SSH_KEY }}
+                  port: ${{ env.VPS_PORT }}
+                  script: |
+                      cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
+                      mkdir -p images
+                      gunzip -c images/${{ matrix.service }}.tar.gz | docker load
+                      docker stop ${{ matrix.service }} 2>/dev/null || true
+                      docker rm ${{ matrix.service }} 2>/dev/null || true
+                      docker compose up -d ${{ matrix.service }}
+                      rm -f images/${{ matrix.service }}.tar.gz
 
-  # Website service (special handling - builds on VPS)
-  website:
-    runs-on: ubuntu-latest
-    needs: infrastructure
-    if: github.event.inputs.service == 'all' || github.event.inputs.service == 'website' || github.event_name == 'push'
-    steps:
-      - name: Deploy website
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ env.VPS_HOST }}
-          username: ${{ env.VPS_USERNAME }}
-          key: ${{ env.VPS_SSH_KEY }}
-          port: ${{ env.VPS_PORT }}
-          script: |
-            cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
-            # Update or clone website repo
-            if [ -d "nextjs/web-ordering/.git" ]; then
-              cd nextjs/web-ordering && git pull origin main && cd ../..
-            else
-              mkdir -p nextjs && cd nextjs && git clone https://github.com/Samad-Developer/web-ordering.git web-ordering && cd ..
-            fi
-            # Build and restart website
-            docker stop website 2>/dev/null || true
-            docker rm website 2>/dev/null || true
-            docker compose build website --no-cache
-            docker compose up -d website
+    # Website service (special handling - builds on VPS)
+    website:
+        runs-on: ubuntu-latest
+        needs: infrastructure
+        if: github.event.inputs.service == 'all' || github.event.inputs.service == 'website' || github.event_name == 'push'
+        steps:
+            - name: Deploy website
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ env.VPS_HOST }}
+                  username: ${{ env.VPS_USERNAME }}
+                  key: ${{ env.VPS_SSH_KEY }}
+                  port: ${{ env.VPS_PORT }}
+                  script: |
+                      cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
+                      # Update or clone website repo
+                      if [ -d "nextjs/web-ordering/.git" ]; then
+                        cd nextjs/web-ordering && git pull origin main && cd ../..
+                      else
+                        mkdir -p nextjs && cd nextjs && git clone https://github.com/Samad-Developer/web-ordering.git web-ordering && cd ..
+                      fi
+                      # Build and restart website
+                      docker stop website 2>/dev/null || true
+                      docker rm website 2>/dev/null || true
+                      docker compose build website --no-cache
+                      docker compose up -d website
 
-  # Single-service manual deployment (when specific service selected)
-  single-service:
-    runs-on: ubuntu-latest
-    needs: infrastructure
-    if: github.event.inputs.service != 'all' && github.event.inputs.service != 'website' && github.event.inputs.service != ''
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    # Single-service manual deployment (when specific service selected)
+    single-service:
+        runs-on: ubuntu-latest
+        needs: infrastructure
+        if: github.event.inputs.service != 'all' && github.event.inputs.service != 'website' && github.event.inputs.service != ''
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Build ${{ github.event.inputs.service }}
-        run: |
-          docker compose build ${{ github.event.inputs.service }}
-          mkdir -p images
-          IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "(${{ github.event.inputs.service }}|onlineordertaking-${{ github.event.inputs.service }})$" | head -1)
-          if [ -z "$IMAGE_NAME" ]; then
-            IMAGE_NAME="${{ github.event.inputs.service }}:latest"
-          fi
-          echo "Saving image: $IMAGE_NAME"
-          docker save "$IMAGE_NAME" | gzip > "images/${{ github.event.inputs.service }}.tar.gz"
+            - name: Build ${{ github.event.inputs.service }}
+              run: |
+                  docker compose build ${{ github.event.inputs.service }}
+                  IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "(${{ github.event.inputs.service }}|onlineordertaking-${{ github.event.inputs.service }})$" | head -1)
+                  if [ -z "$IMAGE_NAME" ]; then
+                    IMAGE_NAME="${{ github.event.inputs.service }}:latest"
+                  fi
+                  echo "Saving image: $IMAGE_NAME"
+                  docker save "$IMAGE_NAME" | gzip > "${{ github.event.inputs.service }}.tar.gz"
 
-      - name: Transfer ${{ github.event.inputs.service }}
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ env.VPS_HOST }}
-          username: ${{ env.VPS_USERNAME }}
-          key: ${{ env.VPS_SSH_KEY }}
-          port: ${{ env.VPS_PORT }}
-          source: "images/${{ github.event.inputs.service }}.tar.gz"
-          target: "/home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/"
+            - name: Transfer ${{ github.event.inputs.service }}
+              uses: appleboy/scp-action@v0.1.7
+              with:
+                  host: ${{ env.VPS_HOST }}
+                  username: ${{ env.VPS_USERNAME }}
+                  key: ${{ env.VPS_SSH_KEY }}
+                  port: ${{ env.VPS_PORT }}
+                  source: "${{ github.event.inputs.service }}.tar.gz"
+                  target: "/home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/images/"
 
-      - name: Deploy ${{ github.event.inputs.service }}
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ env.VPS_HOST }}
-          username: ${{ env.VPS_USERNAME }}
-          key: ${{ env.VPS_SSH_KEY }}
-          port: ${{ env.VPS_PORT }}
-          script: |
-            cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
-            mkdir -p images
-            gunzip -c images/${{ github.event.inputs.service }}.tar.gz | docker load
-            docker stop ${{ github.event.inputs.service }} 2>/dev/null || true
-            docker rm ${{ github.event.inputs.service }} 2>/dev/null || true
-            docker compose up -d ${{ github.event.inputs.service }}
-            rm -f images/${{ github.event.inputs.service }}.tar.gz
+            - name: Deploy ${{ github.event.inputs.service }}
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ env.VPS_HOST }}
+                  username: ${{ env.VPS_USERNAME }}
+                  key: ${{ env.VPS_SSH_KEY }}
+                  port: ${{ env.VPS_PORT }}
+                  script: |
+                      cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
+                      mkdir -p images
+                      gunzip -c images/${{ github.event.inputs.service }}.tar.gz | docker load
+                      docker stop ${{ github.event.inputs.service }} 2>/dev/null || true
+                      docker rm ${{ github.event.inputs.service }} 2>/dev/null || true
+                      docker compose up -d ${{ github.event.inputs.service }}
+                      rm -f images/${{ github.event.inputs.service }}.tar.gz
 
-  # Final health check (only for full deployment)
-  health-check:
-    runs-on: ubuntu-latest
-    needs: [deploy-services, website]
-    if: always() && (github.event.inputs.service == 'all' || github.event_name == 'push')
-    steps:
-      - name: Verify all services
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ env.VPS_HOST }}
-          username: ${{ env.VPS_USERNAME }}
-          key: ${{ env.VPS_SSH_KEY }}
-          port: ${{ env.VPS_PORT }}
-          script: |
-            cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
-            echo "=== Container Status ==="
-            docker ps --format "table {{.Names}}\t{{.Status}}"
-            echo ""
-            curl -f http://localhost:8090/health && echo "✅ Gateway OK" || echo "⚠️ Gateway issue"
-            curl -f http://localhost:3000/health && echo "✅ Website OK" || echo "⚠️ Website issue"
+    # Final health check (only for full deployment)
+    health-check:
+        runs-on: ubuntu-latest
+        needs: [deploy-services, website]
+        if: always() && (github.event.inputs.service == 'all' || github.event_name == 'push')
+        steps:
+            - name: Verify all services
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ env.VPS_HOST }}
+                  username: ${{ env.VPS_USERNAME }}
+                  key: ${{ env.VPS_SSH_KEY }}
+                  port: ${{ env.VPS_PORT }}
+                  script: |
+                      cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
+                      echo "=== Container Status ==="
+                      docker ps --format "table {{.Names}}\t{{.Status}}"
+                      echo ""
+                      curl -f http://localhost:8090/health && echo "✅ Gateway OK" || echo "⚠️ Gateway issue"
+                      curl -f http://localhost:3000/health && echo "✅ Website OK" || echo "⚠️ Website issue"
