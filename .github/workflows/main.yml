@@ -94,7 +94,7 @@ jobs:
           username: ${{ env.VPS_USERNAME }}
           key: ${{ env.VPS_SSH_KEY }}
           port: ${{ env.VPS_PORT }}
-          source: "images/${{ matrix.service }}.tar.gz"
+          source: "images/${{ matrix.service }}.tar.gz,images/.env"
           target: "/home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/images/"
           timeout: "30s"
           command_timeout: "10m"
@@ -163,7 +163,7 @@ jobs:
           username: ${{ env.VPS_USERNAME }}
           key: ${{ env.VPS_SSH_KEY }}
           port: ${{ env.VPS_PORT }}
-          source: "images/${{ github.event.inputs.service }}.tar.gz"
+          source: "images/${{ github.event.inputs.service }}.tar.gz,images/.env"
           target: "/home/${{ env.VPS_USERNAME }}/OnlineOrderTaking/"
 
       - name: Deploy ${{ github.event.inputs.service }}
