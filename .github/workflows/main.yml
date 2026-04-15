@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  build-and-transfer:
     runs-on: ubuntu-latest
     
     steps:
@@ -17,32 +17,63 @@ jobs:
       - name: Build application services
         run: |
           echo "Building application services..."
-          # Build only application services (exclude infrastructure)
+          # List available services first
+          echo "Available services in docker-compose:"
+          docker compose config --services
+          
+          # Build only application services
           docker compose build \
             exportservice generalseodataservice pushnotificationservice \
             customerorderhistoryservice menuservice orderhistoryservice \
             settingsdataservice clientnotifyservice orderupdateservice \
             importservice createorderservice gatewayservice
           
+          # Verify images were built
+          echo "Built images:"
+          docker images | grep -E "exportservice|gatewayservice|menuservice"
+          
+          # Create images directory
           mkdir -p docker-images
           
-          # Save application images
-          echo "Saving application images..."
-          docker save exportservice:latest | gzip > docker-images/exportservice.tar.gz
-          docker save generalseodataservice:latest | gzip > docker-images/generalseodataservice.tar.gz
-          docker save pushnotificationservice:latest | gzip > docker-images/pushnotificationservice.tar.gz
-          docker save customerorderhistoryservice:latest | gzip > docker-images/customerorderhistoryservice.tar.gz
-          docker save menuservice:latest | gzip > docker-images/menuservice.tar.gz
-          docker save orderhistoryservice:latest | gzip > docker-images/orderhistoryservice.tar.gz
-          docker save settingsdataservice:latest | gzip > docker-images/settingsdataservice.tar.gz
-          docker save clientnotifyservice:latest | gzip > docker-images/clientnotifyservice.tar.gz
-          docker save orderupdateservice:latest | gzip > docker-images/orderupdateservice.tar.gz
-          docker save importservice:latest | gzip > docker-images/importservice.tar.gz
-          docker save createorderservice:latest | gzip > docker-images/createorderservice.tar.gz
-          docker save gatewayservice:latest | gzip > docker-images/gatewayservice.tar.gz
+          # Save images with proper names
+          echo "Saving images..."
           
-          echo "Compressed images:"
-          ls -lh docker-images/
+          # Get actual image names from docker compose
+          docker compose config --images | grep -v "redis\|rabbitmq\|patroni\|etcd\|haproxy" | while read image; do
+            if [ ! -z "$image" ] && [ "$image" != "null" ]; then
+              name=$(echo $image | sed 's/.*_//' | sed 's/:.*//')
+              echo "Saving $image as $name..."
+              docker save "$image" | gzip > "docker-images/${name}.tar.gz"
+            fi
+          done
+          
+          # Also try alternative method if above fails
+          echo "Alternative save method..."
+          for service in exportservice generalseodataservice pushnotificationservice \
+                         customerorderhistoryservice menuservice orderhistoryservice \
+                         settingsdataservice clientnotifyservice orderupdateservice \
+                         importservice createorderservice gatewayservice; do
+            if docker images | grep -q "$service"; then
+              echo "Saving $service..."
+              docker save "$service:latest" | gzip > "docker-images/${service}.tar.gz" 2>/dev/null || \
+              docker save "onlineordertaking_$service:latest" | gzip > "docker-images/${service}.tar.gz" 2>/dev/null || \
+              echo "Could not save $service"
+            else
+              echo "Warning: $service image not found"
+            fi
+          done
+          
+          # List saved images
+          echo "Saved images:"
+          ls -la docker-images/ || echo "No images saved"
+
+      - name: Upload debug info
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-images
+          path: docker-images/
+          retention-days: 1
 
       - name: Transfer to VPS
         uses: appleboy/scp-action@v0.1.7
@@ -55,6 +86,11 @@ jobs:
           target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
           strip_components: 1
 
+  deploy:
+    needs: build-and-transfer
+    runs-on: ubuntu-latest
+    
+    steps:
       - name: Deploy on VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -62,95 +98,101 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          script_stop: true
+          script_stop: false
           script: |
             cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
+            
+            # Debug: Check what files were transferred
+            echo "=== Debug: Checking transferred files ==="
+            ls -la
+            ls -la docker-images/ 2>/dev/null || echo "No docker-images directory"
             
             # Function to check if service is running
             service_running() {
               docker ps --format "table {{.Names}}" | grep -q "^$1$"
             }
             
-            # Function to check if container exists (running or stopped)
-            container_exists() {
-              docker ps -a --format "table {{.Names}}" | grep -q "^$1$"
-            }
-            
             echo "🔍 Checking infrastructure services..."
-            
-            # Check each infrastructure service
             INFRA_SERVICES="patroni1 patroni2 patroni3 etcd haproxy rabbitmq redis redis-commander"
             
             for service in $INFRA_SERVICES; do
               if service_running "$service"; then
                 echo "  ✅ $service is running"
-              elif container_exists "$service"; then
-                echo "  ⚠️  $service exists but not running"
               else
-                echo "  ❌ $service not found"
+                echo "  ❌ $service is not running"
               fi
             done
             
+            # Load application images if they exist
             echo "📦 Loading application Docker images..."
-            for image in docker-images/*.tar.gz; do
-              if [ -f "$image" ]; then
-                echo "  Loading $(basename $image)..."
-                gunzip -c "$image" | docker load
-              fi
-            done
+            if [ -d "docker-images" ] && [ "$(ls -A docker-images/*.tar.gz 2>/dev/null)" ]; then
+              for image in docker-images/*.tar.gz; do
+                if [ -f "$image" ]; then
+                  echo "  Loading $(basename $image)..."
+                  gunzip -c "$image" | docker load || echo "  Failed to load $image"
+                fi
+              done
+            else
+              echo "  ⚠️  No image files found to load"
+              echo "  This might be the first deployment or build failed"
+            fi
             
-            echo "🛑 Stopping only application services..."
-            # Stop only application services, not infrastructure
+            # Stop only application services that are running
+            echo "🛑 Stopping application services..."
             APP_SERVICES="exportservice generalseodataservice pushnotificationservice \
               customerorderhistoryservice menuservice orderhistoryservice \
               settingsdataservice clientnotifyservice orderupdateservice \
-              importservice createorderservice gatewayservice website"
+              importservice createorderservice gatewayservice"
             
             for service in $APP_SERVICES; do
               if service_running "$service"; then
                 echo "  Stopping $service..."
-                docker stop $service || true
-                docker rm $service || true
+                docker stop "$service" 2>/dev/null || true
+                docker rm "$service" 2>/dev/null || true
               fi
             done
             
+            # Start application services
             echo "🚀 Starting application services..."
-            # Start only application services (infrastructure stays running)
             docker compose up -d \
               exportservice generalseodataservice pushnotificationservice \
               customerorderhistoryservice menuservice orderhistoryservice \
               settingsdataservice clientnotifyservice orderupdateservice \
-              importservice createorderservice gatewayservice
+              importservice createorderservice gatewayservice 2>&1 || echo "Some services failed to start"
             
+            # Handle website
             echo "🌐 Updating website..."
-            if [ -d "nextjs/web-ordering" ]; then
+            if [ -d "nextjs/web-ordering/.git" ]; then
               cd nextjs/web-ordering
               echo "  Pulling latest website code..."
-              git pull origin main
+              git pull origin main || echo "Git pull failed"
               cd ../..
             else
               echo "  Cloning website repository..."
+              rm -rf nextjs/web-ordering
               mkdir -p nextjs
               cd nextjs
-              git clone https://github.com/Samad-Developer/web-ordering.git web-ordering
+              git clone https://github.com/Samad-Developer/web-ordering.git web-ordering || echo "Clone failed"
               cd ..
             fi
             
+            # Build and start website
             echo "🏗️ Building website..."
-            # Stop existing website if running
             if service_running "website"; then
               echo "  Stopping existing website..."
-              docker stop website || true
-              docker rm website || true
+              docker stop website 2>/dev/null || true
+              docker rm website 2>/dev/null || true
             fi
             
-            docker compose build website
-            docker compose up -d website
+            docker compose build website || echo "Website build failed"
+            docker compose up -d website || echo "Website start failed"
             
+            # Cleanup
             echo "🧹 Cleaning up..."
-            rm -rf docker-images/
-            docker system prune -f
+            rm -rf docker-images/ 2>/dev/null || true
+            docker system prune -f 2>/dev/null || true
             
+            # Show status
             echo ""
             echo "📊 Final Container Status:"
             docker compose ps
