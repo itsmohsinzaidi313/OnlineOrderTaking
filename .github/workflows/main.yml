@@ -148,12 +148,11 @@ jobs:
                   port: ${{ env.VPS_PORT }}
                   script: |
                       cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
-                      mkdir -p images
-                      gunzip -c images/${{ matrix.service }}.tar.gz | docker load
+                      gunzip -c ${{ matrix.service }}.tar.gz | docker load
                       docker stop ${{ matrix.service }} 2>/dev/null || true
                       docker rm ${{ matrix.service }} 2>/dev/null || true
                       docker compose up -d ${{ matrix.service }}
-                      rm -f images/${{ matrix.service }}.tar.gz
+                      rm -f ${{ matrix.service }}.tar.gz
 
     # Website service (special handling - builds on VPS)
     website:
@@ -242,12 +241,11 @@ jobs:
                   port: ${{ env.VPS_PORT }}
                   script: |
                       cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
-                      mkdir -p images
-                      gunzip -c images/${{ github.event.inputs.service }}.tar.gz | docker load
+                      gunzip -c ${{ github.event.inputs.service }}.tar.gz | docker load
                       docker stop ${{ github.event.inputs.service }} 2>/dev/null || true
                       docker rm ${{ github.event.inputs.service }} 2>/dev/null || true
                       docker compose up -d ${{ github.event.inputs.service }}
-                      rm -f images/${{ github.event.inputs.service }}.tar.gz
+                      rm -f ${{ github.event.inputs.service }}.tar.gz
 
     # Final health check (only for full deployment)
     health-check:
