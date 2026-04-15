@@ -1,130 +1,50 @@
-name: Build, Compress & Transfer Docker Images
+name: Production Deployment
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:  # Manual trigger
 
 jobs:
-  build-and-transfer:
+  deploy:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout main repository
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          path: main-repo
 
-      - name: Clone website repository
-        uses: actions/checkout@v4
-        with:
-          repository: Samad-Developer/web-ordering
-          token: ${{ secrets.VPS_SSH_KEY }}  # Personal Access Token for private repo
-          path: main-repo/nextjs
+      - name: Build backend services
+        run: |
+          echo "Building backend services..."
+          docker compose build --no-cache \
+            exportservice generalseodataservice pushnotificationservice \
+            customerorderhistoryservice menuservice orderhistoryservice \
+            settingsdataservice clientnotifyservice orderupdateservice \
+            importservice createorderservice gatewayservice etcd \
+            patroni1 patroni2 patroni3 haproxy
           
-      - name: Verify repository structure
-        run: |
-          cd main-repo
-          ls -la
-          ls -la nextjs/  # Should show web-ordering contents
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build all Docker images
-        working-directory: ./main-repo
-        run: |
-          # Build all services
-          docker compose build
-          
-          # List built images
-          docker images | grep -E "website|exportservice|gatewayservice"
-
-      - name: Compress Docker images
-        working-directory: ./main-repo
-        run: |
-          # Create directory for compressed images
           mkdir -p docker-images
           
-          # Save and compress each image
-          echo "Compressing website image..."
-          docker save main-repo-website:latest | gzip > docker-images/website.tar.gz
-          
-          echo "Compressing exportservice image..."
-          docker save main-repo-exportservice:latest | gzip > docker-images/exportservice.tar.gz
-          
-          echo "Compressing generalseodataservice image..."
-          docker save main-repo-generalseodataservice:latest | gzip > docker-images/generalseodataservice.tar.gz
-          
-          echo "Compressing pushnotificationservice image..."
-          docker save main-repo-pushnotificationservice:latest | gzip > docker-images/pushnotificationservice.tar.gz
-          
-          echo "Compressing customerorderhistoryservice image..."
-          docker save main-repo-customerorderhistoryservice:latest | gzip > docker-images/customerorderhistoryservice.tar.gz
-          
-          echo "Compressing menuservice image..."
-          docker save main-repo-menuservice:latest | gzip > docker-images/menuservice.tar.gz
-          
-          echo "Compressing orderhistoryservice image..."
-          docker save main-repo-orderhistoryservice:latest | gzip > docker-images/orderhistoryservice.tar.gz
-          
-          echo "Compressing settingsdataservice image..."
-          docker save main-repo-settingsdataservice:latest | gzip > docker-images/settingsdataservice.tar.gz
-          
-          echo "Compressing clientnotifyservice image..."
-          docker save main-repo-clientnotifyservice:latest | gzip > docker-images/clientnotifyservice.tar.gz
-          
-          echo "Compressing orderupdateservice image..."
-          docker save main-repo-orderupdateservice:latest | gzip > docker-images/orderupdateservice.tar.gz
-          
-          echo "Compressing importservice image..."
-          docker save main-repo-importservice:latest | gzip > docker-images/importservice.tar.gz
-          
-          echo "Compressing createorderservice image..."
-          docker save main-repo-createorderservice:latest | gzip > docker-images/createorderservice.tar.gz
-          
-          echo "Compressing gatewayservice image..."
-          docker save main-repo-gatewayservice:latest | gzip > docker-images/gatewayservice.tar.gz
-          
-          echo "Compressing etcd image..."
-          docker save main-repo-etcd:latest | gzip > docker-images/etcd.tar.gz
-          
-          echo "Compressing patroni1 image..."
-          docker save main-repo-patroni1:latest | gzip > docker-images/patroni1.tar.gz
-          
-          echo "Compressing patroni2 image..."
-          docker save main-repo-patroni2:latest | gzip > docker-images/patroni2.tar.gz
-          
-          echo "Compressing patroni3 image..."
-          docker save main-repo-patroni3:latest | gzip > docker-images/patroni3.tar.gz
-          
-          echo "Compressing haproxy image..."
-          docker save main-repo-haproxy:latest | gzip > docker-images/haproxy.tar.gz
-          
-          # Show sizes
-          ls -lh docker-images/
+          # Compress all backend images
+          for service in exportservice generalseodataservice pushnotificationservice \
+                         customerorderhistoryservice menuservice orderhistoryservice \
+                         settingsdataservice clientnotifyservice orderupdateservice \
+                         importservice createorderservice gatewayservice etcd \
+                         patroni1 patroni2 patroni3 haproxy; do
+            echo "Compressing $service..."
+            docker save ${service}:latest | gzip > docker-images/${service}.tar.gz
+          done
 
-      - name: Transfer compressed images to VPS
+      - name: Transfer to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          source: "main-repo/docker-images/*.tar.gz"
+          source: "docker-images/*.tar.gz,docker-compose.yml,.env"
           target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
-          strip_components: 1
-
-      - name: Transfer docker-compose and env files
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT }}
-          source: "main-repo/docker-compose.yml,main-repo/.env.example"
-          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
-          strip_components: 1
 
       - name: Deploy on VPS
         uses: appleboy/ssh-action@v1.0.3
@@ -137,29 +57,69 @@ jobs:
           script: |
             cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
             
-            echo "Loading Docker images..."
-            # Load all compressed images
+            # Load environment variables
+            set -a
+            source .env
+            set +a
+            
+            # Load backend images
+            echo "📦 Loading backend Docker images..."
             for image in docker-images/*.tar.gz; do
               if [ -f "$image" ]; then
-                echo "Loading $image..."
+                echo "  Loading $(basename $image)..."
                 gunzip -c "$image" | docker load
               fi
             done
             
-            echo "Pulling base images (Redis, RabbitMQ, etc.)..."
+            # Pull base images
+            echo "📥 Pulling base images..."
             docker compose pull redis redis-commander rabbitmq
             
-            echo "Stopping old containers..."
-            docker compose down
+            # Start backend services
+            echo "🚀 Starting backend services..."
+            docker compose up -d \
+              exportservice generalseodataservice pushnotificationservice \
+              customerorderhistoryservice menuservice orderhistoryservice \
+              settingsdataservice clientnotifyservice orderupdateservice \
+              importservice createorderservice gatewayservice etcd \
+              patroni1 patroni2 patroni3 haproxy redis redis-commander rabbitmq
             
-            echo "Starting new containers..."
-            docker compose up -d
+            # Update website
+            echo "🌐 Updating website..."
+            if [ -d "nextjs/web-ordering" ]; then
+              cd nextjs/web-ordering
+              git pull origin main
+              cd ../..
+            else
+              echo "❌ Website directory not found!"
+              exit 1
+            fi
             
-            echo "Cleaning up..."
-            docker system prune -f
+            # Build and start website
+            echo "🏗️ Building website..."
+            docker compose build website
+            
+            echo "🔄 Restarting website..."
+            docker compose up -d --no-deps website
+            
+            # Health check
+            echo "🏥 Performing health check..."
+            sleep 10
+            if curl -f http://localhost:3000/health; then
+              echo "✅ Website health check passed!"
+            else
+              echo "⚠️  Website health check failed, but service is running"
+            fi
+            
+            # Cleanup
+            echo "🧹 Cleaning up..."
             rm -rf docker-images/
+            docker system prune -f
             
-            echo "Container status:"
+            # Show status
+            echo ""
+            echo "📊 Container Status:"
             docker compose ps
             
-            echo "Deployment complete!"
+            echo ""
+            echo "✅ Deployment completed successfully!"
