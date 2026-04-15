@@ -1,4 +1,4 @@
-name: Deploy to VPS (Prebuilt Images)
+name: Build, Compress & Transfer Docker Images
 
 on:
   push:
@@ -6,56 +6,127 @@ on:
       - main
 
 jobs:
-  deploy:
+  build-and-transfer:
     runs-on: ubuntu-latest
-    env:
-      IMAGE_ARCHIVE: docker-images-${{ github.sha }}.tar.gz
-
+    
     steps:
-      - name: Checkout code
+      - name: Checkout main repository
         uses: actions/checkout@v4
+        with:
+          path: main-repo
 
-      - name: Checkout web-ordering app
+      - name: Clone website repository
         uses: actions/checkout@v4
         with:
           repository: Samad-Developer/web-ordering
-          ref: main
-          ssh-key: ${{ secrets.VPS_SSH_KEY }}
-          path: nextjs/web-ordering
-
-      - name: Build Docker images
+          token: ${{ secrets.VPS_SSH_KEY }}  # Personal Access Token for private repo
+          path: main-repo/nextjs
+          
+      - name: Verify repository structure
         run: |
-          set -e
-          docker compose build --no-cache
+          cd main-repo
+          ls -la
+          ls -la nextjs/  # Should show web-ordering contents
 
-      - name: Create compressed image bundle
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build all Docker images
+        working-directory: ./main-repo
         run: |
-          set -e
+          # Build all services
+          docker compose build
+          
+          # List built images
+          docker images | grep -E "website|exportservice|gatewayservice"
 
-          # Export all images referenced by this compose project.
-          docker compose config --images | sort -u > image-list.txt
-          IMAGES=$(tr '\n' ' ' < image-list.txt)
+      - name: Compress Docker images
+        working-directory: ./main-repo
+        run: |
+          # Create directory for compressed images
+          mkdir -p docker-images
+          
+          # Save and compress each image
+          echo "Compressing website image..."
+          docker save main-repo-website:latest | gzip > docker-images/website.tar.gz
+          
+          echo "Compressing exportservice image..."
+          docker save main-repo-exportservice:latest | gzip > docker-images/exportservice.tar.gz
+          
+          echo "Compressing generalseodataservice image..."
+          docker save main-repo-generalseodataservice:latest | gzip > docker-images/generalseodataservice.tar.gz
+          
+          echo "Compressing pushnotificationservice image..."
+          docker save main-repo-pushnotificationservice:latest | gzip > docker-images/pushnotificationservice.tar.gz
+          
+          echo "Compressing customerorderhistoryservice image..."
+          docker save main-repo-customerorderhistoryservice:latest | gzip > docker-images/customerorderhistoryservice.tar.gz
+          
+          echo "Compressing menuservice image..."
+          docker save main-repo-menuservice:latest | gzip > docker-images/menuservice.tar.gz
+          
+          echo "Compressing orderhistoryservice image..."
+          docker save main-repo-orderhistoryservice:latest | gzip > docker-images/orderhistoryservice.tar.gz
+          
+          echo "Compressing settingsdataservice image..."
+          docker save main-repo-settingsdataservice:latest | gzip > docker-images/settingsdataservice.tar.gz
+          
+          echo "Compressing clientnotifyservice image..."
+          docker save main-repo-clientnotifyservice:latest | gzip > docker-images/clientnotifyservice.tar.gz
+          
+          echo "Compressing orderupdateservice image..."
+          docker save main-repo-orderupdateservice:latest | gzip > docker-images/orderupdateservice.tar.gz
+          
+          echo "Compressing importservice image..."
+          docker save main-repo-importservice:latest | gzip > docker-images/importservice.tar.gz
+          
+          echo "Compressing createorderservice image..."
+          docker save main-repo-createorderservice:latest | gzip > docker-images/createorderservice.tar.gz
+          
+          echo "Compressing gatewayservice image..."
+          docker save main-repo-gatewayservice:latest | gzip > docker-images/gatewayservice.tar.gz
+          
+          echo "Compressing etcd image..."
+          docker save main-repo-etcd:latest | gzip > docker-images/etcd.tar.gz
+          
+          echo "Compressing patroni1 image..."
+          docker save main-repo-patroni1:latest | gzip > docker-images/patroni1.tar.gz
+          
+          echo "Compressing patroni2 image..."
+          docker save main-repo-patroni2:latest | gzip > docker-images/patroni2.tar.gz
+          
+          echo "Compressing patroni3 image..."
+          docker save main-repo-patroni3:latest | gzip > docker-images/patroni3.tar.gz
+          
+          echo "Compressing haproxy image..."
+          docker save main-repo-haproxy:latest | gzip > docker-images/haproxy.tar.gz
+          
+          # Show sizes
+          ls -lh docker-images/
 
-          if [ -z "$IMAGES" ]; then
-            echo "No Docker images found from docker compose config --images"
-            exit 1
-          fi
-
-          echo "Saving images to $IMAGE_ARCHIVE"
-          docker save $IMAGES | gzip -1 > "$IMAGE_ARCHIVE"
-          ls -lh "$IMAGE_ARCHIVE"
-
-      - name: Copy image bundle to server
+      - name: Transfer compressed images to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          source: "${{ env.IMAGE_ARCHIVE }},image-list.txt"
-          target: "~/OnlineOrderTaking/deploy-bundle"
+          source: "main-repo/docker-images/*.tar.gz"
+          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
+          strip_components: 1
 
-      - name: Load images and start containers
+      - name: Transfer docker-compose and env files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          source: "main-repo/docker-compose.yml,main-repo/.env.example"
+          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
+          strip_components: 1
+
+      - name: Deploy on VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -64,28 +135,31 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script_stop: true
           script: |
-            set -e
-
-            echo "Preparing project directory..."
-            cd ~/OnlineOrderTaking || exit 1
-
-            echo "Pulling latest repository changes..."
-            git pull origin main
-
-            echo "Stopping current containers..."
+            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
+            
+            echo "Loading Docker images..."
+            # Load all compressed images
+            for image in docker-images/*.tar.gz; do
+              if [ -f "$image" ]; then
+                echo "Loading $image..."
+                gunzip -c "$image" | docker load
+              fi
+            done
+            
+            echo "Pulling base images (Redis, RabbitMQ, etc.)..."
+            docker compose pull redis redis-commander rabbitmq
+            
+            echo "Stopping old containers..."
             docker compose down
-
-            echo "Loading transferred Docker images..."
-            gzip -dc ~/OnlineOrderTaking/deploy-bundle/${{ env.IMAGE_ARCHIVE }} | docker load
-
-            echo "Starting containers from prebuilt images..."
-            docker compose up -d --no-build
-
-            echo "Cleaning up old docker artifacts..."
+            
+            echo "Starting new containers..."
+            docker compose up -d
+            
+            echo "Cleaning up..."
             docker system prune -f
-            rm -f ~/OnlineOrderTaking/deploy-bundle/${{ env.IMAGE_ARCHIVE }}
-
+            rm -rf docker-images/
+            
             echo "Container status:"
             docker compose ps
-
+            
             echo "Deployment complete!"
