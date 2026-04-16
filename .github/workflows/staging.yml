@@ -148,9 +148,10 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script: |
             cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
+            docker compose stop ${{ matrix.service }} 2>/dev/null || true
+            docker compose rm -f ${{ matrix.service }} 2>/dev/null || true
+            docker image rm "onlineordertaking-${{ matrix.service }}:latest" 2>/dev/null || true
             gunzip -c ${{ matrix.service }}.tar.gz | docker load
-            docker stop ${{ matrix.service }} 2>/dev/null || true
-            docker rm ${{ matrix.service }} 2>/dev/null || true
             docker compose up -d ${{ matrix.service }}
             rm -f ${{ matrix.service }}.tar.gz
 
@@ -176,8 +177,8 @@ jobs:
               mkdir -p nextjs && cd nextjs && git clone https://github.com/Samad-Developer/web-ordering.git web-ordering && cd ..
             fi
             # Build and restart website
-            docker stop website 2>/dev/null || true
-            docker rm website 2>/dev/null || true
+            docker compose stop website 2>/dev/null || true
+            docker compose rm -f website 2>/dev/null || true
             docker compose build website --no-cache
             docker compose up -d website
 
@@ -220,7 +221,7 @@ jobs:
           source: "${{ github.event.inputs.service }}.tar.gz"
           target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
 
-      - name: Transfer Compose and env for ${{ matrix.service }}
+      - name: Transfer Compose and env for ${{ github.event.inputs.service }}
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST_STAGING }}
@@ -241,9 +242,10 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script: |
             cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
+            docker compose stop ${{ github.event.inputs.service }} 2>/dev/null || true
+            docker compose rm -f ${{ github.event.inputs.service }} 2>/dev/null || true
+            docker image rm "onlineordertaking-${{ github.event.inputs.service }}:latest" 2>/dev/null || true
             gunzip -c ${{ github.event.inputs.service }}.tar.gz | docker load
-            docker stop ${{ github.event.inputs.service }} 2>/dev/null || true
-            docker rm ${{ github.event.inputs.service }} 2>/dev/null || true
             docker compose up -d ${{ github.event.inputs.service }}
             rm -f ${{ github.event.inputs.service }}.tar.gz
 
