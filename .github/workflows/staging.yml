@@ -1,7 +1,8 @@
 name: Parallel Deployment to Staging
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - staging
   workflow_dispatch:
@@ -26,17 +27,11 @@ on:
           - createorderservice
           - gatewayservice
           - website
-
-env:
-  VPS_HOST: ${{ secrets.VPS_HOST_STAGING }}
-  VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
-  VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY_STAGING }}
-  VPS_PORT: ${{ secrets.VPS_PORT }}
-
 jobs:
   # Infrastructure - runs once
   infrastructure:
     runs-on: ubuntu-latest
+    environment: development
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,10 +39,10 @@ jobs:
       - name: Transfer .env file
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.VPS_HOST_STAGING }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY_STAGING }}
-          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
           source: "docker-compose.yml,.env"
           target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
           # If .env is missing, the step will fail. Ensure .env exists in the repo root.
@@ -55,10 +50,10 @@ jobs:
       - name: Deploy infrastructure services
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_HOST_STAGING }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY_STAGING }}
-          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
           script: |
             cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
             for service in etcd patroni1 patroni2 patroni3 haproxy rabbitmq redis redis-commander; do
@@ -70,6 +65,7 @@ jobs:
   # Parallel build, transfer & deploy for all backend services
   deploy-services:
     runs-on: ubuntu-latest
+    environment: development
     needs: infrastructure
     if: github.event.inputs.service == 'all' || github.event_name == 'push'
     strategy:
@@ -116,10 +112,10 @@ jobs:
       - name: Transfer ${{ matrix.service }}
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.VPS_HOST_STAGING }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY_STAGING }}
-          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
           source: "${{ matrix.service }}.tar.gz"
           target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
           timeout: "30s"
@@ -128,10 +124,10 @@ jobs:
       - name: Transfer Compose and env for ${{ matrix.service }}
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.VPS_HOST_STAGING }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY_STAGING }}
-          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
           source: "docker-compose.yml,.env"
           target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
           timeout: "30s"
@@ -140,10 +136,10 @@ jobs:
       - name: Deploy ${{ matrix.service }}
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_HOST_STAGING }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY_STAGING }}
-          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
           script: |
             cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
             docker compose stop ${{ matrix.service }} 2>/dev/null || true
@@ -156,6 +152,7 @@ jobs:
   # Website service (special handling - builds on VPS)
   website:
     runs-on: ubuntu-latest
+    environment: development
     needs: infrastructure
     if: github.event.inputs.service == 'all' || github.event.inputs.service == 'website' || github.event_name == 'push'
     steps:
@@ -165,10 +162,10 @@ jobs:
       - name: Transfer Compose and env for website
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.VPS_HOST_STAGING }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY_STAGING }}
-          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
           source: "nextjs/Dockerfile"
           target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/nextjs/"
           timeout: "30s"
@@ -177,10 +174,10 @@ jobs:
       - name: Deploy website
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_HOST_STAGING }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY_STAGING }}
-          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
           script: |
             cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
             # Update or clone website repo
@@ -198,6 +195,7 @@ jobs:
   # Single-service manual deployment (when specific service selected)
   single-service:
     runs-on: ubuntu-latest
+    environment: development
     needs: infrastructure
     if: github.event.inputs.service != 'all' && github.event.inputs.service != 'website' && github.event.inputs.service != ''
     steps:
@@ -227,20 +225,20 @@ jobs:
       - name: Transfer ${{ github.event.inputs.service }}
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.VPS_HOST_STAGING }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY_STAGING }}
-          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
           source: "${{ github.event.inputs.service }}.tar.gz"
           target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
 
       - name: Transfer Compose and env for ${{ github.event.inputs.service }}
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.VPS_HOST_STAGING }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY_STAGING }}
-          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
           source: "docker-compose.yml,.env"
           target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
           timeout: "30s"
@@ -249,10 +247,10 @@ jobs:
       - name: Deploy ${{ github.event.inputs.service }}
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_HOST_STAGING }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY_STAGING }}
-          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
           script: |
             cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
             docker compose stop ${{ github.event.inputs.service }} 2>/dev/null || true
@@ -265,16 +263,17 @@ jobs:
   # Final health check (only for full deployment)
   health-check:
     runs-on: ubuntu-latest
+    environment: development
     needs: [deploy-services, website]
     if: always() && (github.event.inputs.service == 'all' || github.event_name == 'push')
     steps:
       - name: Verify all services
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_HOST_STAGING }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY_STAGING }}
-          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
           script: |
             cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
             echo "=== Container Status ==="
