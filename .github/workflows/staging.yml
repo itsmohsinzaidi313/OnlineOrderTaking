@@ -100,7 +100,7 @@ jobs:
           # Resolve actual image name produced by docker compose build.
           IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^((onlineordertaking-)?${{ matrix.service }}):" | head -1)
           if [ -z "$IMAGE_NAME" ]; then
-            for candidate in "onlineordertaking-${{ matrix.service }}:latest" "${{ matrix.service }}:latest"; do
+            for candidate in "onlineordertaking-${{ matrix.service }}" "${{ matrix.service }}"; do
               if docker image inspect "$candidate" >/dev/null 2>&1; then
                 IMAGE_NAME="$candidate"
                 break
@@ -150,7 +150,7 @@ jobs:
             cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
             docker compose stop ${{ matrix.service }} 2>/dev/null || true
             docker compose rm -f ${{ matrix.service }} 2>/dev/null || true
-            docker image rm "onlineordertaking-${{ matrix.service }}:latest" 2>/dev/null || true
+            docker image rm "onlineordertaking-${{ matrix.service }}" 2>/dev/null || true
             gunzip -c ${{ matrix.service }}.tar.gz | docker load
             docker compose up -d ${{ matrix.service }}
             rm -f ${{ matrix.service }}.tar.gz
@@ -196,7 +196,7 @@ jobs:
           docker compose build ${{ github.event.inputs.service }}
           IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^((onlineordertaking-)?${{ github.event.inputs.service }}):" | head -1)
           if [ -z "$IMAGE_NAME" ]; then
-            for candidate in "onlineordertaking-${{ github.event.inputs.service }}:latest" "${{ github.event.inputs.service }}:latest"; do
+            for candidate in "onlineordertaking-${{ github.event.inputs.service }}" "${{ github.event.inputs.service }}"; do
               if docker image inspect "$candidate" >/dev/null 2>&1; then
                 IMAGE_NAME="$candidate"
                 break
@@ -244,7 +244,7 @@ jobs:
             cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
             docker compose stop ${{ github.event.inputs.service }} 2>/dev/null || true
             docker compose rm -f ${{ github.event.inputs.service }} 2>/dev/null || true
-            docker image rm "onlineordertaking-${{ github.event.inputs.service }}:latest" 2>/dev/null || true
+            docker image rm "onlineordertaking-${{ github.event.inputs.service }}" 2>/dev/null || true
             gunzip -c ${{ github.event.inputs.service }}.tar.gz | docker load
             docker compose up -d ${{ github.event.inputs.service }}
             rm -f ${{ github.event.inputs.service }}.tar.gz
