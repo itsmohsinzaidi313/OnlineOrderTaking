@@ -61,8 +61,6 @@ jobs:
           port: ${{ env.VPS_PORT }}
           script: |
             cd /home/${{ env.VPS_USERNAME }}/OnlineOrderTaking
-            # Create images directory if not exists
-            mkdir -p images
             for service in etcd patroni1 patroni2 patroni3 haproxy rabbitmq redis redis-commander; do
               if ! docker ps | grep -q $service; then
                 docker compose up -d $service
@@ -161,6 +159,21 @@ jobs:
     needs: infrastructure
     if: github.event.inputs.service == 'all' || github.event.inputs.service == 'website' || github.event_name == 'push'
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Transfer Compose and env for website
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST_STAGING }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY_STAGING }}
+          port: ${{ secrets.VPS_PORT }}
+          source: "nextjs/Dockerfile"
+          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/nextjs/"
+          timeout: "30s"
+          command_timeout: "10m"
+
       - name: Deploy website
         uses: appleboy/ssh-action@v1.0.3
         with:
