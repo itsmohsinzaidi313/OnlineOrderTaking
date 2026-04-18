@@ -56,7 +56,7 @@ public class Implementation()
         if (userId.HasValue)
         {
             var branchIds = await dbContext.UserBranchMappings.Where(x => x.UserId == userId).Select(x => x.BranchId).ToArrayAsync();
-            var orderMasters = await dbContext.OrderMasters.Where(x => branchIds.Contains(x.BranchId) && x.OrderDate > DateOnly.FromDateTime(DateTime.Now.AddDays(-30))).ToListAsync();
+            var orderMasters = await dbContext.OrderMasters.Where(x => branchIds.Contains(x.BranchId) && x.OrderDate > DateOnly.FromDateTime(DateTime.Now.AddDays(-3))).ToListAsync();
 
             foreach (var dbOrder in orderMasters)
             {
@@ -65,7 +65,7 @@ public class Implementation()
         }
         else if (!string.IsNullOrEmpty(orderToken))
         {
-            var orderMaster = await dbContext.OrderMasters.FirstOrDefaultAsync(x => x.OrderToken == orderToken && x.OrderDate > DateOnly.FromDateTime(DateTime.Now.AddDays(-30)));
+            var orderMaster = await dbContext.OrderMasters.FirstOrDefaultAsync(x => x.OrderToken == orderToken && x.OrderDate > DateOnly.FromDateTime(DateTime.Now.AddDays(-3)));
             if (orderMaster != null)
             {
                 yield return await mapToCustomerOrder(orderMaster);
