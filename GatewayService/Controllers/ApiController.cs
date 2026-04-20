@@ -18,7 +18,7 @@ namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient, GeneralSeoDataServiceClient seoDataClient) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient, PointofSaleModels.Protos.GeneralSeoDataService.GeneralSeoDataServiceClient seoDataClient) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
 
@@ -142,12 +142,6 @@ namespace GatewayService.Controllers
             //    orders++;
             //}
             return Ok(new { Menu = menuKeys, DAndP = dAndPKeys, Pending = pendingKeys, Subscriptions = subscriptions, Connections = connections, Orders = orders });
-        }
-
-        [HttpGet("health")]
-        public IActionResult Health()
-        {
-            return Ok("Gateway Service is healthy.");
         }
 
         [HttpGet("import/{companyId:int}")]

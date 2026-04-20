@@ -40,31 +40,17 @@ builder.Services
 builder.Services.AddGrpc();
 builder.WebHost.ConfigureKestrel(options =>
 {
-    // gRPC endpoint on port 8080
-    options.ListenAnyIP(8080, o =>
+    options.ListenAnyIP(8081, o =>
     {
         o.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
     });
-
-    // Health check endpoint on port 8081
-    options.ListenAnyIP(8081, o =>
-    {
-        o.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
-    });
 });
-
+builder.Services.AddHealthChecks()
+    .AddCheck<HealthCheck>("health_check");
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
-app.MapGet("/health", async ([FromServices] IDbContextFactory<RestaurantsContext> contextFactory) =>
-{
-    var restaurantsContext = await contextFactory.CreateDbContextAsync();
-    if (!await restaurantsContext.Database.CanConnectAsync())
-    {
-        return Results.Problem("Cannot connect to restaurants database.");
-    }
-    return Results.Ok();
-});
+app.MapHealthChecks("/health");
 app.MapGrpcService<OrderHistoryServiceImpl>();
 app.Run();

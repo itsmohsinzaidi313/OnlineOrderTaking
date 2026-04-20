@@ -95,21 +95,24 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddGrpcClient<PushNotificationServiceClient>(o =>
 {
-    var address = builder.Configuration["GRPC:PushNotificationHost"] ?? "http://pushnotificationservice:8080";
+    var address = builder.Configuration["GRPC:PushNotificationHost"] ?? "http://pushnotificationservice:8081";
     o.Address = new Uri(address);
 });
 
 builder.Services.AddGrpcClient<OrderHistoryServiceClient>(x =>
 {
-    var address = builder.Configuration["GRPC:OrderHistoryHost"] ?? "http://orderhistoryservice:8080";
+    var address = builder.Configuration["GRPC:OrderHistoryHost"] ?? "http://orderhistoryservice:8081";
     x.Address = new Uri(address);
 });
 
 builder.Services.AddGrpcClient<GeneralSeoDataServiceClient>(x =>
 {
-    var address = builder.Configuration["GRPC:GeneralSeoDataHost"] ?? "http://generalseodataservice:8080";
+    var address = builder.Configuration["GRPC:GeneralSeoDataHost"] ?? "http://generalseodataservice:8081";
     x.Address = new Uri(address);
 });
+
+builder.Services.AddHealthChecks()
+    .AddCheck<HealthCheck>("health_check");
 
 var app = builder.Build();
 app.UseRouting();
@@ -119,6 +122,7 @@ app.UseAuthorization();
 
 app.MapHub<GatewayHub>("/gatewayHub");
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 var configuredRedis = app.Configuration["REDIS:ConnectionString"] ?? app.Configuration["Redis:ConnectionString"];
 if (!string.IsNullOrWhiteSpace(configuredRedis))

@@ -50,19 +50,10 @@ builder.Services
     {
         options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
     });
+builder.Services.AddHealthChecks()
+    .AddCheck<HealthCheck>("health_check");
 
 var app = builder.Build();
-app.MapGet("/health", ([FromServices] SqlServerDbContext sqlServerDb, [FromServices] RestaurantsDbContext restaurantsDb) =>
-{
-    if (!sqlServerDb.Database.CanConnect())
-    {
-        return Results.Problem("Cannot connect to SQL Server database", statusCode: 500);
-    }
-    if (!restaurantsDb.Database.CanConnect())
-    {
-        return Results.Problem("Cannot connect to PostgreSQL database", statusCode: 500);
-    }
-    return Results.Ok();
-});
+app.MapHealthChecks("/health");
 
 app.Run();

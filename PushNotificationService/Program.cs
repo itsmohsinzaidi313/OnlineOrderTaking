@@ -29,16 +29,9 @@ builder.Services
 builder.Services.AddGrpc();
 builder.WebHost.ConfigureKestrel(options =>
 {
-    // gRPC endpoint on port 8080
-    options.ListenAnyIP(8080, o =>
-    {
-        o.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
-    });
-
-    // Health check endpoint on port 8081
     options.ListenAnyIP(8081, o =>
     {
-        o.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
+        o.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
     });
 });
 

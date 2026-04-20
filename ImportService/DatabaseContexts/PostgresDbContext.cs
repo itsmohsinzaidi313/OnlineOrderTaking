@@ -1,7 +1,7 @@
 ﻿using ImportService.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace ImportService.Data
+namespace ImportService.DatabaseContexts
 {
     public class PostgresDbContext(DbContextOptions<PostgresDbContext> options) : DbContext(options)
     {

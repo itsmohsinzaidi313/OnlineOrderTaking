@@ -34,20 +34,14 @@ builder.Services
     .Configure<RabbitMqSettings>(rabbitMqSection)
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
-    .AddHostedService<RequestQueueListener>();
+    .AddHostedService<RequestQueueListener>()
+    .AddHealthChecks()
+    .AddCheck<HealthCheck>("health_check");
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
-app.MapGet("/health", async ([FromServices] IDbContextFactory<RestaurantsContext> contextFactory) =>
-{
-    var restaurantsContext = await contextFactory.CreateDbContextAsync();
-    if (!await restaurantsContext.Database.CanConnectAsync())
-    {
-        return Results.Problem("Cannot connect to restaurants database.");
-    }
-    return Results.Ok();
-});
+app.MapHealthChecks("/health");
 
 app.Run();
