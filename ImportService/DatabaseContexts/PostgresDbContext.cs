@@ -213,6 +213,16 @@ namespace ImportService.Data
                 .HasForeignKey(c => c.PhoneId)
                 .HasPrincipalKey(p => p.PhoneId);
 
+            var dateOnlyConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateOnly?, DateTime?>(
+                v => v.HasValue ? v.Value.ToDateTime(TimeOnly.MinValue) : null,
+                v => v.HasValue ? DateOnly.FromDateTime(v.Value) : null);
+
+            modelBuilder.Entity<OrderMaster>(entity =>
+            {
+                entity.Property(e => e.OrderDate)
+                    .HasConversion(dateOnlyConverter);
+            });
+
             modelBuilder.Entity<OrderMaster>()
                 .ToTable("order_master")
                 .HasKey(x => x.OrderMasterId);
