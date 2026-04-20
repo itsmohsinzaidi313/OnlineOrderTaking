@@ -27,11 +27,13 @@ on:
           - createorderservice
           - gatewayservice
           - website
+          - infrastructure
 
 jobs:
   infrastructure:
     runs-on: ubuntu-latest
     environment: production
+    if: github.event.inputs.service == 'all' || github.event.inputs.service == 'infrastructure' || github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -66,8 +68,7 @@ jobs:
   deploy-services:
     runs-on: ubuntu-latest
     environment: production
-    needs: infrastructure
-    if: github.event.inputs.service == 'all' || github.event_name == 'push'
+    if: github.event.inputs.service == 'all' || github.event_name == 'push' || (github.event.inputs.service != 'all' && github.event.inputs.service != 'website' && github.event.inputs.service != '' && github.event.inputs.service != 'infrastructure')
     strategy:
       max-parallel: 2
       matrix:
@@ -196,8 +197,7 @@ jobs:
   single-service:
     runs-on: ubuntu-latest
     environment: production
-    needs: infrastructure
-    if: github.event.inputs.service != 'all' && github.event.inputs.service != 'website' && github.event.inputs.service != ''
+    if: github.event.inputs.service != 'all' && github.event.inputs.service != 'website' && github.event.inputs.service != '' && github.event.inputs.service != 'infrastructure'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
