@@ -43,9 +43,7 @@ services:
       dockerfile: ./GeneralSeoDataService/Dockerfile
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://localhost:${GRPC_PORT}
-      - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
-      - KESTREL__ENDPOINTS__GRPCHTTPS__URL=https://localhost:${GRPC_PORT}
-      - KESTREL__ENDPOINTS__GRPCHTTPS__PROTOCOLS=Http2
+      - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2   
       - ConnectionStrings__Postgres=${ROSQLCONNECTION}
     networks:
       - patroni-net
@@ -63,9 +61,7 @@ services:
       - "8080"
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://localhost:${GRPC_PORT}
-      - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
-      - KESTREL__ENDPOINTS__GRPCHTTPS__URL=https://localhost:${GRPC_PORT}
-      - KESTREL__ENDPOINTS__GRPCHTTPS__PROTOCOLS=Http2
+      - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2   
       - REDIS__CONNECTIONSTRING=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
       - VAPID__SUBJECT=${VAPID_SUBJECT}
       - VAPID__PUBLICKEY=${VAPID_PUBLIC_KEY}
@@ -106,9 +102,7 @@ services:
       dockerfile: ./MenuService/Dockerfile
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://localhost:${GRPC_PORT}
-      - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
-      - KESTREL__ENDPOINTS__GRPCHTTPS__URL=https://localhost:${GRPC_PORT}
-      - KESTREL__ENDPOINTS__GRPCHTTPS__PROTOCOLS=Http2
+      - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2   
       - ConnectionStrings__Postgres=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
