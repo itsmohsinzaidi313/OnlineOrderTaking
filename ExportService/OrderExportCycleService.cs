@@ -22,7 +22,10 @@ namespace ExportService
                                                 .Where(x => x.Exported == false)
                                                 .Select(o => o.OrderNumber)
                                                 .ToListAsync(stoppingToken);
-
+                        if (orderNumbers.Count >= 1)
+                        {
+                            logger.LogInformation("Found {Count} unexported orders for restaurant {DomainName}.", orderNumbers.Count, restaurant.DomainName);
+                        }
                         foreach (var orderNumber in orderNumbers)
                         {
                             try
