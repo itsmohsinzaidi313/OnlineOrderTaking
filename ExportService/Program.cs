@@ -15,10 +15,10 @@ builder.Configuration
 
 // Connection strings
 var sqlServerConnectionString =
-    builder.Configuration.GetConnectionString("SqlServer")
+    builder.Configuration.GetConnectionString("SQLSERVER")
     ?? throw new InvalidOperationException("SqlServer connection string is not configured.");
 
-var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres")
+var postgresConnectionString = builder.Configuration.GetConnectionString("POSTGRES")
     ?? throw new InvalidOperationException("Postgres connection string is not configured.");
 var rabbitMqSection = builder.Configuration.GetSection("RABBITMQ") ?? throw new InvalidOperationException("RABBITMQ section is not configured.");
 

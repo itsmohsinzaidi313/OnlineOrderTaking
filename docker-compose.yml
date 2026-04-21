@@ -23,8 +23,8 @@ services:
       context: .
       dockerfile: ./ExportService/Dockerfile
     environment:
-      - ConnectionStrings__SqlServer=${MSSQLCONNECTION}
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - CONNECTIONSTRINGS_SQLSERVER=${MSSQLCONNECTION}
+      - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
@@ -44,7 +44,7 @@ services:
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://localhost:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2   
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
     networks:
       - patroni-net
     depends_on:
@@ -83,7 +83,7 @@ services:
       context: .
       dockerfile: ./CustomerOrderHistoryService/Dockerfile
     environment:
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
@@ -103,7 +103,7 @@ services:
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://localhost:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2   
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
@@ -123,7 +123,7 @@ services:
     ports:
       - "8080"
     environment:
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
@@ -141,7 +141,7 @@ services:
       context: .
       dockerfile: ./SettingsDataService/Dockerfile
     environment:
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
@@ -159,7 +159,7 @@ services:
       context: .
       dockerfile: ./ClientNotificationService/Dockerfile
     environment:
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
@@ -177,7 +177,7 @@ services:
       context: .
       dockerfile: ./OrderUpdateService/Dockerfile
     environment:
-      - ConnectionStrings__Postgres=${ROSQLCONNECTION}
+      - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
@@ -195,8 +195,8 @@ services:
       context: .
       dockerfile: ./ImportService/Dockerfile
     environment:
-      - ConnectionStrings__SqlServer=${MSSQLCONNECTION}
-      - ConnectionStrings__Postgres=${RWSQLCONNECTION}
+      - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
+      - CONNECTIONSTRINGS__POSTGRES=${RWSQLCONNECTION}
     networks:
       - patroni-net
     depends_on:
@@ -210,8 +210,7 @@ services:
       context: .
       dockerfile: ./CreateOrderService/Dockerfile
     environment:
-      - ConnectionStrings__Postgres=${RWSQLCONNECTION}
-      - ConnectionStrings__Redis=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
+      - CONNECTIONSTRINGS__POSTGRES=${RWSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
       - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}

@@ -1,6 +1,6 @@
 using CustomerOrderHistoryService;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PointofSaleModels.HealthChecks;
 using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
@@ -15,7 +15,7 @@ builder.Configuration
 
 // Connection strings
 var dbConnectionString =
-    builder.Configuration.GetConnectionString("Postgres")
+    builder.Configuration.GetConnectionString("POSTGRES")
     ?? throw new InvalidOperationException("Postgres connection string is not configured.");
 
 var rabbitMqSection = builder.Configuration.GetSection("RABBITMQ");
@@ -37,7 +37,7 @@ builder.Services
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
     .AddHostedService<RequestQueueListener>()
     .AddHealthChecks()
-    .AddCheck<HealthCheck>("health_check");
+    .AddCheck<PostgresHealth>("health_check");
 
 var app = builder.Build();
 

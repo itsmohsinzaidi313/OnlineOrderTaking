@@ -1,3 +1,4 @@
+using PointofSaleModels.HealthChecks;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using PushNotificationService;
@@ -27,11 +28,12 @@ builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddHostedService<RequestQueueListener>();
 builder.Services.AddGrpc();
-
+builder.Services.AddHealthChecks()
+    .AddCheck<RedisHealth>("Redis");
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-app.Map("/health", () => Results.Ok());
+app.MapHealthChecks("/health");
 
 app.MapGrpcService<PushNotificationServiceImpl>();
 app.Run();

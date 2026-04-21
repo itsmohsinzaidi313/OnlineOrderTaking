@@ -1,11 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-using PointofSaleModels.PGDatabaseModels;
+﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
 using StackExchange.Redis;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
-namespace GatewayService
+namespace PointofSaleModels.HealthChecks
 {
-    public class HealthCheck(IConnectionMultiplexer multiplexer) : IHealthCheck
+    public class RedisHealth(IConnectionMultiplexer multiplexer) : IHealthCheck
     {
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {

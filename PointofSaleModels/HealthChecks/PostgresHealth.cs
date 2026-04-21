@@ -1,10 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using PointofSaleModels.PGDatabaseModels;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
-namespace CustomerOrderHistoryService
+namespace PointofSaleModels.HealthChecks
 {
-    public class HealthCheck(IDbContextFactory<RestaurantsContext> contextFactory) : IHealthCheck
+    public class PostgresHealth(IDbContextFactory<RestaurantsContext> contextFactory) : IHealthCheck
     {
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {

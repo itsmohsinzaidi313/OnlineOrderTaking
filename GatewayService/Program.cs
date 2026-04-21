@@ -10,6 +10,7 @@ using GatewayService.ServiceResponseListeners;
 using static PointofSaleModels.Protos.PushNotificationService;
 using static PointofSaleModels.Protos.OrderHistoryService;
 using static PointofSaleModels.Protos.GeneralSeoDataService;
+using PointofSaleModels.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -112,9 +113,10 @@ builder.Services.AddGrpcClient<GeneralSeoDataServiceClient>(x =>
 });
 
 builder.Services.AddHealthChecks()
-    .AddCheck<HealthCheck>("health_check");
+    .AddCheck<RedisHealth>("health_check");
 
 var app = builder.Build();
+
 app.UseRouting();
 app.UseCors("AllowAll");
 app.UseAuthentication();
@@ -123,9 +125,5 @@ app.UseAuthorization();
 app.MapHub<GatewayHub>("/gatewayHub");
 app.MapControllers();
 app.MapHealthChecks("/health");
-
-var configuredRedis = app.Configuration["REDIS:ConnectionString"] ?? app.Configuration["Redis:ConnectionString"];
-if (!string.IsNullOrWhiteSpace(configuredRedis))
-    app.Logger.LogInformation("SignalR backplane enabled via Redis at {RedisEndpoint}", configuredRedis);
 
 app.Run();
