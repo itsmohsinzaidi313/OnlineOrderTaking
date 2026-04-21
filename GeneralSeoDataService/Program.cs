@@ -1,5 +1,4 @@
 using GeneralSeoDataService;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.HealthChecks;
 using PointofSaleModels.PGDatabaseModels;

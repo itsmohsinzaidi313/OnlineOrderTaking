@@ -1,9 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using PointofSaleModels.PGDatabaseModels;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace PointofSaleModels.HealthChecks
 {

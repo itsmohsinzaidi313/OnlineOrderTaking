@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using PointofSaleModels.Application;
 using Db = PointofSaleModels.PGDatabaseModels;
 using ValueType = PointofSaleModels.Application.ValueType;

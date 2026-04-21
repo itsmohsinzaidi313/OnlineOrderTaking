@@ -23,7 +23,7 @@ services:
       context: .
       dockerfile: ./ExportService/Dockerfile
     environment:
-      - CONNECTIONSTRINGS_SQLSERVER=${MSSQLCONNECTION}
+      - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
@@ -43,7 +43,9 @@ services:
       dockerfile: ./GeneralSeoDataService/Dockerfile
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://localhost:${GRPC_PORT}
-      - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2   
+      - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
+      - KESTREL__ENDPOINTS__HTTP__URL=http://localhost:${HTTP_PORT}
+      - KESTREL__ENDPOINTS__HTTP__PROTOCOLS=Http1
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
     networks:
       - patroni-net
@@ -61,7 +63,9 @@ services:
       - "8080"
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://localhost:${GRPC_PORT}
-      - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2   
+      - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
+      - KESTREL__ENDPOINTS__HTTP__URL=http://localhost:${HTTP_PORT}
+      - KESTREL__ENDPOINTS__HTTP__PROTOCOLS=Http1
       - REDIS__CONNECTIONSTRING=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
       - VAPID__SUBJECT=${VAPID_SUBJECT}
       - VAPID__PUBLICKEY=${VAPID_PUBLIC_KEY}
@@ -102,7 +106,9 @@ services:
       dockerfile: ./MenuService/Dockerfile
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://localhost:${GRPC_PORT}
-      - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2   
+      - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
+      - KESTREL__ENDPOINTS__HTTP__URL=http://localhost:${HTTP_PORT}
+      - KESTREL__ENDPOINTS__HTTP__PROTOCOLS=Http1
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}

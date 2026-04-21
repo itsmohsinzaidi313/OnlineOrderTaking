@@ -1,6 +1,4 @@
-﻿using PointofSaleModels.Application;
-
-namespace PointofSaleModels.ServicePayloads
+﻿namespace PointofSaleModels.ServicePayloads
 {
     public class CustomerOrderHistoryServicePayload : ServicePayload
     {

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PointofSaleModels.PGDatabaseModels
+﻿namespace PointofSaleModels.PGDatabaseModels
 {
     public class OrderStatus
     {
