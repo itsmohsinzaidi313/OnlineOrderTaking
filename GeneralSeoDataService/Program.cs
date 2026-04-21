@@ -1,6 +1,6 @@
 using GeneralSeoDataService;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PointofSaleModels.HealthChecks;
 using PointofSaleModels.PGDatabaseModels;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,7 +13,7 @@ builder.Configuration
 
 // Connection strings
 var dbConnectionString =
-    builder.Configuration.GetConnectionString("Postgres")
+    builder.Configuration.GetConnectionString("POSTGRES")
     ?? throw new InvalidOperationException("Postgres connection string is not configured.");
 
 var rabbitMqSection = builder.Configuration.GetSection("RABBITMQ");
@@ -30,33 +30,14 @@ builder.Services
                     errorCodesToAdd: null);
             }));
 builder.Services.AddGrpc();
-builder.WebHost.ConfigureKestrel(options =>
-{
-    // gRPC endpoint on port 8080
-    options.ListenAnyIP(8080, o =>
-    {
-        o.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
-    });
 
-    // Health check endpoint on port 8081
-    options.ListenAnyIP(8081, o =>
-    {
-        o.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
-    });
-});
+builder.Services.AddHealthChecks()
+    .AddCheck<PostgresHealth>("health_check");
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-app.Map("/health", async ([FromServices] IDbContextFactory<RestaurantsContext> dbContextFactory) =>
-{
-    using var context = await dbContextFactory.CreateDbContextAsync();
-    if (!await context.Database.CanConnectAsync())
-    {
-        return Results.Problem("Cannot connect to PostgreSQL database", statusCode: 500);
-    }
-    return Results.Ok();
-});
+app.MapHealthChecks("/health");
 
 app.MapGrpcService<SeoDataServiceImpl>();
 app.Run();

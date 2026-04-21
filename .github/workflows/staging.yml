@@ -1,10 +1,10 @@
-name: Parallel Deployment to Main
+name: Parallel Deployment to Staging
 
 on:
   pull_request:
     types: [closed]
     branches:
-      - main
+      - staging
   workflow_dispatch:
     inputs:
       service:
@@ -30,9 +30,10 @@ on:
           - infrastructure
 
 jobs:
+  # Infrastructure - runs once
   infrastructure:
     runs-on: ubuntu-latest
-    environment: production
+    environment: development
     if: github.event.inputs.service == 'all' || github.event.inputs.service == 'infrastructure' || github.event_name == 'push'
     steps:
       - name: Checkout code
@@ -45,7 +46,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT }}
-          source: ".env"
+          source: "docker-compose.yml,.env"
           target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
           # If .env is missing, the step will fail. Ensure .env exists in the repo root.
 
@@ -67,7 +68,8 @@ jobs:
   # Parallel build, transfer & deploy for all backend services
   deploy-services:
     runs-on: ubuntu-latest
-    environment: production
+    environment: development
+    needs: infrastructure
     if: github.event.inputs.service == 'all' || github.event_name == 'push' || (github.event.inputs.service != 'all' && github.event.inputs.service != 'website' && github.event.inputs.service != '' && github.event.inputs.service != 'infrastructure')
     strategy:
       max-parallel: 2
@@ -153,9 +155,9 @@ jobs:
   # Website service (special handling - builds on VPS)
   website:
     runs-on: ubuntu-latest
-    environment: production
+    environment: development
     needs: infrastructure
-    if: github.event.inputs.service == 'all' || github.event.inputs.service == 'website' || github.event_name == 'push'
+    if: github.event.inputs.service == 'all' || github.event.inputs.service == 'website' || github.event_name == 'push' || (github.event.inputs.service != 'all' && github.event.inputs.service == 'website')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -183,20 +185,21 @@ jobs:
             cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
             # Update or clone website repo
             if [ -d "nextjs/web-ordering/.git" ]; then
-              cd nextjs/web-ordering && git pull origin main && cd ../..
+              cd nextjs/web-ordering && git pull && cd ../..
             else
               mkdir -p nextjs && cd nextjs && git clone https://github.com/Samad-Developer/web-ordering.git web-ordering && cd ..
             fi
             # Build and restart website
-            docker stop website 2>/dev/null || true
-            docker rm website 2>/dev/null || true
+            docker compose stop website 2>/dev/null || true
+            docker compose rm -f website 2>/dev/null || true
             docker compose build website --no-cache
             docker compose up -d website
 
   # Single-service manual deployment (when specific service selected)
   single-service:
     runs-on: ubuntu-latest
-    environment: production
+    environment: development
+    needs: infrastructure
     if: github.event.inputs.service != 'all' && github.event.inputs.service != 'website' && github.event.inputs.service != '' && github.event.inputs.service != 'infrastructure'
     steps:
       - name: Checkout code
@@ -263,7 +266,7 @@ jobs:
   # Final health check (only for full deployment)
   health-check:
     runs-on: ubuntu-latest
-    environment: production
+    environment: development
     needs: [deploy-services, website]
     if: always() && (github.event.inputs.service == 'all' || github.event_name == 'push')
     steps:

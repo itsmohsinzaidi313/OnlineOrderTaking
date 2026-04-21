@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PointofSaleModels.Settings
+﻿namespace PointofSaleModels.Settings
 {
     public class VapidSettings
     {

@@ -1,5 +1,4 @@
 using GatewayService.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -161,12 +160,6 @@ namespace GatewayService.Controllers
             //    orders++;
             //}
             return Ok(new { Menu = menuKeys, DAndP = dAndPKeys, Pending = pendingKeys, Subscriptions = subscriptions, Connections = connections, Orders = orders });
-        }
-
-        [HttpGet("health")]
-        public IActionResult Health()
-        {
-            return Ok("Gateway Service is healthy.");
         }
 
         [HttpGet("import/{companyId:int}")]

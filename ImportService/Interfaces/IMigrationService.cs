@@ -1,4 +1,4 @@
-﻿using ImportService.Data;
+﻿using ImportService.DatabaseContexts;
 
 namespace ImportService.Interfaces
 {

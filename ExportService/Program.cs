@@ -1,6 +1,5 @@
 using ExportService;
 using ExportService.DatabaseContexts;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
@@ -15,10 +14,10 @@ builder.Configuration
 
 // Connection strings
 var sqlServerConnectionString =
-    builder.Configuration.GetConnectionString("SqlServer")
+    builder.Configuration.GetConnectionString("SQLSERVER")
     ?? throw new InvalidOperationException("SqlServer connection string is not configured.");
 
-var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres")
+var postgresConnectionString = builder.Configuration.GetConnectionString("POSTGRES")
     ?? throw new InvalidOperationException("Postgres connection string is not configured.");
 var rabbitMqSection = builder.Configuration.GetSection("RABBITMQ") ?? throw new InvalidOperationException("RABBITMQ section is not configured.");
 
@@ -50,19 +49,10 @@ builder.Services
     {
         options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
     });
+builder.Services.AddHealthChecks()
+    .AddCheck<HealthCheck>("health_check");
 
 var app = builder.Build();
-app.MapGet("/health", ([FromServices] SqlServerDbContext sqlServerDb, [FromServices] RestaurantsDbContext restaurantsDb) =>
-{
-    if (!sqlServerDb.Database.CanConnect())
-    {
-        return Results.Problem("Cannot connect to SQL Server database", statusCode: 500);
-    }
-    if (!restaurantsDb.Database.CanConnect())
-    {
-        return Results.Problem("Cannot connect to PostgreSQL database", statusCode: 500);
-    }
-    return Results.Ok();
-});
+app.MapHealthChecks("/health");
 
 app.Run();

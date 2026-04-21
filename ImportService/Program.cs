@@ -1,5 +1,5 @@
 using ImportService;
-using ImportService.Data;
+using ImportService.DatabaseContexts;
 using ImportService.Interfaces;
 using ImportService.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -14,10 +14,10 @@ builder.Configuration
 
 // Connection strings
 var sqlServerConnectionString =
-    builder.Configuration.GetConnectionString("SqlServer")
+    builder.Configuration.GetConnectionString("SQLSERVER")
     ?? throw new InvalidOperationException("SqlServer connection string is not configured.");
 
-var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres")
+var postgresConnectionString = builder.Configuration.GetConnectionString("POSTGRES")
     ?? throw new InvalidOperationException("Postgres connection string is not configured.");
 // Services
 
@@ -57,6 +57,9 @@ builder.Services
     .AddScoped<IUserLoginMigrationService, UserLoginMigrationService>()
     .AddScoped<IRidersMigrationService, RidersMigrationService>()
     .AddScoped<Implementation>();
+
+builder.Services.AddHealthChecks()
+    .AddCheck<HealthCheck>("health_check");
 
 var app = builder.Build();
 
@@ -111,25 +114,6 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogg
     return response;
 });
 
-app.MapGet("health", ([FromServices] ILogger<Program> logger, [FromServices] IDbContextFactory<SqlServerDbContext> sqlDbContextFactory, [FromServices] IDbContextFactory<RestaurantsDbContext> restaurantDbContextFactory) =>
-{
-    using var sqlServerDbContext = sqlDbContextFactory.CreateDbContext();
-    if (sqlServerDbContext.Database.CanConnect() == false)
-    {
-        var connectionString = sqlServerDbContext.Database.GetConnectionString();
-        logger.LogError("SQL Server Database connection failed. Connection String: {ConnectionString}", connectionString);
-        sqlServerDbContext.Areas.ToList(); // Try to query to confirm connectivity
-        logger.LogError("SQL Server Database connection failed");
-        return Results.Problem(statusCode: 503);
-    }
-
-    using var restaurantDbContext = restaurantDbContextFactory.CreateDbContext();
-    if (restaurantDbContext.Database.CanConnect() == false)
-    {
-        logger.LogError("Postgres Database connection failed");
-        return Results.Problem(statusCode: 503);
-    }
-    return Results.Ok("Service is healthy");
-});
+app.MapHealthChecks("/health");
 
 await app.RunAsync();

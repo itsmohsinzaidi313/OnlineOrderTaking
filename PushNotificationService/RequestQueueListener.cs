@@ -1,6 +1,4 @@
 ﻿using Lib.Net.Http.WebPush;
-using Microsoft.EntityFrameworkCore;
-using PointofSaleModels.Protos;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;

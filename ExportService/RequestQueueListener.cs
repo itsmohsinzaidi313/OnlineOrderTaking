@@ -1,7 +1,4 @@
-﻿using ExportService.DatabaseContexts;
-using ExportService.Entities;
-using Microsoft.EntityFrameworkCore;
-using PointofSaleModels.ServicePayloads;
+﻿using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 

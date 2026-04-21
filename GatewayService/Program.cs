@@ -10,6 +10,7 @@ using GatewayService.ServiceResponseListeners;
 using static PointofSaleModels.Protos.PushNotificationService;
 using static PointofSaleModels.Protos.OrderHistoryService;
 using static PointofSaleModels.Protos.GeneralSeoDataService;
+using PointofSaleModels.HealthChecks;
 using static PointofSaleModels.Protos.CreateOrderService;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -96,19 +97,19 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddGrpcClient<PushNotificationServiceClient>(o =>
 {
-    var address = builder.Configuration["GRPC:PushNotificationHost"] ?? "http://pushnotificationservice:8080";
+    var address = builder.Configuration["GRPC:PUSHNOTIFICAIONHOST"] ?? throw new InvalidOperationException("PushNotificationService gRPC host is not configured.");
     o.Address = new Uri(address);
 });
 
 builder.Services.AddGrpcClient<OrderHistoryServiceClient>(x =>
 {
-    var address = builder.Configuration["GRPC:OrderHistoryHost"] ?? "http://orderhistoryservice:8080";
+    var address = builder.Configuration["GRPC:ORDERHISTORYHOST"] ?? throw new InvalidOperationException("OrderHistoryService gRPC host is not configured.");
     x.Address = new Uri(address);
 });
 
 builder.Services.AddGrpcClient<GeneralSeoDataServiceClient>(x =>
 {
-    var address = builder.Configuration["GRPC:GeneralSeoDataHost"] ?? "http://generalseodataservice:8080";
+    var address = builder.Configuration["GRPC:GENERALSEODATAHOST"] ?? throw new InvalidOperationException("GeneralSeoDataService gRPC host is not configured.");
     x.Address = new Uri(address);
 });
 
@@ -118,7 +119,11 @@ builder.Services.AddGrpcClient<CreateOrderServiceClient>(x =>
     x.Address = new Uri(address);
 });
 
+builder.Services.AddHealthChecks()
+    .AddCheck<RedisHealth>("health_check");
+
 var app = builder.Build();
+
 app.UseRouting();
 app.UseCors("AllowAll");
 app.UseAuthentication();
@@ -126,9 +131,6 @@ app.UseAuthorization();
 
 app.MapHub<GatewayHub>("/gatewayHub");
 app.MapControllers();
-
-var configuredRedis = app.Configuration["REDIS:ConnectionString"] ?? app.Configuration["Redis:ConnectionString"];
-if (!string.IsNullOrWhiteSpace(configuredRedis))
-    app.Logger.LogInformation("SignalR backplane enabled via Redis at {RedisEndpoint}", configuredRedis);
+app.MapHealthChecks("/health");
 
 app.Run();
