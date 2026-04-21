@@ -26,6 +26,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+RUN dotnet dev-certs https
+RUN dotnet dev-certs https --trust
+
 RUN useradd -m -d /app -s /usr/sbin/nologin appuser
 
 WORKDIR /app
