@@ -239,6 +239,7 @@ services:
       - GRPC__PUSHNOTIFICAIONHOST=http://pushnotificationservice:${GRPC_PORT}
       - GRPC__ORDERHISTORYHOST=http://orderhistoryservice:${GRPC_PORT}
       - GRPC__GENERALSEODATAHOST=http://generalseodataservice:${GRPC_PORT}
+      - GRPC__CREATEORDERHOST=http://createorderservice:${GRPC_PORT}
       - ASPNETCORE_ENVIRONMENT=${GATEWAY_ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=${GATEWAY_ASPNETCORE_URLS}
       - REDIS__CONNECTIONSTRING=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false

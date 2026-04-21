@@ -115,7 +115,7 @@ builder.Services.AddGrpcClient<GeneralSeoDataServiceClient>(x =>
 
 builder.Services.AddGrpcClient<CreateOrderServiceClient>(x =>
 {
-    var address = builder.Configuration["GRPC:CreateOrderHost"] ?? "http://createorderservice:8080";
+    var address = builder.Configuration["GRPC:CREATEORDERHOST"] ?? throw new InvalidOperationException("CreateOrderService gRPC host is not configured.");
     x.Address = new Uri(address);
 });
 
