@@ -45,6 +45,7 @@ builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<OrderExportService>()
     .AddHostedService<RequestQueueListener>()
+    .AddHostedService<OrderExportCycleService>()
     .Configure<HostOptions>(options =>
     {
         options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
