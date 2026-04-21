@@ -42,9 +42,9 @@ services:
       context: .
       dockerfile: ./GeneralSeoDataService/Dockerfile
     environment:
-      - KESTREL__ENDPOINTS__GRPC__URLS=http://localhost:${GRPC_PORT}
+      - KESTREL__ENDPOINTS__GRPC__URL=http://localhost:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
-      - KESTREL__ENDPOINTS__GRPCHTTPS__URLS=https://localhost:${GRPC_PORT}
+      - KESTREL__ENDPOINTS__GRPCHTTPS__URL=https://localhost:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPCHTTPS__PROTOCOLS=Http2
       - ConnectionStrings__Postgres=${ROSQLCONNECTION}
     networks:
@@ -62,9 +62,9 @@ services:
     ports:
       - "8080"
     environment:
-      - KESTREL__ENDPOINTS__GRPC__URLS=http://localhost:${GRPC_PORT}
+      - KESTREL__ENDPOINTS__GRPC__URL=http://localhost:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
-      - KESTREL__ENDPOINTS__GRPCHTTPS__URLS=https://localhost:${GRPC_PORT}
+      - KESTREL__ENDPOINTS__GRPCHTTPS__URL=https://localhost:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPCHTTPS__PROTOCOLS=Http2
       - REDIS__CONNECTIONSTRING=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
       - VAPID__SUBJECT=${VAPID_SUBJECT}
@@ -105,9 +105,9 @@ services:
       context: .
       dockerfile: ./MenuService/Dockerfile
     environment:
-      - KESTREL__ENDPOINTS__GRPC__URLS=http://localhost:${GRPC_PORT}
+      - KESTREL__ENDPOINTS__GRPC__URL=http://localhost:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
-      - KESTREL__ENDPOINTS__GRPCHTTPS__URLS=https://localhost:${GRPC_PORT}
+      - KESTREL__ENDPOINTS__GRPCHTTPS__URL=https://localhost:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPCHTTPS__PROTOCOLS=Http2
       - ConnectionStrings__Postgres=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
