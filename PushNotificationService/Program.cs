@@ -27,13 +27,6 @@ builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddHostedService<RequestQueueListener>();
 builder.Services.AddGrpc();
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(8081, o =>
-    {
-        o.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
-    });
-});
 
 var app = builder.Build();
 

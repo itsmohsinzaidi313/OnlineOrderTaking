@@ -1,12 +1,10 @@
 ﻿using ExportService.DatabaseContexts;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using PointofSaleModels.PGDatabaseModels;
 
 namespace ExportService
 {
-    public class HealthCheck(IDbContextFactory<SqlServerDbContext> sqlContextFactory, IDbContextFactory<RestaurantsContext> pgContextFactory) : IHealthCheck
+    public class HealthCheck(IDbContextFactory<SqlServerDbContext> sqlContextFactory, IDbContextFactory<RestaurantsDbContext> pgContextFactory) : IHealthCheck
     {
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {
