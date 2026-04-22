@@ -41,7 +41,7 @@ jobs:
           docker save "$IMAGE_NAME" | gzip > "${{ inputs.service }}.tar.gz"
           du -h "${{ inputs.service }}.tar.gz"
 
-      - name: Transfer ${{ matrix.service }}
+      - name: Transfer ${{ inputs.service }}
         uses: ./.github/workflows/transfer-image.yml
         with:
           environment: ${{ inputs.environment }}
