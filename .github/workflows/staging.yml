@@ -111,6 +111,7 @@ jobs:
           fi
           echo "Saving image: $IMAGE_NAME"
           docker save "$IMAGE_NAME" | gzip > "${{ matrix.service }}.tar.gz"
+          du -h "${{ matrix.service }}.tar.gz"
 
       - name: Transfer ${{ matrix.service }}
         uses: appleboy/scp-action@v0.1.7
@@ -151,7 +152,6 @@ jobs:
             gunzip -c ${{ matrix.service }}.tar.gz | docker load
             docker compose up -d ${{ matrix.service }}
             rm -f ${{ matrix.service }}.tar.gz
-
 
   website-exists:
     runs-on: ubuntu-latest
@@ -264,6 +264,7 @@ jobs:
           fi
           echo "Saving image: $IMAGE_NAME"
           docker save "$IMAGE_NAME" | gzip > "${{ github.event.inputs.service }}.tar.gz"
+          du -h "${{ github.event.inputs.service }}.tar.gz"
 
       - name: Transfer ${{ github.event.inputs.service }}
         uses: appleboy/scp-action@v0.1.7
