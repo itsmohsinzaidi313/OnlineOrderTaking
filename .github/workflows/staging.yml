@@ -157,8 +157,7 @@ jobs:
   website:
     runs-on: ubuntu-latest
     environment: development
-    needs: website-exists
-    if: needs.website-exists.outputs.dir-exists == 'true' && (github.event.inputs.service == 'all' || github.event.inputs.service == 'website' || github.event_name == 'push')
+    if: github.event.inputs.service == 'all' || github.event.inputs.service == 'website' || github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
