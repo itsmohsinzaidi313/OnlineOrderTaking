@@ -16,8 +16,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Download ${{ inputs.service }} image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: image-${{ inputs.service }}
+          path: .
       
       - name: Transfer ${{ inputs.service }}
         uses: appleboy/scp-action@v0.1.7

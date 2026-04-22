@@ -9,8 +9,8 @@ on:
         type: string
 
 jobs:
-  deploy-services:
-    name: Deploy services in parallel to ${{ inputs.environment }}
+  build-services:
+    name: Build services in parallel for ${{ inputs.environment }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     if: github.event.inputs.service == 'all' || github.event_name == 'push'
@@ -56,14 +56,61 @@ jobs:
           docker save "$IMAGE_NAME" | gzip > "${{ matrix.service }}.tar.gz"
           du -h "${{ matrix.service }}.tar.gz"
 
-      - name: Transfer ${{ matrix.service }}
-        uses: ./.github/workflows/transfer-image.yml
+      - name: Upload ${{ matrix.service }} image artifact
+        uses: actions/upload-artifact@v4
         with:
-          environment: ${{ inputs.environment }}
-          service: ${{ matrix.service }}
+          name: image-${{ matrix.service }}
+          path: ${{ matrix.service }}.tar.gz
+          retention-days: 1
 
-      - name: Deploy ${{ matrix.service }}
-        uses: ./.github/workflows/deploy-image.yml
-        with:
-          environment: ${{ inputs.environment }}
-          service: ${{ matrix.service }}
+  transfer-services:
+    name: Transfer services in parallel to ${{ inputs.environment }}
+    needs: build-services
+    if: github.event.inputs.service == 'all' || github.event_name == 'push'
+    strategy:
+      max-parallel: 2
+      matrix:
+        service:
+          - exportservice
+          - generalseodataservice
+          - pushnotificationservice
+          - customerorderhistoryservice
+          - menuservice
+          - orderhistoryservice
+          - settingsdataservice
+          - clientnotifyservice
+          - orderupdateservice
+          - importservice
+          - createorderservice
+          - gatewayservice
+    uses: ./.github/workflows/transfer-image.yml
+    with:
+      environment: ${{ inputs.environment }}
+      service: ${{ matrix.service }}
+    secrets: inherit
+
+  deploy-services:
+    name: Deploy services in parallel to ${{ inputs.environment }}
+    needs: transfer-services
+    if: github.event.inputs.service == 'all' || github.event_name == 'push'
+    strategy:
+      max-parallel: 2
+      matrix:
+        service:
+          - exportservice
+          - generalseodataservice
+          - pushnotificationservice
+          - customerorderhistoryservice
+          - menuservice
+          - orderhistoryservice
+          - settingsdataservice
+          - clientnotifyservice
+          - orderupdateservice
+          - importservice
+          - createorderservice
+          - gatewayservice
+    uses: ./.github/workflows/deploy-image.yml
+    with:
+      environment: ${{ inputs.environment }}
+      service: ${{ matrix.service }}
+    secrets: inherit
