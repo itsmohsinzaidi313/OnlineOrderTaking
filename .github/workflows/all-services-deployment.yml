@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       environment:
-        description: 'Deployment environment (production or development)'
+        description: "Deployment environment (production or development)"
         required: true
         type: string
 
@@ -32,7 +32,7 @@ jobs:
           - gatewayservice
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Build ${{ matrix.service }}
         run: |
@@ -83,6 +83,7 @@ jobs:
           - importservice
           - createorderservice
           - gatewayservice
+
     uses: ./.github/workflows/transfer-image.yml
     with:
       environment: ${{ inputs.environment }}

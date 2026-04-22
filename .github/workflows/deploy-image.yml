@@ -4,11 +4,11 @@ on:
   workflow_call:
     inputs:
       environment:
-        description: 'Deployment environment (production or development)'
+        description: "Deployment environment (production or development)"
         required: true
         type: string
       service:
-        description: 'Service to deploy'
+        description: "Service to deploy"
         required: true
         type: string
 
@@ -18,10 +18,10 @@ jobs:
     environment: ${{ inputs.environment }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-      
+        uses: actions/checkout@v6
+
       - name: Deploy ${{ inputs.service }}
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}

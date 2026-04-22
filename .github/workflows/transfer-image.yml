@@ -4,11 +4,11 @@ on:
   workflow_call:
     inputs:
       environment:
-        description: 'Deployment environment (production or development)'
+        description: "Deployment environment (production or development)"
         required: true
         type: string
       service:
-        description: 'Service to deploy'
+        description: "Service to deploy"
         required: true
         type: string
 jobs:
@@ -17,13 +17,13 @@ jobs:
     environment: ${{ inputs.environment }}
     steps:
       - name: Download ${{ inputs.service }} image artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: image-${{ inputs.service }}
           path: .
-      
+
       - name: Transfer ${{ inputs.service }}
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
