@@ -12,9 +12,6 @@ jobs:
     environment: ${{ inputs.environment }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
       - name: Transfer base files
         uses: appleboy/scp-action@v0.1.7
         with:

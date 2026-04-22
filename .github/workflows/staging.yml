@@ -36,6 +36,9 @@ jobs:
   call-actions-workflow:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Transfer base files
         uses: ./.github/workflows/transfer-base-files.yml
         with:
@@ -45,6 +48,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.inputs.service == 'infrastructure'
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Call infrastructure deployment workflow
         uses: ./.github/workflows/infrastructure-deployment.yml
         with:
@@ -54,6 +60,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.inputs.service == 'all'
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Call service deployment workflow
         uses: ./.github/workflows/all-services-deployment.yml
         with:
@@ -63,6 +72,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.inputs.service == 'website'
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
       - name: Call website deployment workflow
         uses: ./.github/workflows/website-deployment.yml
         with:
@@ -72,6 +84,9 @@ jobs:
     runs-on: ubuntu-latest
     if: contains(github.event.inputs.service, 'service')
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Call single service deployment workflow
         uses: ./.github/workflows/single-service-deployment.yml
         with:
