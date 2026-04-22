@@ -56,7 +56,7 @@ jobs:
     if: github.event.inputs.service == 'website'
     uses: ./.github/workflows/website-deployment.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: development
     secrets: inherit
 
   single-service-deployment:
