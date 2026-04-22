@@ -160,7 +160,6 @@ jobs:
       dir-exists: ${{ steps.check.outputs.exists }}
     steps:
       - uses: actions/checkout@v4
-  
       - name: Check if website directory exists on VPS
         id: check
         uses: appleboy/ssh-action@v1.0.3
@@ -239,7 +238,6 @@ jobs:
   single-service:
     runs-on: ubuntu-latest
     environment: development
-    needs: infrastructure
     if: github.event.inputs.service != 'all' && github.event.inputs.service != 'website' && github.event.inputs.service != '' && github.event.inputs.service != 'infrastructure'
     steps:
       - name: Checkout code
