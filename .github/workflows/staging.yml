@@ -33,7 +33,7 @@ env:
   ENVIRONMENT: development
 
 jobs:
-  call-actions-workflow:
+  transfer-base-files:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
