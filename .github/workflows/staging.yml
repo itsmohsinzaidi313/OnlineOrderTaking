@@ -156,6 +156,7 @@ jobs:
   website-exists:
     runs-on: ubuntu-latest
     environment: development
+    if: needs.website-exists.outputs.dir-exists == 'true' && (github.event.inputs.service == 'all' || github.event.inputs.service == 'website' || github.event_name == 'push')
     outputs:
       dir-exists: ${{ steps.check.outputs.exists }}
     steps:
@@ -180,6 +181,7 @@ jobs:
   website:
     runs-on: ubuntu-latest
     environment: development
+    needs: website-exists
     if: needs.website-exists.outputs.dir-exists == 'true' && (github.event.inputs.service == 'all' || github.event.inputs.service == 'website' || github.event_name == 'push')
     steps:
       - name: Checkout code
