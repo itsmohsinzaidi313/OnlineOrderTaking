@@ -1,0 +1,81 @@
+name: Single service deployment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Deployment environment (production or development)'
+        required: true
+        type: string
+      service:
+        description: 'Service to deploy'
+        required: true
+        type: string
+
+jobs:
+  single-service:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    if: contains(github.event.inputs.service, 'service')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build ${{ github.event.inputs.service }}
+        run: |
+          docker compose build ${{ github.event.inputs.service }}
+          IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^((onlineordertaking-)?${{ github.event.inputs.service }}):" | head -1)
+          if [ -z "$IMAGE_NAME" ]; then
+            for candidate in "onlineordertaking-${{ github.event.inputs.service }}" "${{ github.event.inputs.service }}"; do
+              if docker image inspect "$candidate" >/dev/null 2>&1; then
+                IMAGE_NAME="$candidate"
+                break
+              fi
+            done
+          fi
+          if [ -z "$IMAGE_NAME" ]; then
+            echo "No image found for ${{ github.event.inputs.service }} after build."
+            docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "${{ github.event.inputs.service }}|onlineordertaking-${{ github.event.inputs.service }}" || true
+            exit 1
+          fi
+          echo "Saving image: $IMAGE_NAME"
+          docker save "$IMAGE_NAME" | gzip > "${{ github.event.inputs.service }}.tar.gz"
+          du -h "${{ github.event.inputs.service }}.tar.gz"
+
+      - name: Transfer ${{ github.event.inputs.service }}
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          source: "${{ github.event.inputs.service }}.tar.gz"
+          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
+
+      - name: Transfer Compose and env for ${{ github.event.inputs.service }}
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          source: "docker-compose.yml,.env"
+          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
+          timeout: "30s"
+          command_timeout: "10m"
+
+      - name: Deploy ${{ github.event.inputs.service }}
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
+            docker compose stop ${{ github.event.inputs.service }} 2>/dev/null || true
+            docker compose rm -f ${{ github.event.inputs.service }} 2>/dev/null || true
+            docker image rm "onlineordertaking-${{ github.event.inputs.service }}" 2>/dev/null || true
+            gunzip -c ${{ github.event.inputs.service }}.tar.gz | docker load
+            docker compose up -d ${{ github.event.inputs.service }}
+            rm -f ${{ github.event.inputs.service }}.tar.gz

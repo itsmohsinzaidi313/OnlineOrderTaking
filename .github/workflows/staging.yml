@@ -29,261 +29,52 @@ on:
           - website
           - infrastructure
 
+env:
+  ENVIRONMENT: development
+
 jobs:
   call-actions-workflow:
     runs-on: ubuntu-latest
-    environment: development
     steps:
-      - name: Call Actions workflow
-        uses: ./.github/workflows/transfer-base-files-to-dev-vps.yml
+      - name: Transfer base files
+        uses: ./.github/workflows/transfer-base-files.yml
+        with:
+          environment: ${{ env.ENVIRONMENT }}
 
-  # Infrastructure - runs once
   infrastructure:
     runs-on: ubuntu-latest
-    environment: development
     if: github.event.inputs.service == 'infrastructure'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy infrastructure services
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Call infrastructure deployment workflow
+        uses: ./.github/workflows/infrastructure-deployment.yml
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          script: |
-            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
-            for service in etcd patroni1 patroni2 patroni3 haproxy rabbitmq redis redis-commander; do
-              if ! docker ps | grep -q $service; then
-                docker compose up -d $service
-              fi
-            done
+          environment: ${{ env.ENVIRONMENT }}
 
-  # Parallel build, transfer & deploy for all backend services
-  deploy-services:
+  deploy-all-services:
     runs-on: ubuntu-latest
-    environment: development
-    if: github.event.inputs.service == 'all' || github.event_name == 'push' || contains(github.event.inputs.service, 'service')
-    strategy:
-      max-parallel: 2
-      matrix:
-        service:
-          - exportservice
-          - generalseodataservice
-          - pushnotificationservice
-          - customerorderhistoryservice
-          - menuservice
-          - orderhistoryservice
-          - settingsdataservice
-          - clientnotifyservice
-          - orderupdateservice
-          - importservice
-          - createorderservice
-          - gatewayservice
+    if: github.event.inputs.service == 'all'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Build ${{ matrix.service }}
-        run: |
-          docker compose build ${{ matrix.service }}
-          # Resolve actual image name produced by docker compose build.
-          IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^((onlineordertaking-)?${{ matrix.service }}):" | head -1)
-          if [ -z "$IMAGE_NAME" ]; then
-            for candidate in "onlineordertaking-${{ matrix.service }}" "${{ matrix.service }}"; do
-              if docker image inspect "$candidate" >/dev/null 2>&1; then
-                IMAGE_NAME="$candidate"
-                break
-              fi
-            done
-          fi
-          if [ -z "$IMAGE_NAME" ]; then
-            echo "No image found for ${{ matrix.service }} after build."
-            docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "${{ matrix.service }}|onlineordertaking-${{ matrix.service }}" || true
-            exit 1
-          fi
-          echo "Saving image: $IMAGE_NAME"
-          docker save "$IMAGE_NAME" | gzip > "${{ matrix.service }}.tar.gz"
-          du -h "${{ matrix.service }}.tar.gz"
-
-      - name: Transfer ${{ matrix.service }}
-        uses: appleboy/scp-action@v0.1.7
+      - name: Call service deployment workflow
+        uses: ./.github/workflows/all-services-deployment.yml
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          source: "${{ matrix.service }}.tar.gz"
-          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
-          timeout: "30s"
-          command_timeout: "10m"
-
-      - name: Transfer Compose and env for ${{ matrix.service }}
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          source: "docker-compose.yml,.env"
-          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
-          timeout: "30s"
-          command_timeout: "10m"
-
-      - name: Deploy ${{ matrix.service }}
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          script: |
-            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
-            docker compose stop ${{ matrix.service }} 2>/dev/null || true
-            docker compose rm -f ${{ matrix.service }} 2>/dev/null || true
-            docker image rm "onlineordertaking-${{ matrix.service }}" 2>/dev/null || true
-            gunzip -c ${{ matrix.service }}.tar.gz | docker load
-            docker compose up -d ${{ matrix.service }}
-            rm -f ${{ matrix.service }}.tar.gz
-            
-  # Website service (special handling - builds on VPS)
-  website:
+          environment: ${{ env.ENVIRONMENT }}
+  
+  deploy-website:
     runs-on: ubuntu-latest
-    environment: development
-    if: github.event.inputs.service == 'all' || github.event.inputs.service == 'website'
+    if: github.event.inputs.service == 'website'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Checking if website directory exists on VPS
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Call website deployment workflow
+        uses: ./.github/workflows/website-deployment.yml
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          script: |
-            if [ -d "OnlineOrderTaking/nextjs/web-ordering" ]; then
-              echo Website directory exists on VPS
-            else
-              echo Website directory does not exist on VPS && exit 1
-            fi
+          environment: ${{ env.ENVIRONMENT }}
 
-      - name: Transfer Compose and env for website
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          source: "nextjs/Dockerfile"
-          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/nextjs/"
-          timeout: "30s"
-          command_timeout: "10m"
-
-      - name: Deploy website
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          script: |
-            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/nextjs/web-ordering
-            git pull main && cd ../..
-            # Build and restart website
-            docker compose -f website-compose.yml stop website 2>/dev/null || true
-            docker rm website 2>/dev/null || true
-            docker compose -f website-compose.yml build website --no-cache
-            docker compose -f website-compose.yml up -d website
-
-      - name: Deploy website
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          script: |
-            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
-            # Update or clone website repo
-            if [ -d "nextjs/web-ordering/.git" ]; then
-              cd nextjs/web-ordering && git pull && cd ../..
-            else
-              mkdir -p nextjs && cd nextjs && git clone https://github.com/Samad-Developer/web-ordering.git web-ordering && cd ..
-            fi
-            # Build and restart website
-            docker compose -f website-compose.yml stop website 2>/dev/null || true
-            docker compose -f website-compose.yml rm -f website 2>/dev/null || true
-            docker compose -f website-compose.yml build website --no-cache
-            docker compose -f website-compose.yml up -d website
-
-  # Single-service manual deployment (when specific service selected)
-  single-service:
+  single-service-deployment:
     runs-on: ubuntu-latest
-    environment: development
-    if: github.event.inputs.service != 'all' && github.event.inputs.service != 'website' && github.event.inputs.service != '' && github.event.inputs.service != 'infrastructure'
+    if: contains(github.event.inputs.service, 'service')
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Build ${{ github.event.inputs.service }}
-        run: |
-          docker compose build ${{ github.event.inputs.service }}
-          IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^((onlineordertaking-)?${{ github.event.inputs.service }}):" | head -1)
-          if [ -z "$IMAGE_NAME" ]; then
-            for candidate in "onlineordertaking-${{ github.event.inputs.service }}" "${{ github.event.inputs.service }}"; do
-              if docker image inspect "$candidate" >/dev/null 2>&1; then
-                IMAGE_NAME="$candidate"
-                break
-              fi
-            done
-          fi
-          if [ -z "$IMAGE_NAME" ]; then
-            echo "No image found for ${{ github.event.inputs.service }} after build."
-            docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "${{ github.event.inputs.service }}|onlineordertaking-${{ github.event.inputs.service }}" || true
-            exit 1
-          fi
-          echo "Saving image: $IMAGE_NAME"
-          docker save "$IMAGE_NAME" | gzip > "${{ github.event.inputs.service }}.tar.gz"
-          du -h "${{ github.event.inputs.service }}.tar.gz"
-
-      - name: Transfer ${{ github.event.inputs.service }}
-        uses: appleboy/scp-action@v0.1.7
+      - name: Call single service deployment workflow
+        uses: ./.github/workflows/single-service-deployment.yml
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          source: "${{ github.event.inputs.service }}.tar.gz"
-          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
-
-      - name: Transfer Compose and env for ${{ github.event.inputs.service }}
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          source: "docker-compose.yml,.env"
-          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
-          timeout: "30s"
-          command_timeout: "10m"
-
-      - name: Deploy ${{ github.event.inputs.service }}
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          script: |
-            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
-            docker compose stop ${{ github.event.inputs.service }} 2>/dev/null || true
-            docker compose rm -f ${{ github.event.inputs.service }} 2>/dev/null || true
-            docker image rm "onlineordertaking-${{ github.event.inputs.service }}" 2>/dev/null || true
-            gunzip -c ${{ github.event.inputs.service }}.tar.gz | docker load
-            docker compose up -d ${{ github.event.inputs.service }}
-            rm -f ${{ github.event.inputs.service }}.tar.gz
+          service: ${{ github.event.inputs.service }}
+          environment: ${{ env.ENVIRONMENT }}
+  

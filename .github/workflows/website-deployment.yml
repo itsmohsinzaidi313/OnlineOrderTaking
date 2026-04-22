@@ -1,0 +1,80 @@
+name: Website Staging Deployment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+jobs:
+  website:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    if: github.event.inputs.service == 'all' || github.event.inputs.service == 'website'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Checking if website directory exists on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            if [ -d "OnlineOrderTaking/nextjs/web-ordering" ]; then
+              echo Website directory exists on VPS
+            else
+              echo Website directory does not exist on VPS && exit 1
+            fi
+
+      - name: Transfer Compose and env for website
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          source: "nextjs/Dockerfile"
+          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/nextjs/"
+          timeout: "30s"
+          command_timeout: "10m"
+
+      - name: Deploy website
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/nextjs/web-ordering
+            git pull main && cd ../..
+            # Build and restart website
+            docker compose -f website-compose.yml stop website 2>/dev/null || true
+            docker rm website 2>/dev/null || true
+            docker compose -f website-compose.yml build website --no-cache
+            docker compose -f website-compose.yml up -d website
+
+      - name: Deploy website
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
+            # Update or clone website repo
+            if [ -d "nextjs/web-ordering/.git" ]; then
+              cd nextjs/web-ordering && git pull && cd ../..
+            else
+              mkdir -p nextjs && cd nextjs && git clone https://github.com/Samad-Developer/web-ordering.git web-ordering && cd ..
+            fi
+            # Build and restart website
+            docker compose -f website-compose.yml stop website 2>/dev/null || true
+            docker compose -f website-compose.yml rm -f website 2>/dev/null || true
+            docker compose -f website-compose.yml build website --no-cache
+            docker compose -f website-compose.yml up -d website

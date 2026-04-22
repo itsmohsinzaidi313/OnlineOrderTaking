@@ -2,10 +2,14 @@ name: Actions
 
 on:
   workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
   
 jobs:
   transfer-base-files-to-production-vps:
-    environment: production
+    environment: ${{ inputs.environment }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
