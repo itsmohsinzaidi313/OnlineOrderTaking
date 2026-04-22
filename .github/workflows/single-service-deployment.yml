@@ -45,10 +45,10 @@ jobs:
         uses: ./.github/workflows/transfer-image.yml
         with:
           environment: ${{ inputs.environment }}
-          service: ${{ matrix.service }}
+          service: ${{ inputs.service }}
 
-      - name: Deploy ${{ matrix.service }}
+      - name: Deploy ${{ inputs.service }}
         uses: ./.github/workflows/deploy-image.yml
         with:
           environment: ${{ inputs.environment }}
-          service: ${{ matrix.service }}
+          service: ${{ inputs.service }}
