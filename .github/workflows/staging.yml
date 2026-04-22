@@ -152,12 +152,36 @@ jobs:
             docker compose up -d ${{ matrix.service }}
             rm -f ${{ matrix.service }}.tar.gz
 
+
+  website-exists:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      dir-exists: ${{ steps.check.outputs.exists }}
+    steps:
+      - uses: actions/checkout@v4
+  
+      - name: Check if website directory exists on VPS
+        id: check
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            if [-d "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/nextjs/web-ordering" ]; then
+              echo "exists=true" >> $GITHUB_OUTPUT
+            else
+              echo "exists=false" >> $GITHUB_OUTPUT
+            fi
+          echo "Checked website directory existence on VPS: ${{ steps.check.outputs.exists }}"
+
   # Website service (special handling - builds on VPS)
   website:
     runs-on: ubuntu-latest
-    environment: development
-    needs: infrastructure
-    if: github.event.inputs.service == 'all' || github.event.inputs.service == 'website' || github.event_name == 'push' || (github.event.inputs.service != 'all' && github.event.inputs.service == 'website')
+    environment: production
+    if: needs.website-exists.outputs.dir-exists == 'true' && (github.event.inputs.service == 'all' || github.event.inputs.service == 'website' || github.event_name == 'push')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -173,6 +197,22 @@ jobs:
           target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/nextjs/"
           timeout: "30s"
           command_timeout: "10m"
+
+      - name: Deploy website
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/nextjs/web-ordering
+            git pull main && cd ../..
+            # Build and restart website
+            docker compose -f website-compose.yml stop website 2>/dev/null || true
+            docker rm website 2>/dev/null || true
+            docker compose -f website-compose.yml build website --no-cache
+            docker compose -f website-compose.yml up -d website
 
       - name: Deploy website
         uses: appleboy/ssh-action@v1.0.3
