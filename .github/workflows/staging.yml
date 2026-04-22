@@ -30,25 +30,21 @@ on:
           - infrastructure
 
 jobs:
+  call-actions-workflow:
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: Call Actions workflow
+        uses: ./.github/workflows/transfer-base-files-to-dev-vps.yml
+
   # Infrastructure - runs once
   infrastructure:
     runs-on: ubuntu-latest
     environment: development
-    if: github.event.inputs.service == 'all' || github.event.inputs.service == 'infrastructure' || github.event_name == 'push'
+    if: github.event.inputs.service == 'infrastructure'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Transfer .env file
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          source: "docker-compose.yml,.env"
-          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
-          # If .env is missing, the step will fail. Ensure .env exists in the repo root.
 
       - name: Deploy infrastructure services
         uses: appleboy/ssh-action@v1.0.3
@@ -69,8 +65,7 @@ jobs:
   deploy-services:
     runs-on: ubuntu-latest
     environment: development
-    needs: infrastructure
-    if: github.event.inputs.service == 'all' || github.event_name == 'push' || (github.event.inputs.service != 'all' && github.event.inputs.service != 'website' && github.event.inputs.service != '' && github.event.inputs.service != 'infrastructure')
+    if: github.event.inputs.service == 'all' || github.event_name == 'push' || contains(github.event.inputs.service, 'service')
     strategy:
       max-parallel: 2
       matrix:
@@ -157,7 +152,7 @@ jobs:
   website:
     runs-on: ubuntu-latest
     environment: development
-    if: github.event.inputs.service == 'all' || github.event.inputs.service == 'website' || github.event_name == 'push'
+    if: github.event.inputs.service == 'all' || github.event.inputs.service == 'website'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -220,10 +215,10 @@ jobs:
               mkdir -p nextjs && cd nextjs && git clone https://github.com/Samad-Developer/web-ordering.git web-ordering && cd ..
             fi
             # Build and restart website
-            docker compose stop website 2>/dev/null || true
-            docker compose rm -f website 2>/dev/null || true
-            docker compose build website --no-cache
-            docker compose up -d website
+            docker compose -f website-compose.yml stop website 2>/dev/null || true
+            docker compose -f website-compose.yml rm -f website 2>/dev/null || true
+            docker compose -f website-compose.yml build website --no-cache
+            docker compose -f website-compose.yml up -d website
 
   # Single-service manual deployment (when specific service selected)
   single-service:

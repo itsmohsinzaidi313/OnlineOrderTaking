@@ -1,0 +1,22 @@
+name: Actions
+
+on:
+  workflow_call:
+  
+jobs:
+  transfer-base-files-to-staging-vps:
+    environment: development
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Transfer base files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          source: "docker-compose.yml,website-compose.yml,.env"
+          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
