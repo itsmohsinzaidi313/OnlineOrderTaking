@@ -155,7 +155,7 @@ jobs:
 
   website-exists:
     runs-on: ubuntu-latest
-    environment: production
+    environment: development
     outputs:
       dir-exists: ${{ steps.check.outputs.exists }}
     steps:
@@ -180,7 +180,7 @@ jobs:
   # Website service (special handling - builds on VPS)
   website:
     runs-on: ubuntu-latest
-    environment: production
+    environment: development
     if: needs.website-exists.outputs.dir-exists == 'true' && (github.event.inputs.service == 'all' || github.event.inputs.service == 'website' || github.event_name == 'push')
     steps:
       - name: Checkout code
