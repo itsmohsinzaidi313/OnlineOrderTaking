@@ -54,6 +54,7 @@ jobs:
 
   deploy-website:
     if: github.event.inputs.service == 'website'
+    needs: transfer-base-files
     uses: ./.github/workflows/website-deployment.yml
     with:
       environment: development
