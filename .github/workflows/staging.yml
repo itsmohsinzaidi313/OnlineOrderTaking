@@ -1,8 +1,8 @@
-name: Parallel Deployment to Staging
+name: Staging Deployment
 
 on:
   pull_request:
-    types: [closed]
+    types: [ closed ]
     branches:
       - staging
   workflow_dispatch:
@@ -51,7 +51,7 @@ jobs:
     with:
       environment: development
     secrets: inherit
-  
+
   deploy-website:
     if: github.event.inputs.service == 'website'
     uses: ./.github/workflows/website-deployment.yml
@@ -67,4 +67,3 @@ jobs:
       service: ${{ github.event.inputs.service }}
       environment: development
     secrets: inherit
-  

@@ -1,4 +1,4 @@
-name: Website Staging Deployment
+name: Website Deployment
 
 on:
   workflow_call:

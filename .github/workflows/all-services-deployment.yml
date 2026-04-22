@@ -1,4 +1,4 @@
-name: Parallel service deployment
+name: All Services Deployment
 
 on:
   workflow_call:
@@ -11,11 +11,9 @@ on:
 jobs:
   build-services:
     name: Build services in parallel for ${{ inputs.environment }}
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
     if: github.event.inputs.service == 'all' || github.event_name == 'push'
     strategy:
-      max-parallel: 2
+      max-parallel: 4
       matrix:
         service:
           - exportservice
@@ -30,45 +28,18 @@ jobs:
           - importservice
           - createorderservice
           - gatewayservice
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Build ${{ matrix.service }}
-        run: |
-          docker compose build ${{ matrix.service }}
-          # Resolve actual image name produced by docker compose build.
-          IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^((onlineordertaking-)?${{ matrix.service }}):" | head -1)
-          if [ -z "$IMAGE_NAME" ]; then
-            for candidate in "onlineordertaking-${{ matrix.service }}" "${{ matrix.service }}"; do
-              if docker image inspect "$candidate" >/dev/null 2>&1; then
-                IMAGE_NAME="$candidate"
-                break
-              fi
-            done
-          fi
-          if [ -z "$IMAGE_NAME" ]; then
-            echo "No image found for ${{ matrix.service }} after build."
-            docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "${{ matrix.service }}|onlineordertaking-${{ matrix.service }}" || true
-            exit 1
-          fi
-          echo "Saving image: $IMAGE_NAME"
-          docker save "$IMAGE_NAME" | gzip > "${{ matrix.service }}.tar.gz"
-          du -h "${{ matrix.service }}.tar.gz"
-
-      - name: Upload ${{ matrix.service }} image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: image-${{ matrix.service }}
-          path: ${{ matrix.service }}.tar.gz
-          retention-days: 1
+    uses: ./.github/workflows/build-image.yml
+    with:
+      environment: ${{ inputs.environment }}
+      service: ${{ matrix.service }}
+    secrets: inherit
 
   transfer-services:
     name: Transfer services in parallel to ${{ inputs.environment }}
     needs: build-services
     if: github.event.inputs.service == 'all' || github.event_name == 'push'
     strategy:
-      max-parallel: 2
+      max-parallel: 1
       matrix:
         service:
           - exportservice
@@ -95,7 +66,7 @@ jobs:
     needs: transfer-services
     if: github.event.inputs.service == 'all' || github.event_name == 'push'
     strategy:
-      max-parallel: 2
+      max-parallel: 4
       matrix:
         service:
           - exportservice
