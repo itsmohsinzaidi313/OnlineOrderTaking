@@ -29,14 +29,11 @@ on:
           - website
           - infrastructure
 
-env:
-  ENVIRONMENT: production
-
 jobs:
   transfer-base-files:
     uses: ./.github/workflows/transfer-base-files.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: production
     secrets: inherit
 
   infrastructure:
@@ -44,7 +41,7 @@ jobs:
     if: github.event.inputs.service == 'infrastructure'
     uses: ./.github/workflows/infrastructure-deployment.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: production
     secrets: inherit
 
   deploy-all-services:
@@ -52,14 +49,14 @@ jobs:
     if: github.event.inputs.service == 'all'
     uses: ./.github/workflows/all-services-deployment.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: production
     secrets: inherit
   
   deploy-website:
     if: github.event.inputs.service == 'website'
     uses: ./.github/workflows/website-deployment.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: production
     secrets: inherit
 
   single-service-deployment:
@@ -68,6 +65,6 @@ jobs:
     uses: ./.github/workflows/single-service-deployment.yml
     with:
       service: ${{ github.event.inputs.service }}
-      environment: ${{ env.ENVIRONMENT }}
+      environment: production
     secrets: inherit
   
