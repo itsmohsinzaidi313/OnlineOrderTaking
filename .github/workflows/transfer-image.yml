@@ -23,8 +23,9 @@ jobs:
           username: ${{ secrets.ARTIFACTS_USERNAME }}
           key: ${{ secrets.ARTIFACTS_SSH_KEY }}
           port: ${{ secrets.ARTIFACTS_SSH_PORT }}
-          source: "/home/${{ secrets.ARTIFACTS_USERNAME }}/GitHubArtifacts/${{ inputs.service }}.tar.gz"
-          target: "${{ inputs.service }}.tar.gz"
+          source: "/home/${{ secrets.ARTIFACTS_USERNAME }}/GitHubArtifacts/${{
+            inputs.service }}.tar.gz"
+          target: "."
           timeout: "30s"
           command_timeout: "10m"
 
