@@ -19,11 +19,11 @@ jobs:
       - name: Transfer ${{ inputs.service }}
         uses: appleboy/scp-action@v1
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          source: "/home/${{ secrets.VPS_USERNAME }}/GitHubArtifacts/${{ inputs.service }}.tar.gz"
+          host: ${{ secrets.ARTIFACTS_HOST }}
+          username: ${{ secrets.ARTIFACTS_USERNAME }}
+          key: ${{ secrets.ARTIFACTS_SSH_KEY }}
+          port: ${{ secrets.ARTIFACTS_SSH_PORT }}
+          source: "/home/${{ secrets.ARTIFACTS_USERNAME }}/GitHubArtifacts/${{ inputs.service }}.tar.gz"
           target: "${{ inputs.service }}.tar.gz"
           timeout: "30s"
           command_timeout: "10m"
