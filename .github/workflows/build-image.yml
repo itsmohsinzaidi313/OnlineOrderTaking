@@ -15,6 +15,7 @@ on:
 jobs:
     build-image:
         runs-on: ubuntu-latest
+        environment: ${{ inputs.environment }}
         if: contains(inputs.service, 'service')
         steps:
             - name: Checkout code
