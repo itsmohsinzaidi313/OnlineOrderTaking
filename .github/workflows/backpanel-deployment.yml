@@ -1,4 +1,4 @@
-name: Website Deployment
+name: Backpanel Deployment
 
 on:
   workflow_call:
@@ -38,12 +38,12 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT }}
-          source: "nextjs/Dockerfile"
-          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/nextjs/"
+          source: "Backpanel/Dockerfile"
+          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/Backpanel/"
           timeout: "30s"
           command_timeout: "10m"
 
-      - name: Deploy website
+      - name: Deploy backpanel
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -51,10 +51,10 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT }}
           script: |
-            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/nextjs/web-ordering
+            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/Backpanel
             git pull && cd ..
-            # Build and restart website
-            docker compose stop website 2>/dev/null || true
-            docker rm website 2>/dev/null || true
-            docker compose build website --no-cache
-            docker compose up -d website
+            # Build and restart backpanel
+            docker compose stop backpanel 2>/dev/null || true
+            docker rm backpanel 2>/dev/null || true
+            docker compose build backpanel --no-cache
+            docker compose up -d backpanel
