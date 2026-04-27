@@ -117,26 +117,20 @@ namespace ImportService
             return company.WebsiteUrl.Trim();
         }
 
-        private async Task<bool> AddRestaurantEntry(DomainInfo domainInfo, CancellationToken cancellationToken)
+        private async Task AddRestaurantEntry(DomainInfo domainInfo, CancellationToken cancellationToken)
         {
             var dbName = domainInfo.Domain == "eatx" ? domainInfo.Subdomain : domainInfo.Domain;
 
             using var pgDb = pgDbFactory.CreateDbContext();
             await pgDb.Database.EnsureCreatedAsync(cancellationToken);
-            var restaurant = await pgDb.Restaurants.FirstOrDefaultAsync(x => x.DomainName == domainInfo.FullyQualifiedDomainName, cancellationToken);
-            if (restaurant == null)
+            var restaurant = new Entities.Restaurants
             {
-                restaurant = new Entities.Restaurants
-                {
-                    DomainName = dbName,
-                    ConnectionString = $"Host=haproxy;Port=5433;Database={dbName};Username=postgres;Password=postgrespass",
-                    Name = domainInfo.FullyQualifiedDomainName
-                };
-                await pgDb.Restaurants.AddAsync(restaurant, cancellationToken);
-                await pgDb.SaveChangesAsync(cancellationToken);
-                return true;
-            }
-            return false;
+                DomainName = dbName,
+                ConnectionString = $"Host=haproxy;Port=5433;Database={dbName};Username=postgres;Password=postgrespass",
+                Name = domainInfo.FullyQualifiedDomainName
+            };
+            await pgDb.Restaurants.AddAsync(restaurant, cancellationToken);
+            await pgDb.SaveChangesAsync(cancellationToken);
         }
 
         private static PostgresDbContext GetPgDbContext(string connectionString)
