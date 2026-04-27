@@ -4,6 +4,8 @@ using ImportService.Interfaces;
 using ImportService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Nager.PublicSuffix;
+using Nager.PublicSuffix.RuleProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,7 +64,8 @@ builder.Services.AddHealthChecks()
     .AddCheck<HealthCheck>("health_check");
 
 var app = builder.Build();
-
+SimpleHttpRuleProvider ruleProvider = new();
+await ruleProvider.BuildAsync();
 // Optional: minimal endpoint (useful for health checks)
 app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogger<Program> logger, [FromServices] Implementation impl, [FromServices] IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory, HttpContext httpContext, [FromQuery] string selection = "") =>
 {
@@ -87,11 +90,15 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogg
         logger.LogWarning("Company website URL not found for CompanyId: {CompanyId}", companyId);
         return Results.NotFound("Company website URL not found");
     }
-    var domain = url
-                .Replace("http://", "")
-                .Replace("https://", "")
-                .Replace("www.", "")
-                .Split('/')[0];
+
+    var domainParser = new DomainParser(ruleProvider);
+
+    var domainInfo = domainParser.Parse(url);
+    var domain = domainInfo?.Domain ?? throw new InvalidOperationException("Failed to parse domain from URL.");
+    if(domain == "eatx")
+    {
+        domain = domainInfo.Subdomain;
+    }
     var response = await impl.Import(companyId, domain, selection, httpContext.RequestAborted);
     try
     {
