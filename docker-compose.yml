@@ -198,6 +198,10 @@ services:
       context: .
       dockerfile: ./CreateOrderService/Dockerfile
     environment:
+      - KESTREL__ENDPOINTS__GRPC__URL=http://createorderservice:${GRPC_PORT}
+      - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
+      - KESTREL__ENDPOINTS__HTTP__URL=http://createorderservice:${HTTP_PORT}
+      - KESTREL__ENDPOINTS__HTTP__PROTOCOLS=Http1
       - CONNECTIONSTRINGS__POSTGRES=${RWSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
