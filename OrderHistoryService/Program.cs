@@ -38,6 +38,10 @@ builder.Services
     .AddHostedService<RequestQueueListener>();
 
 builder.Services.AddGrpc();
+var grpcUrl = builder.Configuration.GetValue<string>("Kestrel:Endpoints:Grpc:Url") ?? "N/A";
+Console.WriteLine($"gRPC URL: {grpcUrl}");
+var httpUrl = builder.Configuration.GetValue<string>("Kestrel:Endpoints:Http:Url") ?? "N/A";
+Console.WriteLine($"HTTP URL: {httpUrl}");
 builder.Services.AddHealthChecks()
     .AddCheck<PostgresHealth>("health_check");
 
