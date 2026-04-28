@@ -4,6 +4,8 @@ using ImportService.Interfaces;
 using ImportService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Nager.PublicSuffix;
+using Nager.PublicSuffix.RuleProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,7 +64,8 @@ builder.Services.AddHealthChecks()
     .AddCheck<HealthCheck>("health_check");
 
 var app = builder.Build();
-
+SimpleHttpRuleProvider ruleProvider = new();
+await ruleProvider.BuildAsync();
 // Optional: minimal endpoint (useful for health checks)
 app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogger<Program> logger, [FromServices] Implementation impl, [FromServices] IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory, HttpContext httpContext, [FromQuery] string selection = "") =>
 {
@@ -87,12 +90,16 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogg
         logger.LogWarning("Company website URL not found for CompanyId: {CompanyId}", companyId);
         return Results.NotFound("Company website URL not found");
     }
-    var domain = url
-                .Replace("http://", "")
-                .Replace("https://", "")
-                .Replace("www.", "")
-                .Split('/')[0];
-    var response = await impl.Import(companyId, domain, selection, httpContext.RequestAborted);
+
+    var domainParser = new DomainParser(ruleProvider);
+
+    var domainInfo = domainParser.Parse(url);
+    var name = domainInfo?.Domain ?? throw new InvalidOperationException("Failed to parse domain from URL.");
+    if(name == "eatx")
+    {
+        name = domainInfo.Subdomain;
+    }
+    var response = await impl.Import(companyId, selection, httpContext.RequestAborted);
     try
     {
         var httpClient = new HttpClient
@@ -101,7 +108,7 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogg
             BaseAddress = new Uri($"http://gatewayservice:8080")
         };
 
-        var httpResponse = await httpClient.GetAsync($"clear?domain={domain}");
+        var httpResponse = await httpClient.GetAsync($"clear?domain={name}");
         if (httpResponse.IsSuccessStatusCode == false)
         {
             return Results.Ok($"Import completed but failed to clear cache\nStatusCode: {httpResponse.StatusCode}");

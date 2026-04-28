@@ -1,0 +1,37 @@
+name: Single Service Deployment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Deployment environment (production or development)"
+        required: true
+        type: string
+      service:
+        description: "Service to deploy"
+        required: true
+        type: string
+
+jobs:
+  build-service:
+    uses: ./.github/workflows/build-image.yml
+    with:
+      environment: ${{ inputs.environment }}
+      service: ${{ inputs.service }}
+    secrets: inherit
+
+  transfer-service:
+    needs: build-service
+    uses: ./.github/workflows/transfer-image.yml
+    with:
+      environment: ${{ inputs.environment }}
+      service: ${{ inputs.service }}
+    secrets: inherit
+
+  deploy-service:
+    needs: transfer-service
+    uses: ./.github/workflows/deploy-image.yml
+    with:
+      environment: ${{ inputs.environment }}
+      service: ${{ inputs.service }}
+    secrets: inherit

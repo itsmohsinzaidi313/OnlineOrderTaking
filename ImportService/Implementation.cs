@@ -1,10 +1,13 @@
 ﻿using ImportService.DatabaseContexts;
 using ImportService.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Nager.PublicSuffix;
+using Nager.PublicSuffix.RuleProviders;
 
 namespace ImportService
 {
     public class Implementation(
+        IDbContextFactory<SqlServerDbContext> sqlDbFactory,
         IDbContextFactory<RestaurantsDbContext> pgDbFactory,
         ILogger<Implementation> logger,
         ISetupCompanyMigrationService setupCompany,
@@ -24,15 +27,28 @@ namespace ImportService
         IRidersMigrationService riders,
         IOrderModeCompanyMappingMigrationService omcm)
     {
-        public async Task<IResult?> Import(int companyId, string domainName, string selection, CancellationToken cancellationToken = default)
+        public async Task<IResult?> Import(int companyId, string selection, CancellationToken cancellationToken = default)
         {
             try
             {
-                var isNewRestaurant = await RestaurantCreated(domainName, cancellationToken);
-                var dbname = domainName.Split(".")[0];
-                using var postgresDbContext = GetPgDbContext($"Host=haproxy;Port=5433;Database={dbname};Username=postgres;Password=postgrespass");
+                var ruleProvider = new SimpleHttpRuleProvider();
+                await ruleProvider.BuildAsync(cancellationToken: cancellationToken);
+                var webSiteUrl = await GetCompanyWebsiteUrl(companyId, cancellationToken);
+                var domainInfo = ExtractDomainInfo(webSiteUrl, ruleProvider);
+                var dbName = domainInfo.Domain == "eatx" ? domainInfo.Subdomain : domainInfo.Domain;
 
-                await postgresDbContext.Database.EnsureCreatedAsync(cancellationToken);
+                using var postgresDbContext = GetPgDbContext($"Host=haproxy;Port=5433;Database={dbName};Username=postgres;Password=postgrespass");
+
+                var isNewRestaurant = await postgresDbContext.Database.EnsureCreatedAsync(cancellationToken);
+                if (isNewRestaurant)
+                {
+                    await AddRestaurantEntry(domainInfo, cancellationToken);
+                    logger?.LogInformation("Database {DbName} created successfully.", dbName);
+                }
+                else
+                {
+                    logger?.LogInformation("Database {DbName} already exists.", dbName);
+                }
 
                 Dictionary<string, IMigrationService> migrationServices = new()
                 {
@@ -69,35 +85,52 @@ namespace ImportService
 
                 await postgresDbContext.SaveChangesAsync(cancellationToken);
 
-                logger.LogInformation("Data import completed successfully for database: {DbName}", dbname);
-                return Results.Ok($"Import completed successfully for {dbname}");
+                logger?.LogInformation("Data import completed successfully for database: {DbName}", dbName);
+                return Results.Ok($"Import completed successfully for {dbName}");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error occurred while importing data");
+                logger?.LogError(ex, "Error occurred while importing data");
                 return Results.Problem(ex.InnerException?.Message ?? ex.Message, statusCode: 500);
             }
         }
 
-        private async Task<bool> RestaurantCreated(string domain, CancellationToken cancellationToken)
+        static private DomainInfo ExtractDomainInfo(string webSiteUrl, SimpleHttpRuleProvider ruleProvider)
         {
+            var domainParser = new DomainParser(ruleProvider);
+            var domainInfo = domainParser.Parse(webSiteUrl);
+            return domainInfo ?? throw new InvalidOperationException("Failed to parse domain from URL.");
+        }
+
+        private async Task<string> GetCompanyWebsiteUrl(int companyId, CancellationToken cancellationToken)
+        {
+            var sqlServerDbContext = sqlDbFactory.CreateDbContext();
+            var company = await sqlServerDbContext.SetupCompanies.FirstOrDefaultAsync(x => x.CompanyId == companyId, cancellationToken);
+            if (company == null)
+            {
+                throw new InvalidOperationException($"Company with ID {companyId} not found.");
+            }
+            if (string.IsNullOrEmpty(company.WebsiteUrl))
+            {
+                throw new InvalidOperationException($"Company with ID {companyId} does not have a website URL.");
+            }
+            return company.WebsiteUrl.Trim();
+        }
+
+        private async Task AddRestaurantEntry(DomainInfo domainInfo, CancellationToken cancellationToken)
+        {
+            var dbName = domainInfo.Domain == "eatx" ? domainInfo.Subdomain : domainInfo.Domain;
+
             using var pgDb = pgDbFactory.CreateDbContext();
             await pgDb.Database.EnsureCreatedAsync(cancellationToken);
-            var restaurant = await pgDb.Restaurants.FirstOrDefaultAsync(x => x.DomainName == domain, cancellationToken);
-            if (restaurant == null)
+            var restaurant = new Entities.Restaurants
             {
-                var dbname = domain.Split(".")[0];
-                restaurant = new Entities.Restaurants
-                {
-                    DomainName = domain,
-                    ConnectionString = $"Host=haproxy;Port=5433;Database={dbname};Username=postgres;Password=postgrespass",
-                    Name = dbname
-                };
-                await pgDb.Restaurants.AddAsync(restaurant, cancellationToken);
-                await pgDb.SaveChangesAsync(cancellationToken);
-                return true;
-            }
-            return false;
+                DomainName = domainInfo.FullyQualifiedDomainName,
+                ConnectionString = $"Host=haproxy;Port=5433;Database={dbName};Username=postgres;Password=postgrespass",
+                Name = dbName
+            };
+            await pgDb.Restaurants.AddAsync(restaurant, cancellationToken);
+            await pgDb.SaveChangesAsync(cancellationToken);
         }
 
         private static PostgresDbContext GetPgDbContext(string connectionString)

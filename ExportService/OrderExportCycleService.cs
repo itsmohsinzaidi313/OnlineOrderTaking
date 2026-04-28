@@ -16,13 +16,17 @@ namespace ExportService
                     var restaurants = await restaurantsContext.Restaurants.ToListAsync(stoppingToken);
                     foreach (var restaurant in restaurants)
                     {
+                        logger.LogInformation("⏳ Checking for unexported orders for restaurant {DomainName}.", restaurant.DomainName);
                         var connectionString = restaurant.ConnectionString;
                         var pgContext = exportService.GetDbContext(connectionString);
                         var orderNumbers = await pgContext.OrderMasters
                                                 .Where(x => x.Exported == false)
                                                 .Select(o => o.OrderNumber)
                                                 .ToListAsync(stoppingToken);
-
+                        if (orderNumbers.Count >= 1)
+                        {
+                            logger.LogInformation("✅ Found {Count} unexported orders for restaurant {DomainName}.", orderNumbers.Count, restaurant.DomainName);
+                        }
                         foreach (var orderNumber in orderNumbers)
                         {
                             try
@@ -42,7 +46,7 @@ namespace ExportService
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "An error occurred while executing the order export cycle.");
+                    logger.LogError(ex, "❌ An error occurred while executing the order export cycle.");
                 }
                 await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }

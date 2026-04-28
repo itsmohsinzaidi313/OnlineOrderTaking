@@ -1,0 +1,60 @@
+name: Backpanel Deployment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+jobs:
+  website:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    if: github.event.inputs.service == 'all' || github.event.inputs.service ==
+      'website'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Checking if website directory exists on VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            if [ -d "OnlineOrderTaking/nextjs/web-ordering" ]; then
+              echo Website directory exists on VPS
+            else
+              echo Website directory does not exist on VPS && exit 1
+            fi
+
+      - name: Transfer Docker for website
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          source: "Backpanel/Dockerfile"
+          target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/Backpanel/"
+          timeout: "30s"
+          command_timeout: "10m"
+
+      - name: Deploy backpanel
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/Backpanel
+            git pull && cd ..
+            # Build and restart backpanel
+            docker compose stop backpanel 2>/dev/null || true
+            docker rm backpanel 2>/dev/null || true
+            docker compose build backpanel --no-cache
+            docker compose up -d backpanel
