@@ -14,8 +14,9 @@ using PointofSaleModels.HealthChecks;
 using static PointofSaleModels.Protos.CreateOrderService;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Configuration.AddEnvironmentVariables();
-builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
+builder.Configuration
+    .AddEnvironmentVariables()
+    .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
 
 // Bind settings
 builder.Services
@@ -95,28 +96,32 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddGrpcClient<PushNotificationServiceClient>(o =>
+builder.Services.AddGrpcClient<PushNotificationServiceClient>(options =>
 {
     var address = builder.Configuration["GRPC:PUSHNOTIFICAIONHOST"] ?? throw new InvalidOperationException("PushNotificationService gRPC host is not configured.");
-    o.Address = new Uri(address);
+    options.Address = new Uri(address);
+    Console.WriteLine($"Configured PushNotificationService gRPC client with address: {options.Address}");
 });
 
 builder.Services.AddGrpcClient<OrderHistoryServiceClient>(x =>
 {
     var address = builder.Configuration["GRPC:ORDERHISTORYHOST"] ?? throw new InvalidOperationException("OrderHistoryService gRPC host is not configured.");
     x.Address = new Uri(address);
+    Console.WriteLine($"Configured OrderHistoryService gRPC client with address: {x.Address}");
 });
 
 builder.Services.AddGrpcClient<GeneralSeoDataServiceClient>(x =>
 {
     var address = builder.Configuration["GRPC:GENERALSEODATAHOST"] ?? throw new InvalidOperationException("GeneralSeoDataService gRPC host is not configured.");
     x.Address = new Uri(address);
+    Console.WriteLine($"Configured GeneralSeoDataService gRPC client with address: {x.Address}");
 });
 
 builder.Services.AddGrpcClient<CreateOrderServiceClient>(x =>
 {
     var address = builder.Configuration["GRPC:CREATEORDERHOST"] ?? throw new InvalidOperationException("CreateOrderService gRPC host is not configured.");
     x.Address = new Uri(address);
+    Console.WriteLine($"Configured CreateOrderService gRPC client with address: {x.Address}");
 });
 
 builder.Services.AddHealthChecks()
