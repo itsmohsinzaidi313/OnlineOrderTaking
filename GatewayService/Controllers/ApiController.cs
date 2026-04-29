@@ -32,12 +32,14 @@ namespace GatewayService.Controllers
         }
 
         [HttpPost("PlaceOrder")]
-        public async Task<IActionResult> PlaceOrder([FromBody] App.CustomerOrder request)
+        public async Task<IActionResult> PlaceOrder()
         {
-            if (request == null || request.Items.Count < 1)
-                return BadRequest(new { error = "Invalid order data." });
+            HttpContext.Request.EnableBuffering();
+            HttpContext.Request.Body.Position = 0;
 
-            var orderJson = HttpContext.Request.Body.CanSeek ? new StreamReader(HttpContext.Request.Body).ReadToEnd() : System.Text.Json.JsonSerializer.Serialize(request);
+            using var reader = new StreamReader(HttpContext.Request.Body);
+            var orderJson = await reader.ReadToEndAsync();
+
             var orderPayload = new PlaceOrderRequest
             {
                 OrderJson = orderJson
