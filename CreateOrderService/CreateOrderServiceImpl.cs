@@ -13,18 +13,26 @@ namespace CreateOrderService
         private readonly JsonSerializerOptions options = new();
         public override async Task<PlaceOrderResponse> PlaceOrder(PlaceOrderRequest request, ServerCallContext context)
         {
-            options.PropertyNameCaseInsensitive = true;
-            var order = JsonSerializer.Deserialize<CustomerOrder>(request.OrderJson, options);
-            var connectionString = await GetConnectionString(order.Domain);
-            connectionString = connectionString.Replace("5434", "5433");
-            await impl.SaveOrderAsync(connectionString, order!);
-            var orderToken = order?.OrderToken;
-            if (orderToken == null)
+            try
             {
-                return new PlaceOrderResponse { Success = false, Message = "Failed to place order" };
+                options.PropertyNameCaseInsensitive = true;
+                var order = JsonSerializer.Deserialize<CustomerOrder>(request.OrderJson, options);
+                var connectionString = await GetConnectionString(order.Domain);
+                connectionString = connectionString.Replace("5434", "5433");
+                await impl.SaveOrderAsync(connectionString, order!);
+                var orderToken = order?.OrderToken;
+                if (orderToken == null)
+                {
+                    return new PlaceOrderResponse { Success = false, Message = "Failed to place order" };
+                }
+                var response = new PlaceOrderResponse { Success = true, OrderNumber = orderToken, Message = "Order placed successfully" };
+                return response;
             }
-            var response = new PlaceOrderResponse { Success = true, OrderNumber = orderToken, Message = "Order placed successfully" };
-            return response;
+            catch (Exception ex)
+            {
+                var message = ex.InnerException?.Message ?? ex.Message;
+                return new PlaceOrderResponse { Success = false, Message = $"Error placing order: {message}" };
+            }
         }
 
         private async Task<string> GetConnectionString(string domainName)

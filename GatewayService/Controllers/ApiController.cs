@@ -1,4 +1,5 @@
 using GatewayService.Models;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -46,7 +47,16 @@ namespace GatewayService.Controllers
             };
             var response = await createOrderClient.PlaceOrderAsync(orderPayload, cancellationToken: HttpContext.RequestAborted);
             if (response.Success)
-                return Ok(response);
+            {
+                if(response.Success)
+                {
+                    return Ok(response);
+                }
+                else
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, response.Message);
+                }
+            }
             else
                 return BadRequest(response.Message);
         }
