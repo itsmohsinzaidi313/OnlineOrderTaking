@@ -9,6 +9,7 @@ using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using static PointofSaleModels.Protos.CreateOrderService;
 using static PointofSaleModels.Protos.GeneralSeoDataService;
 using static PointofSaleModels.Protos.OrderHistoryService;
@@ -35,22 +36,42 @@ namespace GatewayService.Controllers
         [HttpPost("PlaceOrder")]
         public async Task<IActionResult> PlaceOrder()
         {
-            HttpContext.Request.EnableBuffering();
-            HttpContext.Request.Body.Position = 0;
-
-            using var reader = new StreamReader(HttpContext.Request.Body);
-            var orderJson = await reader.ReadToEndAsync();
-
-            var orderPayload = new PlaceOrderRequest
-            {
-                OrderJson = orderJson
-            };
-            var response = await createOrderClient.PlaceOrderAsync(orderPayload, cancellationToken: HttpContext.RequestAborted);
+            var request = await GetPlaceOrderRequest();
+            var response = await createOrderClient.PlaceOrderAsync(request, cancellationToken: HttpContext.RequestAborted);
             if (response.Success)
             {
                 if(response.Success)
                 {
                     return Ok(response);
+                }
+                else
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, response.Message);
+                }
+            }
+            else
+                return BadRequest(response.Message);
+        }
+        private async Task<PlaceOrderRequest> GetPlaceOrderRequest()
+        {
+            HttpContext.Request.EnableBuffering();
+            HttpContext.Request.Body.Position = 0;
+            using var reader = new StreamReader(HttpContext.Request.Body);
+            var body = await reader.ReadToEndAsync();
+            return new PlaceOrderRequest { OrderJson = body };
+        }
+
+        [HttpPost("PlaceOrderLegacy")]
+        public async Task<IActionResult> PlaceOrderLegacy()
+        {
+            var request = await GetPlaceOrderRequest();
+            var response = await createOrderClient.PlaceOrderLegacyAsync(request, cancellationToken: HttpContext.RequestAborted);
+            var responseBody = JsonSerializer.Deserialize<object>(response.ResponseJson);
+            if (response.Success)
+            {
+                if (response.Success)
+                {
+                    return Ok(responseBody);
                 }
                 else
                 {

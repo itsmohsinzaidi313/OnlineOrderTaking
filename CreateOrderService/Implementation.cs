@@ -346,4 +346,83 @@ public class Implementation()
                         ),
         });
     }
+
+    internal async Task<object> GetLegacyResponse(string orderNumber, string connectionString)
+    {
+        var dbContext = GetDbContext(connectionString);
+        var om = await dbContext.OrderMasters
+            .FirstOrDefaultAsync(x => x.OrderToken == orderNumber);
+
+        var orderDetails = await dbContext.OrderDetails
+            .Where(x => x.OrderMasterId == om!.OrderMasterId)
+            .ToListAsync();
+        var branchName = await dbContext.BranchMasters.Where(x => x.BranchId == om.BranchId).Select(x => x.BranchName).FirstOrDefaultAsync();
+
+        var categories = await dbContext.ProductCategories.ToDictionaryAsync(x => x.CategoryId, x => x.CategoryName);
+        var dbProducts = await dbContext.Products.ToListAsync();
+        var products = dbProducts.ToDictionary(x => x.ProductId, x => x.ProductName);
+        var productImages = dbProducts.ToDictionary(x => x.ProductId, x => x.ProductImage);
+        var productCategoryIds = dbProducts.ToDictionary(x => x.ProductId, x => x.ProductCategoryId);
+        var productDetails = await dbContext.ProductDetails.ToDictionaryAsync(x => x.ProductDetailId, x => x.ProductId);
+        var orderMaster = new
+        {
+            HasError = 0,
+            Error_Message = "",
+            Message = "Your Order Placed Successfully.",
+            Id = om.OrderMasterId,
+            OrderNumber = om.OrderNumber,
+            OrderDate = om.OrderDate,
+            SrbInvoiceId = om.SrbInvoiceId,
+            FbrInvoiceId = om.FbrInvoiceId,
+            IsThirdPartyPaymentIntegration = 0,
+            OrderStatusId = om.OrderStatusId,
+            CompanyId = om.CompanyId,
+            BranchId = om.BranchId,
+            BranchName = branchName,
+            AdditionalMsg = om.Remarks,
+            SubTotal = om.TotalAmountWithoutGst,
+            DeliveryCharges = om.DeliveryCharges,
+            Discount = om.DiscountId,
+            GstAmount = om.Gstamount,
+            GstPercent = om.Gstpercent,
+            NetBill = om.TotalAmountWithGst
+        };
+        List<object> masters = new List<object>() { orderMaster };
+        List<object> details = new List<object>();
+        foreach (var od in orderDetails)
+        {
+            var productId = productDetails[od.ProductDetailId];
+            var productName = products[productId];
+            var productImage = productImages[productId];
+            var categoryName = productCategoryIds[productId];
+            var y = new
+            {
+                OrderDetailId = od.OrderDetailId,
+                ProductDetailId = od.ProductDetailId,
+                DealItemId = od.DealItemId,
+                RandomId = od.RandomId,
+                Quantity = od.Quantity,
+                ProductName = productName,
+                CategoryName = categoryName,
+                AmountWithoutGST = od.PriceWithoutGst,
+                AmountWithGST = od.PriceWithGst,
+                ProductImage = productImage
+            };
+            details.Add(od);
+        }
+        var dataSet = new
+        {
+            Table = masters,
+            Table1 = details
+        };
+        string? data = null;
+        return new
+        {
+            Response = true,
+            ResponseCodes = "00",
+            ResponseMessage = "Success",
+            Data = data,
+            DataSet = dataSet
+        };
+    }
 }
