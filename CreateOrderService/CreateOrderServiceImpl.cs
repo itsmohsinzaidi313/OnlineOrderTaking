@@ -5,12 +5,26 @@ using PointofSaleModels.Protos;
 using static PointofSaleModels.Protos.CreateOrderService;
 using PointofSaleModels.Application;
 using System.Text.Json;
+using PointofSaleModels.PGDatabaseModels;
 
 namespace CreateOrderService
 {
-    public class CreateOrderServiceImpl(IDbContextFactory<Db.RestaurantsContext> contextFactory, Implementation impl) : CreateOrderServiceBase
+    public class CreateOrderServiceImpl : CreateOrderServiceBase
     {
-        private readonly JsonSerializerOptions options = new();
+        private readonly JsonSerializerOptions options;
+        private readonly IDbContextFactory<RestaurantsContext> contextFactory;
+        private readonly Implementation impl;
+
+        public CreateOrderServiceImpl(IDbContextFactory<Db.RestaurantsContext> contextFactory, Implementation impl)
+        {
+            this.contextFactory = contextFactory;
+            this.impl = impl;
+            options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+            };
+        }
+
         public override async Task<PlaceOrderResponse> PlaceOrder(PlaceOrderRequest request, ServerCallContext context)
         {
             var order = DeserializeJson(request.OrderJson);
@@ -36,7 +50,8 @@ namespace CreateOrderService
         public override async Task<PlaceOrderLegacyResponse> PlaceOrderLegacy(PlaceOrderRequest request, ServerCallContext context)
         {
             var placeOrderResponse = await PlaceOrder(request, context);
-            var connectionString = await GetConnectionString(request.DomainName);
+            var order = DeserializeJson(request.OrderJson);
+            var connectionString = await GetConnectionString(order.Domain);
             var legacyResponse = await impl.GetLegacyResponse(placeOrderResponse.OrderNumber, connectionString);
             return new PlaceOrderLegacyResponse
             {
@@ -48,7 +63,6 @@ namespace CreateOrderService
 
         private CustomerOrder DeserializeJson(string orderJson)
         {
-            options.PropertyNameCaseInsensitive = true;
             var order = JsonSerializer.Deserialize<CustomerOrder>(orderJson, options);
             return order!;
         }
