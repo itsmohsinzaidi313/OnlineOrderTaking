@@ -9,6 +9,7 @@ RUN npm install --force
 
 # Copy source and build
 COPY ygen_backpanel/ ./
+RUN npx browserslist@latest --update-db
 RUN npm run build
 
 # Stage 2: Serve with nginx
