@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: ./ExportService/Dockerfile
     environment:
-      - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTIONTESTING}
+      - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
       - RABBITMQ__PORT=${RABBITMQ_PORT}
@@ -183,7 +183,7 @@ services:
       context: .
       dockerfile: ./ImportService/Dockerfile
     environment:
-      - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTIONTESTING}
+      - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
       - CONNECTIONSTRINGS__POSTGRES=${RWSQLCONNECTION}
     networks:
       - patroni-net
