@@ -64,12 +64,14 @@ namespace OrderUpdateService
                             var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
                             return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
                         };
+                        var statuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
                         orderStatusLogs = (await dbContext.OrderStatusLogs
                                                         .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
                                                         .ToListAsync())
                                                         .Select(x => new
                                                         {
                                                             Id = x.OrderStatusId,
+                                                            Name = statuses[x.OrderStatusId],
                                                             CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDate, DateTimeKind.Utc)),
                                                         });
                         await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
