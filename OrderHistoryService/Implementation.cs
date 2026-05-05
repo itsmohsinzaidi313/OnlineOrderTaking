@@ -109,6 +109,7 @@ public class Implementation()
                     OrderStatusLogs = orderStatusLogs.Select(x => new
                     {
                         Id = x.OrderStatusId,
+                        Name = statuses[x.OrderStatusId],
                         CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDate, DateTimeKind.Utc)),
                     }).ToList(),
                     Rider = riders.Select(x => new Rider { Id = x.RiderId, Name = x.RiderName ?? string.Empty, Contact = x.Contact1 ?? string.Empty }).FirstOrDefault(x => x.Id == orderMaster.RiderId),
