@@ -16,16 +16,19 @@ namespace GatewayService.ServiceResponseListeners
             var server = redis.GetServer(redis.GetEndPoints().First());
             List<string> keys = [];
             var responseKey = payload?.ResponseKey ?? throw new Exception("ResponseKey not found");
-            foreach (var key in payload.BranchUserIds.SelectMany(id => server.Keys(pattern: $"branch:{id}:*:connection")))
+            foreach (var id in payload.BranchUserIds)
             {
-                var arr = key.ToString().Split(':');
-                var clientId = $"{arr[0]}:{arr[1]}:{arr[2]}";
-                if (string.IsNullOrEmpty(clientId))
+                foreach (var key in server.Keys(pattern: $"branch:{id}:*:connection"))
                 {
-                    continue;
+                    var arr = key.ToString().Split(':');
+                    var clientId = $"{arr[0]}:{arr[1]}:{arr[2]}";
+                    if (string.IsNullOrEmpty(clientId))
+                    {
+                        continue;
+                    }
+                    logger.LogInformation($"Sending response to backpanel client '{clientId}' '{responseKey}'");
+                    keys.Add(clientId);
                 }
-                logger.LogInformation($"Sending response to backpanel client '{clientId}' '{responseKey}'");
-                keys.Add(clientId);
             }
             await hub.Clients.Users(keys).SendAsync(responseKey, payload);
 
