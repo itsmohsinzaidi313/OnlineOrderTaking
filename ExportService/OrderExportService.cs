@@ -45,8 +45,8 @@ namespace ExportService
 
         private async Task UpdateOrder(string orderNumber, string connectionString)
         {
-            using var postgresContext = GetDbContext(connectionString);
-            using var sqlContext = sqlContextFactory.CreateDbContext();
+            await using var postgresContext = GetDbContext(connectionString);
+            await using var sqlContext = sqlContextFactory.CreateDbContext();
 
             var orderMaster = await postgresContext.OrderMasters.Where(x => x.OrderNumber == orderNumber).FirstOrDefaultAsync();
 
@@ -60,8 +60,8 @@ namespace ExportService
 
         private async Task UpdateOrderStatus(string orderNumber, string connectionString)
         {
-            using var sqlContext = sqlContextFactory.CreateDbContext();
-            using var postgresContext = GetDbContext(connectionString);
+            await using var sqlContext = sqlContextFactory.CreateDbContext();
+            await using var postgresContext = GetDbContext(connectionString);
             var companyId = await GetCompanyIdAsync(connectionString);
             var pgOrderMasterId = await postgresContext.OrderMasters
                                             .Where(x => x.OrderNumber == orderNumber)
@@ -106,13 +106,13 @@ namespace ExportService
         }
         private async Task<int> GetCompanyIdAsync(string connectionString)
         {
-            using var postgresContext = GetDbContext(connectionString);
+            await using var postgresContext = GetDbContext(connectionString);
             return await postgresContext.SetupCompanies.Select(x => x.CompanyId).FirstAsync();
         }
 
         private async Task<bool> CheckIfOrderExists(string orderNumber, string connectionString)
         {
-            using var sqlContext = sqlContextFactory.CreateDbContext();
+            await using var sqlContext = sqlContextFactory.CreateDbContext();
             var companyId = await GetCompanyIdAsync(connectionString);
             var ordermaster = await sqlContext.OrderMasters.FirstOrDefaultAsync(om => om.OrderNumber == orderNumber && om.CompanyId == companyId);
             return ordermaster != null;
@@ -120,7 +120,7 @@ namespace ExportService
 
         internal async Task<string> GetConnectionString(string domainName)
         {
-            using var context = pgContextFactory.CreateDbContext();
+            await using var context = pgContextFactory.CreateDbContext();
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
             return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
         }

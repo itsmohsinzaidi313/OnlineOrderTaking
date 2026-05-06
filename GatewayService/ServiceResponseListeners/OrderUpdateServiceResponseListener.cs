@@ -16,7 +16,7 @@ namespace GatewayService.ServiceResponseListeners
             var server = redis.GetServer(redis.GetEndPoints().First());
             List<string> keys = [];
             var responseKey = payload?.ResponseKey ?? throw new Exception("ResponseKey not found");
-            foreach (var key in server.Keys(pattern: $"branch:*:*:connection"))
+            foreach (var key in payload.BranchUserIds.SelectMany(id => server.Keys(pattern: $"branch:{id}:*:connection")))
             {
                 var arr = key.ToString().Split(':');
                 var clientId = $"{arr[0]}:{arr[1]}:{arr[2]}";
@@ -28,7 +28,9 @@ namespace GatewayService.ServiceResponseListeners
                 keys.Add(clientId);
             }
             await hub.Clients.Users(keys).SendAsync(responseKey, payload);
+
             keys.Clear();
+
             var orderNumber = payload?.OrderToken ?? throw new Exception("OrderNumber not found");
             foreach (var key in server.Keys(pattern: $"order:{orderNumber}:*"))
             {
@@ -39,7 +41,7 @@ namespace GatewayService.ServiceResponseListeners
                     continue;
                 }
                 logger.LogInformation($"Sending response to website client '{clientId}'");
-                await hub.Clients.User(clientId).SendAsync("OrderStatusUpdate", payload);
+                await hub.Clients.User(clientId).SendAsync(responseKey, payload);
             }
         }
     }

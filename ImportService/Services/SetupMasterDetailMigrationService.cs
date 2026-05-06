@@ -5,10 +5,11 @@ using Microsoft.EntityFrameworkCore;
 namespace ImportService.Services
 {
     public class SetupMasterDetailMigrationService(
-        SqlServerDbContext sqlDb) : ISetupMasterDetailMigrationService
+        IDbContextFactory<SqlServerDbContext> sqlDbFactory) : ISetupMasterDetailMigrationService
     {
         public async Task MigrateAsync(PostgresDbContext pgDb, int companyId = 0, CancellationToken ct = default)
         {
+            await using var sqlDb = await sqlDbFactory.CreateDbContextAsync(ct);
             var details = await sqlDb.SetupMasterDetails
                 .Where(d => (d.CompanyId == null || d.CompanyId == companyId) && d.IsActive == true)
                 .AsNoTracking()

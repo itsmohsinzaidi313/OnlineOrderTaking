@@ -26,7 +26,7 @@ public class Implementation()
     {
         var branchId = order.BranchId;
         var areaId = order.AreaId;
-        var dbContext = GetDbContext(connectionString);
+        await using var dbContext = GetDbContext(connectionString);
 
         order.BranchName = (await dbContext.BranchMasters.FirstOrDefaultAsync(x => x.BranchId == order.BranchId))?.BranchName ?? string.Empty;
         if (areaId.HasValue)
@@ -327,7 +327,7 @@ public class Implementation()
 
     internal async IAsyncEnumerable<int> GetBranchUsersIdsAsync(string connectionString, int branchId)
     {
-        using var dbContext = GetDbContext(connectionString);
+        await using var dbContext = GetDbContext(connectionString);
         foreach (var userId in await dbContext.UserBranchMappings.Where(x => x.BranchId == branchId).Select(x => x.UserId).ToListAsync())
             yield return userId;
     }
@@ -335,7 +335,7 @@ public class Implementation()
     internal async Task<object> OrderStatusLogs(string connectionString, string orderToken)
     {
         var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
-        var dbContext = GetDbContext(connectionString);
+        await using var dbContext = GetDbContext(connectionString);
         var orderMasterId = await dbContext.OrderMasters.Where(x => x.OrderToken == orderToken).Select(x => x.OrderMasterId).FirstOrDefaultAsync();
         var logs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == orderMasterId).ToListAsync();
         return logs.Select(x => new
@@ -350,7 +350,7 @@ public class Implementation()
 
     internal async Task<JsonObject> GetLegacyResponse(string orderNumber, string connectionString)
     {
-        var dbContext = GetDbContext(connectionString);
+        await using var dbContext = GetDbContext(connectionString);
         var om = await dbContext.OrderMasters
             .FirstOrDefaultAsync(x => x.OrderToken == orderNumber);
 

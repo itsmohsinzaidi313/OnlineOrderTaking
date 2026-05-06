@@ -22,7 +22,7 @@ public class Implementation()
 
     internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, string orderToken)
     {
-        using var dbContext = GetDbContext(connectionString);
+        await using var dbContext = GetDbContext(connectionString);
         var phoneId = await dbContext.OrderMasters.Where(x => x.OrderToken == orderToken).Select(x => x.PhoneId).FirstOrDefaultAsync();
         if (phoneId == null)
         {
@@ -122,7 +122,7 @@ public class Implementation()
 
     internal async Task<Dictionary<int, string>> GetOrderStatusesAsync(string connectionString)
     {
-        using var dbContext = GetDbContext(connectionString);
+        await using var dbContext = GetDbContext(connectionString);
         return await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
     }
 
@@ -214,7 +214,7 @@ public class Implementation()
 
     internal async Task<object> GetRidersAsync(int userId, string connectionString)
     {
-        using var dbContext = GetDbContext(connectionString);
+        await using var dbContext = GetDbContext(connectionString);
         var list = await dbContext.Riders
             .Join(dbContext.UserBranchMappings, a => a.BranchId, b => b.BranchId, (a, b) => new { Riders = a, b.UserId })
             .Where(x => x.UserId == userId)
@@ -229,7 +229,7 @@ public class Implementation()
 
     internal async Task<object> GetBranchesAsync(string connectionString)
     {
-        using var dbContext = GetDbContext(connectionString);
+        await using var dbContext = GetDbContext(connectionString);
         var list = await dbContext.BranchMasters
             .Where(x => x.IsActive)
             .Select(x => new

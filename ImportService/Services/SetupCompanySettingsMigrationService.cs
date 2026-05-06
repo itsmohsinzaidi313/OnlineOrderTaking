@@ -5,12 +5,13 @@ using Microsoft.EntityFrameworkCore;
 namespace ImportService.Services
 {
     public class SetupCompanySettingsMigrationService(
-        SqlServerDbContext SqlDb) : ISetupCompanySettingsMigrationService
+        IDbContextFactory<SqlServerDbContext> sqlDbFactory) : ISetupCompanySettingsMigrationService
     {
 
         public async Task MigrateAsync(PostgresDbContext pgDb, int companyId = 0, CancellationToken ct = default)
         {
-            var items = await SqlDb.SetupCompanySettings
+            await using var sqlDb = await sqlDbFactory.CreateDbContextAsync(ct);
+            var items = await sqlDb.SetupCompanySettings
                 .Where(x => x.CompanyId == companyId)
                 .AsNoTracking()
                 .ToListAsync(ct);

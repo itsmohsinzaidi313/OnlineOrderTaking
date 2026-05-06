@@ -17,7 +17,7 @@ namespace ClientNotificationService
             try
             {
                 var connectionString = await GetConnectionString(requestPayload!.DomainName);
-                var dbContext = GetDbContext(connectionString);
+                using var dbContext = GetDbContext(connectionString);
                 var userIds = await dbContext.UserBranchMappings
                     .Where(x => x.BranchId == requestPayload.CustomerOrder.BranchId)
                     .Select(x => x.UserId)

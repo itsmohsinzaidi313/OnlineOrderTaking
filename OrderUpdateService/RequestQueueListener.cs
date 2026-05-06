@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
@@ -14,9 +15,9 @@ namespace OrderUpdateService
         {
             var requestPayload = System.Text.Json.JsonSerializer.Deserialize<OrderUpdatePayload>(transport);
             object? payload = null;
+            using var dbContext = await GetDbContextAsync(requestPayload.DomainName);
             try
             {
-                var dbContext = await GetDbContextAsync(requestPayload.DomainName);
                 var orderMaster = await dbContext.OrderMasters.Where(x => x.OrderToken == requestPayload.OrderToken).FirstOrDefaultAsync();
                 string? orderStatusName = null;
                 object? orderStatusLogs = null;
@@ -136,9 +137,13 @@ namespace OrderUpdateService
                     message,
                 };
             }
+            var branchUserIds = await dbContext.UserLogins
+                .Select(x => x.UserId)
+                .ToListAsync();
             var response = new OrderUpdatePayload(requestPayload)
             {
                 DataPayload = payload,
+                BranchUserIds = branchUserIds,
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.OrderUpdateResponseQueue, response);
         }
