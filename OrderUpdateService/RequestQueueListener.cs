@@ -96,7 +96,7 @@ namespace OrderUpdateService
                     int? deliveryTime = requestPayload.DeliveryTime;
                     if (deliveryTime != null)
                     {
-                        deliveryTime = orderMaster.DeliveryTime + (deliveryTime);
+                        deliveryTime = orderMaster.DeliveryTime + deliveryTime;
                         await dbContext.OrderMasters
                             .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
                             .ExecuteUpdateAsync(x => x.SetProperty(x => x.DeliveryTime, deliveryTime));
@@ -113,6 +113,7 @@ namespace OrderUpdateService
                         Message = "Order updated successfully",
                         OrderStatusName = orderStatusName,
                         OrderStatusLogs = orderStatusLogs,
+                        DeliveryTime = deliveryTime,
                     };
                 }
                 else
