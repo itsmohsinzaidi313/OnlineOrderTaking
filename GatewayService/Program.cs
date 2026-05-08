@@ -11,6 +11,7 @@ using static PointofSaleModels.Protos.PushNotificationService;
 using static PointofSaleModels.Protos.OrderHistoryService;
 using static PointofSaleModels.Protos.GeneralSeoDataService;
 using PointofSaleModels.HealthChecks;
+using static PointofSaleModels.Protos.CreateOrderService;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -113,6 +114,12 @@ builder.Services.AddGrpcClient<GeneralSeoDataServiceClient>(x =>
     var address = builder.Configuration["GRPC:GENERALSEODATAHOST"] ?? throw new InvalidOperationException("GeneralSeoDataService gRPC host is not configured.");
     x.Address = new Uri(address);
     Console.WriteLine($"Configured GeneralSeoDataService gRPC client with address: {x.Address}");
+});
+
+builder.Services.AddGrpcClient<CreateOrderServiceClient>(x =>
+{
+    var address = builder.Configuration["GRPC:CREATEORDERHOST"] ?? throw new InvalidOperationException("CreateOrderService gRPC host is not configured.");
+    x.Address = new Uri(address);
 });
 
 builder.Services.AddHealthChecks()

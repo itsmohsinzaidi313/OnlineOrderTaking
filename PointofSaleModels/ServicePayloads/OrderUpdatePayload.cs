@@ -20,5 +20,6 @@
         public int? RiderId { get; set; }
         public int? DeliveryTime { get; set; }
         public object? DataPayload { get; set; }
+        public List<int> BranchUserIds { get; set; }
     }
 }

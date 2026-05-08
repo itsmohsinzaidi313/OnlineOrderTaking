@@ -39,10 +39,13 @@ builder.Services
     .AddHealthChecks()
     .AddCheck<PostgresHealth>("health_check");
 
+builder.Services.AddGrpc();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
 app.MapHealthChecks("/health");
 
+app.MapGrpcService<CreateOrderServiceImpl>();
 app.Run();

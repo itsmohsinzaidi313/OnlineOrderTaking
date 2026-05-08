@@ -104,7 +104,7 @@ namespace GatewayService
         internal async Task SetClientOnlineAsync(string clientId, string connectionId)
         {
             var db = redis.GetDatabase();
-            await db.StringSetAsync($"{clientId}{ConnectionKeySuffix}", connectionId);
+            await db.StringSetAsync($"{clientId}{ConnectionKeySuffix}", connectionId, expiry: TimeSpan.FromHours(4));
         }
 
         internal async Task SetUserOfflineAsync(string clientId)

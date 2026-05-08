@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
@@ -14,9 +15,9 @@ namespace OrderUpdateService
         {
             var requestPayload = System.Text.Json.JsonSerializer.Deserialize<OrderUpdatePayload>(transport);
             object? payload = null;
+            using var dbContext = await GetDbContextAsync(requestPayload.DomainName);
             try
             {
-                var dbContext = await GetDbContextAsync(requestPayload.DomainName);
                 var orderMaster = await dbContext.OrderMasters.Where(x => x.OrderToken == requestPayload.OrderToken).FirstOrDefaultAsync();
                 string? orderStatusName = null;
                 object? orderStatusLogs = null;
@@ -64,12 +65,14 @@ namespace OrderUpdateService
                             var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
                             return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
                         };
+                        var statuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
                         orderStatusLogs = (await dbContext.OrderStatusLogs
                                                         .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
                                                         .ToListAsync())
                                                         .Select(x => new
                                                         {
                                                             Id = x.OrderStatusId,
+                                                            Name = statuses[x.OrderStatusId],
                                                             CreatedAt = convertToPkTime(DateTime.SpecifyKind(x.CreatedDate, DateTimeKind.Utc)),
                                                         });
                         await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
@@ -94,7 +97,7 @@ namespace OrderUpdateService
                     int? deliveryTime = requestPayload.DeliveryTime;
                     if (deliveryTime != null)
                     {
-                        deliveryTime = orderMaster.DeliveryTime + (deliveryTime);
+                        deliveryTime = orderMaster.DeliveryTime + deliveryTime;
                         await dbContext.OrderMasters
                             .Where(x => x.OrderMasterId == orderMaster.OrderMasterId)
                             .ExecuteUpdateAsync(x => x.SetProperty(x => x.DeliveryTime, deliveryTime));
@@ -111,6 +114,7 @@ namespace OrderUpdateService
                         Message = "Order updated successfully",
                         OrderStatusName = orderStatusName,
                         OrderStatusLogs = orderStatusLogs,
+                        DeliveryTime = deliveryTime,
                     };
                 }
                 else
@@ -133,9 +137,13 @@ namespace OrderUpdateService
                     message,
                 };
             }
+            var branchUserIds = await dbContext.UserLogins
+                .Select(x => x.UserId)
+                .ToListAsync();
             var response = new OrderUpdatePayload(requestPayload)
             {
                 DataPayload = payload,
+                BranchUserIds = branchUserIds,
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.OrderUpdateResponseQueue, response);
         }

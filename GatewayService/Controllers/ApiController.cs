@@ -1,4 +1,5 @@
 using GatewayService.Models;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -8,6 +9,9 @@ using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
+using static PointofSaleModels.Protos.CreateOrderService;
+using static PointofSaleModels.Protos.GeneralSeoDataService;
 using static PointofSaleModels.Protos.OrderHistoryService;
 using static PointofSaleModels.Protos.PushNotificationService;
 using App = PointofSaleModels.Application;
@@ -16,7 +20,7 @@ namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient, PointofSaleModels.Protos.GeneralSeoDataService.GeneralSeoDataServiceClient seoDataClient) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient, GeneralSeoDataServiceClient seoDataClient, CreateOrderServiceClient createOrderClient) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
 
@@ -27,6 +31,55 @@ namespace GatewayService.Controllers
                 return BadRequest(new { error = "Domain is required." });
             var list = await seoDataClient.GetSeoDataAsync(new Domain { DomainName = domain }, cancellationToken: HttpContext.RequestAborted);
             return Ok(list);
+        }
+
+        [HttpPost("PlaceOrder")]
+        public async Task<IActionResult> PlaceOrder()
+        {
+            var request = await GetPlaceOrderRequest();
+            var response = await createOrderClient.PlaceOrderAsync(request, cancellationToken: HttpContext.RequestAborted);
+            if (response.Success)
+            {
+                if(response.Success)
+                {
+                    return Ok(response);
+                }
+                else
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, response.Message);
+                }
+            }
+            else
+                return BadRequest(response.Message);
+        }
+        private async Task<PlaceOrderRequest> GetPlaceOrderRequest()
+        {
+            HttpContext.Request.EnableBuffering();
+            HttpContext.Request.Body.Position = 0;
+            using var reader = new StreamReader(HttpContext.Request.Body);
+            var body = await reader.ReadToEndAsync();
+            return new PlaceOrderRequest { OrderJson = body };
+        }
+
+        [HttpPost("PlaceOrderLegacy")]
+        public async Task<IActionResult> PlaceOrderLegacy()
+        {
+            var request = await GetPlaceOrderRequest();
+            var response = await createOrderClient.PlaceOrderLegacyAsync(request, cancellationToken: HttpContext.RequestAborted);
+            var responseBody = JsonSerializer.Deserialize<object>(response.ResponseJson);
+            if (response.Success)
+            {
+                if (response.Success)
+                {
+                    return Ok(responseBody);
+                }
+                else
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, response.Message);
+                }
+            }
+            else
+                return BadRequest(response.Message);
         }
 
         [HttpGet("myorder")]

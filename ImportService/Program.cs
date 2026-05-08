@@ -94,11 +94,6 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogg
     var domainParser = new DomainParser(ruleProvider);
 
     var domainInfo = domainParser.Parse(url);
-    var name = domainInfo?.Domain ?? throw new InvalidOperationException("Failed to parse domain from URL.");
-    if(name == "eatx")
-    {
-        name = domainInfo.Subdomain;
-    }
     var response = await impl.Import(companyId, selection, httpContext.RequestAborted);
     try
     {
@@ -108,7 +103,7 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogg
             BaseAddress = new Uri($"http://gatewayservice:8080")
         };
 
-        var httpResponse = await httpClient.GetAsync($"clear?domain={name}");
+        var httpResponse = await httpClient.GetAsync($"clear?domain={domainInfo?.FullyQualifiedDomainName}");
         if (httpResponse.IsSuccessStatusCode == false)
         {
             return Results.Ok($"Import completed but failed to clear cache\nStatusCode: {httpResponse.StatusCode}");

@@ -5,10 +5,11 @@ using Microsoft.EntityFrameworkCore;
 namespace ImportService.Services
 {
     public class AreaMigrationService(
-        SqlServerDbContext SqlDb) : IAreaMigrationService
+        IDbContextFactory<SqlServerDbContext> sqlDbFactory) : IAreaMigrationService
     {
         public async Task MigrateAsync(PostgresDbContext PgDb, int companyId = 0, CancellationToken ct = default)
         {
+            await using var SqlDb = sqlDbFactory.CreateDbContext();
             var areas = await SqlDb.Areas
                 .Where(x => x.IsActive == true && x.CompanyId == companyId)
                 .AsNoTracking()

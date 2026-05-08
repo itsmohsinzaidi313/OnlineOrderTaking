@@ -21,6 +21,8 @@ namespace PointofSaleModels.Settings
         public const string OrderResponseQueue = $"{Services}.{OrderService}.{Response}";
         public const string OrderUpdateRequestQueue = $"{Services}.{OrderUpdateService}.{Request}";
         public const string OrderUpdateResponseQueue = $"{Services}.{OrderUpdateService}.{Response}";
+        public const string DeliveryTimeUpdateResponseQueue = $"{Services}.deliverytime.{Response}";
+        public const string OrderStatusUpdateRequestQueue = $"{Services}.orderstatus.{Response}";
         public const string ClientNotificationRequestQueue = $"{Services}.{ClientNotificationService}.{Request}";
         public const string ClientNotificationResponseQueue = $"{Services}.{ClientNotificationService}.{Response}";
         public const string ClientNotificationGatewayResponse = $"{Services}.{ClientNotificationService}.{GatewayService}.{Response}";

@@ -5,10 +5,11 @@ using Microsoft.EntityFrameworkCore;
 namespace ImportService.Services
 {
     public class CustomerDataImportService(
-        SqlServerDbContext SqlDb) : ICustomerDataImportService
+        IDbContextFactory<SqlServerDbContext> sqlDbFactory) : ICustomerDataImportService
     {
         public async Task MigrateAsync(PostgresDbContext PgDb, int companyId = 0, CancellationToken ct = default)
         {
+            await using var SqlDb = await sqlDbFactory.CreateDbContextAsync(ct);
             var customerPhonesQuery = SqlDb.CustomerPhones
                 .Where(x => x.IsActive == true && x.CompanyId == companyId)
                 .AsNoTracking();

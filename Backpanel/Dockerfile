@@ -4,11 +4,11 @@ FROM node:25-alpine AS build
 WORKDIR /app
 
 # Install dependencies
-COPY package*.json ./
-RUN npm install
+COPY ygen_backpanel/package*.json ./
+RUN npm install --force
 
 # Copy source and build
-COPY . .
+COPY ygen_backpanel/ ./
 RUN npm run build
 
 # Stage 2: Serve with nginx

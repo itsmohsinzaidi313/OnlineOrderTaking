@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Application;
+using System.Text.Json.Nodes;
 using Db = PointofSaleModels.PGDatabaseModels;
 using ValueType = PointofSaleModels.Application.ValueType;
 
@@ -25,7 +26,7 @@ public class Implementation()
     {
         var branchId = order.BranchId;
         var areaId = order.AreaId;
-        var dbContext = GetDbContext(connectionString);
+        await using var dbContext = GetDbContext(connectionString);
 
         order.BranchName = (await dbContext.BranchMasters.FirstOrDefaultAsync(x => x.BranchId == order.BranchId))?.BranchName ?? string.Empty;
         if (areaId.HasValue)
@@ -326,7 +327,7 @@ public class Implementation()
 
     internal async IAsyncEnumerable<int> GetBranchUsersIdsAsync(string connectionString, int branchId)
     {
-        using var dbContext = GetDbContext(connectionString);
+        await using var dbContext = GetDbContext(connectionString);
         foreach (var userId in await dbContext.UserBranchMappings.Where(x => x.BranchId == branchId).Select(x => x.UserId).ToListAsync())
             yield return userId;
     }
@@ -334,7 +335,7 @@ public class Implementation()
     internal async Task<object> OrderStatusLogs(string connectionString, string orderToken)
     {
         var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
-        var dbContext = GetDbContext(connectionString);
+        await using var dbContext = GetDbContext(connectionString);
         var orderMasterId = await dbContext.OrderMasters.Where(x => x.OrderToken == orderToken).Select(x => x.OrderMasterId).FirstOrDefaultAsync();
         var logs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == orderMasterId).ToListAsync();
         return logs.Select(x => new
@@ -345,5 +346,84 @@ public class Implementation()
                             karachiTz
                         ),
         });
+    }
+
+    internal async Task<JsonObject> GetLegacyResponse(string orderNumber, string connectionString)
+    {
+        await using var dbContext = GetDbContext(connectionString);
+        var om = await dbContext.OrderMasters
+            .FirstOrDefaultAsync(x => x.OrderToken == orderNumber);
+
+        var orderDetails = await dbContext.OrderDetails
+            .Where(x => x.OrderMasterId == om!.OrderMasterId)
+            .ToListAsync();
+        var branchName = await dbContext.BranchMasters.Where(x => x.BranchId == om.BranchId).Select(x => x.BranchName).FirstOrDefaultAsync();
+
+        var categories = await dbContext.ProductCategories.ToDictionaryAsync(x => x.CategoryId, x => x.CategoryName);
+        var dbProducts = await dbContext.Products.ToListAsync();
+        var products = dbProducts.ToDictionary(x => x.ProductId, x => x.ProductName);
+        var productImages = dbProducts.ToDictionary(x => x.ProductId, x => x.ProductImage);
+        var productCategoryIds = dbProducts.ToDictionary(x => x.ProductId, x => x.ProductCategoryId);
+        var productDetails = await dbContext.ProductDetails.ToDictionaryAsync(x => x.ProductDetailId, x => x.ProductId);
+        var orderMaster = new JsonObject
+        {
+            ["HasError"] = 0,
+            ["Error_Message"] = "",
+            ["Message"] = "Your Order Placed Successfully.",
+            ["Id"] = om.OrderMasterId,
+            ["OrderNumber"] = om.OrderNumber,
+            ["OrderDate"] = JsonValue.Create(om.OrderDate),
+            ["SrbInvoiceId"] = om.SrbInvoiceId,
+            ["FbrInvoiceId"] = om.FbrInvoiceId,
+            ["IsThirdPartyPaymentIntegration"] = 0,
+            ["OrderStatusId"] = om.OrderStatusId,
+            ["CompanyId"] = om.CompanyId,
+            ["BranchId"] = om.BranchId,
+            ["BranchName"] = branchName,
+            ["AdditionalMsg"] = om.Remarks,
+            ["SubTotal"] = om.TotalAmountWithoutGst,
+            ["DeliveryCharges"] = om.DeliveryCharges,
+            ["Discount"] = om.DiscountId,
+            ["GstAmount"] = om.Gstamount,
+            ["GstPercent"] = om.Gstpercent,
+            ["NetBill"] = om.TotalAmountWithGst
+        };
+        JsonArray masters = new JsonArray() { orderMaster };
+        JsonArray details = new JsonArray();
+        foreach (var od in orderDetails)
+        {
+            var productId = productDetails[od.ProductDetailId];
+            var productName = products[productId];
+            var productImage = productImages[productId];
+            var categoryName = productCategoryIds[productId];
+            var y = new JsonObject
+            {
+                ["OrderDetailId"] = od.OrderDetailId,
+                ["ProductDetailId"] = od.ProductDetailId,
+                ["DealItemId"] = od.DealItemId,
+                ["RandomId"] = od.RandomId,
+                ["Quantity"] = od.Quantity,
+                ["ProductName"] = productName,
+                ["CategoryName"] = categoryName,
+                ["AmountWithoutGST"] = od.PriceWithoutGst,
+                ["AmountWithGST"] = od.PriceWithGst,
+                ["ProductImage"] = productImage
+            };
+            details.Add(y);
+        }
+        var dataSet = new JsonObject
+        {
+            ["Table"] = masters,
+            ["Table1"] = details
+        };
+        string? data = null;
+        return new JsonObject
+        {
+            ["Response"] = true,
+            ["ResponseCodes"] = "00",
+            ["ResponseMessage"] = "Success",
+            ["Data"] = data,
+            ["DataSet"] = dataSet
+        };
     }
 }

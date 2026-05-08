@@ -4,10 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ImportService.Services
 {
-    public class UserLoginMigrationService(SqlServerDbContext sqlServerDbContext) : IUserLoginMigrationService
+    public class UserLoginMigrationService(IDbContextFactory<SqlServerDbContext> sqlDbFactory) : IUserLoginMigrationService
     {
         public async Task MigrateAsync(PostgresDbContext pgDb, int companyId = 0, CancellationToken ct = default)
         {
+            await using var sqlServerDbContext = await sqlDbFactory.CreateDbContextAsync(cancellationToken: ct);
             var userLogins = await sqlServerDbContext.UserLogins
                                                      .AsNoTracking()
                                                      .Where(x => x.CompanyId == companyId)
