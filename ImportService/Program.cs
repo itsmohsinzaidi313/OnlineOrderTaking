@@ -102,7 +102,7 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogg
             Timeout = TimeSpan.FromMinutes(5),
             BaseAddress = new Uri($"http://gatewayservice:8080")
         };
-
+        logger.LogInformation("Clearing cache for {Domain}", domainInfo?.FullyQualifiedDomainName);
         var httpResponse = await httpClient.GetAsync($"clear?domain={domainInfo?.FullyQualifiedDomainName}");
         if (httpResponse.IsSuccessStatusCode == false)
         {
