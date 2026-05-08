@@ -37,7 +37,7 @@ namespace ImportService
                 var domainInfo = ExtractDomainInfo(webSiteUrl, ruleProvider);
                 var dbName = domainInfo.Domain == "eatx" ? domainInfo.Subdomain : domainInfo.Domain;
 
-                using var postgresDbContext = GetPgDbContext($"Host=haproxy;Port=5433;Database={dbName};Username=postgres;Password=postgrespass");
+                await using var postgresDbContext = GetPgDbContext($"Host=haproxy;Port=5433;Database={dbName};Username=postgres;Password=postgrespass");
 
                 var isNewRestaurant = await postgresDbContext.Database.EnsureCreatedAsync(cancellationToken);
                 if (isNewRestaurant)
@@ -121,7 +121,7 @@ namespace ImportService
         {
             var dbName = domainInfo.Domain == "eatx" ? domainInfo.Subdomain : domainInfo.Domain;
 
-            using var pgDb = pgDbFactory.CreateDbContext();
+            await using var pgDb = pgDbFactory.CreateDbContext();
             await pgDb.Database.EnsureCreatedAsync(cancellationToken);
             var restaurant = new Entities.Restaurants
             {

@@ -1,11 +1,10 @@
 ﻿using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using StackExchange.Redis;
 
 namespace GatewayService.ServiceResponseListeners
 {
-    public class OrderHistoryServiceResponseListener(ILogger<OrderHistoryServiceResponseListener> logger, RabbitMqConnection rabbitConnection, Implementation implementation, IConnectionMultiplexer redis) : RabbitMqConsumerService<OrderHistoryServiceResponseListener>(logger, rabbitConnection)
+    public class OrderHistoryServiceResponseListener(ILogger<OrderHistoryServiceResponseListener> logger, RabbitMqConnection rabbitConnection, Implementation implementation) : RabbitMqConsumerService<OrderHistoryServiceResponseListener>(logger, rabbitConnection)
     {
         public override string QueueName() => RabbitMqQueues.OrderHistoryResponseQueue;
         public override async Task OnMessage(string svcPayload)

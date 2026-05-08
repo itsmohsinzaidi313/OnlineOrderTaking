@@ -4,10 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ImportService.Services
 {
-    public class BranchMasterMigrationService(SqlServerDbContext SqlDb) : IBranchMasterMigrationService
+    public class BranchMasterMigrationService(IDbContextFactory<SqlServerDbContext> sqlDbFactory) : IBranchMasterMigrationService
     {
         public async Task MigrateAsync(PostgresDbContext PgDb, int companyId = 0, CancellationToken ct = default)
         {
+            await using var SqlDb = await sqlDbFactory.CreateDbContextAsync(ct);
             var branches = await SqlDb.BranchMasters
                         .Where(b => b.CompanyId == companyId && b.IsActive == true)
                         .AsNoTracking()

@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option csharp_namespace = "PointofSaleModels.Protos";
+
+service CreateOrderService {
+    rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse);
+    rpc PlaceOrderLegacy(PlaceOrderRequest) returns (PlaceOrderLegacyResponse);
+}
+
+message PlaceOrderRequest {
+    string order_json = 1;
+    string domain_name = 2;
+}
+
+message PlaceOrderResponse {
+    bool success = 1;
+    string message = 2;
+    string order_number = 3;
+}
+
+message PlaceOrderLegacyResponse {
+    bool success = 1;
+    string message = 2;
+    string response_json = 3;
+}
+

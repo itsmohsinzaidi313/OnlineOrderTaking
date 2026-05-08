@@ -4,10 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ImportService.Services
 {
-    public class MenuMigrationService(SqlServerDbContext SqlDb) : IMenuMigrationService
+    public class MenuMigrationService(IDbContextFactory<SqlServerDbContext> sqlDbFactory) : IMenuMigrationService
     {
         public async Task MigrateAsync( PostgresDbContext pgDb, int companyId = 0, CancellationToken ct = default)
         {
+            await using var SqlDb = await sqlDbFactory.CreateDbContextAsync(ct);
             // 3) Categories
             var categories = await SqlDb.ProductCategories
                 .Where(x => x.IsActive == true && x.CompanyId == companyId)

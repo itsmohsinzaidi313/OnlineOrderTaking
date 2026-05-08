@@ -5,10 +5,11 @@ using Microsoft.EntityFrameworkCore;
 namespace ImportService.Services
 {
     public class DiscountMigrationService(
-        SqlServerDbContext sqlDb) : IDiscountMigrationService
+        IDbContextFactory<SqlServerDbContext> sqlDbFactory) : IDiscountMigrationService
     {
         public async Task MigrateAsync(PostgresDbContext pgDb, int companyId = 0, CancellationToken ct = default)
         {
+            await using var sqlDb = await sqlDbFactory.CreateDbContextAsync(ct);
             // 1) Migrate main Discount records for this company
             var discounts = await sqlDb.Discounts
                 .Where(x => x.IsActive == true && x.CompanyId == companyId)

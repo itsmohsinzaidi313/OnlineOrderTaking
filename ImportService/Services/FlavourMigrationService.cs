@@ -5,10 +5,11 @@ using Microsoft.EntityFrameworkCore;
 namespace ImportService.Services
 {
     public class FlavourMigrationService(
-        SqlServerDbContext SqlDb) : IFlavourMigrationService
+        IDbContextFactory<SqlServerDbContext> sqlDbFactory) : IFlavourMigrationService
     {
         public async Task MigrateAsync(PostgresDbContext PgDb, int companyId = 0, CancellationToken ct = default)
         {
+            await using var SqlDb = await sqlDbFactory.CreateDbContextAsync(ct);
             var flavours = await SqlDb.Flavours
                 .Where(x => x.IsActive == true && x.CompanyId == companyId)
                 .AsNoTracking()
