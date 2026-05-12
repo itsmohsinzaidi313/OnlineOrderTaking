@@ -1,7 +1,17 @@
 services:
   
   exportservice:
+    build:
+      context: .
+      dockerfile: ./ExportService/Dockerfile
     image: registry.eatx.pk/ygensystems/exportservice:latest
+    environment:
+      - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
+      - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
     networks:
       - patroni-net
     depends_on:
@@ -11,6 +21,9 @@ services:
         condition: service_healthy
 
   generalseodataservice:
+    build:
+      context: .
+      dockerfile: ./GeneralSeoDataService/Dockerfile
     image: registry.eatx.pk/ygensystems/generalseodataservice:latest
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://generalseodataservice:${GRPC_PORT}
@@ -27,6 +40,9 @@ services:
         condition: service_healthy
 
   pushnotificationservice:
+    build:
+      context: .
+      dockerfile: ./PushNotificationService/Dockerfile
     image: registry.eatx.pk/ygensystems/pushnotificationservice:latest
     ports:
       - "8080"
@@ -52,6 +68,9 @@ services:
         condition: service_healthy
 
   customerorderhistoryservice:
+    build:
+      context: .
+      dockerfile: ./CustomerOrderHistoryService/Dockerfile
     image: registry.eatx.pk/ygensystems/customerorderhistoryservice:latest
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
@@ -71,6 +90,7 @@ services:
     build:
       context: .
       dockerfile: ./MenuService/Dockerfile
+    image: registry.eatx.pk/ygensystems/menuservice:latest
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -89,6 +109,7 @@ services:
     build:
       context: .
       dockerfile: ./OrderHistoryService/Dockerfile
+    image: registry.eatx.pk/ygensystems/orderhistoryservice:latest
     ports:
       - "8080"
     environment:
@@ -113,6 +134,7 @@ services:
     build:
       context: .
       dockerfile: ./SettingsDataService/Dockerfile
+    image: registry.eatx.pk/ygensystems/settingsdataservice:latest
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -131,6 +153,7 @@ services:
     build:
       context: .
       dockerfile: ./ClientNotificationService/Dockerfile
+    image: registry.eatx.pk/ygensystems/clientnotifyservice:latest
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -149,6 +172,7 @@ services:
     build:
       context: .
       dockerfile: ./OrderUpdateService/Dockerfile
+    image: registry.eatx.pk/ygensystems/orderupdateservice:latest
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -167,6 +191,7 @@ services:
     build:
       context: .
       dockerfile: ./ImportService/Dockerfile
+    image: registry.eatx.pk/ygensystems/importservice:latest
     environment:
       - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
       - CONNECTIONSTRINGS__POSTGRES=${RWSQLCONNECTION}
@@ -182,6 +207,7 @@ services:
     build:
       context: .
       dockerfile: ./CreateOrderService/Dockerfile
+    image: registry.eatx.pk/ygensystems/createorderservice:latest
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://createorderservice:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
@@ -204,6 +230,7 @@ services:
     build:
       context: .
       dockerfile: ./GatewayService/Dockerfile
+    image: registry.eatx.pk/ygensystems/gatewayservice:latest
     ports:
       - "8090:8080"
     environment:
