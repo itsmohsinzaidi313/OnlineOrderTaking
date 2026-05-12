@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using PointofSaleModels.Application;
 using System.Text.Json.Nodes;
 using Db = PointofSaleModels.PGDatabaseModels;
@@ -27,18 +28,31 @@ public class Implementation()
         var branchId = order.BranchId;
         var areaId = order.AreaId;
         await using var dbContext = GetDbContext(connectionString);
-
-        order.BranchName = (await dbContext.BranchMasters.FirstOrDefaultAsync(x => x.BranchId == order.BranchId))?.BranchName ?? string.Empty;
-        if (areaId.HasValue)
+        var strategy = dbContext.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            var areacity = await dbContext.Areas.Where(x => x.AreaId == areaId).Join(dbContext.Cities, a => a.CityId, b => b.CityId, (a, b) => new { a.AreaName, b.CityName }).FirstOrDefaultAsync();
-            order.AreaName = areacity.AreaName;
-            order.CityName = areacity.CityName;
-        }
-        var orderMaster = await GetOrderMasterAsync(dbContext, order);
-        await SetOnlineOrder(dbContext, branchId, orderMaster, order);
-        order.OrderToken = await SaveOrderAsync(dbContext, orderMaster);
-        order.OrderNumber = orderMaster.OrderNumber;
+            var transaction = await dbContext.Database.BeginTransactionAsync();
+            try
+            {
+                order.BranchName = (await dbContext.BranchMasters.FirstOrDefaultAsync(x => x.BranchId == order.BranchId))?.BranchName ?? string.Empty;
+                if (areaId.HasValue)
+                {
+                    var areacity = await dbContext.Areas.Where(x => x.AreaId == areaId).Join(dbContext.Cities, a => a.CityId, b => b.CityId, (a, b) => new { a.AreaName, b.CityName }).FirstOrDefaultAsync();
+                    order.AreaName = areacity.AreaName;
+                    order.CityName = areacity.CityName;
+                }
+                var orderMaster = await GetOrderMasterAsync(dbContext, order);
+                await SetOnlineOrder(dbContext, branchId, orderMaster, order);
+                order.OrderToken = await SaveOrderAsync(dbContext, orderMaster);
+                order.OrderNumber = orderMaster.OrderNumber;
+                await transaction.CommitAsync();
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
     }
 
     private static async Task<string> SaveOrderAsync(Db.PgDbContext dbContext, Db.OrderMaster orderMaster)
@@ -164,7 +178,7 @@ public class Implementation()
                 {
                     itemDiscount = totalItemPrice * ((discountPercent ?? 0.00) / 100);
                 }
-                orderMaster.TotalAmountWithoutGst += totalItemPrice - itemDiscount;
+                orderMaster.TotalAmountWithoutGst += totalItemPrice;
                 orderMaster.DiscountAmount += double.Round(itemDiscount, MidpointRounding.ToZero);
                 orderMaster.OrderDetails.Add(orderDetail);
             }
@@ -217,15 +231,7 @@ public class Implementation()
         orderDetail.IsPercentage = variation?.Discount?.Type == ValueType.Percentage.ToString();
         orderDetail.PriceWithoutGst = variation?.Price;
         var itemPrice = variation?.Price ?? 0.00;
-        var itemDiscount = 0.00;
-        if (variation?.Discount != null)
-        {
-            itemDiscount = orderDetail.IsPercentage == true
-                ? (itemPrice * (variation.Discount.Value / 100))
-                : variation.Discount.Value;
-        }
-        var itemPriceAfterDiscount = itemPrice - itemDiscount;
-        orderDetail.PriceWithGst = double.Round(itemPriceAfterDiscount + (itemPriceAfterDiscount * (gst?.Gstpercentage ?? 0) / 100), MidpointRounding.ToZero);
+        orderDetail.PriceWithGst = double.Round(itemPrice + (itemPrice * (gst?.Gstpercentage ?? 0) / 100), MidpointRounding.ToZero);
         yield return orderDetail;
     }
 
