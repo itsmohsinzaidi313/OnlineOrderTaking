@@ -29,19 +29,12 @@ jobs:
                   username: "ygensystems"
                   password: "$2y$05$o54NnejK7KomeBFAbQwgieJC7A0cXf7tPYDGYH5qEG7MnLs9CD01."
 
-            - name: Create .env
-              shell: bash
+            - name: Restore .env
               run: |
-                cat > .env <<EOF
-                ${{ secrets.ENV_FILE }}
-                EOF
+                echo "${{ secrets.ENV_FILE_BASE64 }}" | base64 -d > .env
 
-            - name: Verify .env
-              shell: bash
+            - name: Verify
               run: |
-                echo "----- START -----"
-                cat .env
-                echo "----- END -----"
                 sha256sum .env
 
             - name: Build all images
