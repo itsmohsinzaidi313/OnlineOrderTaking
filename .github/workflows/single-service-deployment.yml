@@ -23,6 +23,7 @@ jobs:
   deploy-service:
     needs: build-service
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
