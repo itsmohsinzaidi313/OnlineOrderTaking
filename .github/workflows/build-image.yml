@@ -29,13 +29,19 @@ jobs:
                   username: "ygensystems"
                   password: "$2y$05$o54NnejK7KomeBFAbQwgieJC7A0cXf7tPYDGYH5qEG7MnLs9CD01."
 
-            - name: Create .env file
-              run: echo "${{ secrets.ENV_FILE }}" > .env
-
-            - name: Verify .env exists
+            - name: Create .env
+              shell: bash
               run: |
-                ls -la
-                cat .env | head
+                cat > .env <<EOF
+                ${{ secrets.ENV_FILE }}
+                EOF
+
+            - name: Create .env
+              shell: bash
+              run: |
+                cat > .env <<EOF
+                ${{ secrets.ENV_FILE }}
+                EOF
 
             - name: Generate checksum
               run: |
