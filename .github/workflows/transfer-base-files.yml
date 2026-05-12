@@ -22,5 +22,5 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT }}
-          source: "docker-compose.yml,Website/website-compose.yml,.env"
+          source: "docker-compose-ci.yml,Website/website-compose.yml"
           target: "/home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/"
