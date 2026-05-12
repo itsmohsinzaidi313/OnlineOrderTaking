@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: ./ExportService/Dockerfile
-    image: registry.eatx.pk/ygensystems/exportservice:latest
+    image: registry.eatx.pk/exportservice:latest
     environment:
       - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
@@ -24,7 +24,7 @@ services:
     build:
       context: .
       dockerfile: ./GeneralSeoDataService/Dockerfile
-    image: registry.eatx.pk/ygensystems/generalseodataservice:latest
+    image: registry.eatx.pk/generalseodataservice:latest
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://generalseodataservice:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
@@ -43,7 +43,7 @@ services:
     build:
       context: .
       dockerfile: ./PushNotificationService/Dockerfile
-    image: registry.eatx.pk/ygensystems/pushnotificationservice:latest
+    image: registry.eatx.pk/pushnotificationservice:latest
     ports:
       - "8080"
     environment:
@@ -71,7 +71,7 @@ services:
     build:
       context: .
       dockerfile: ./CustomerOrderHistoryService/Dockerfile
-    image: registry.eatx.pk/ygensystems/customerorderhistoryservice:latest
+    image: registry.eatx.pk/customerorderhistoryservice:latest
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -90,7 +90,7 @@ services:
     build:
       context: .
       dockerfile: ./MenuService/Dockerfile
-    image: registry.eatx.pk/ygensystems/menuservice:latest
+    image: registry.eatx.pk/menuservice:latest
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -109,7 +109,7 @@ services:
     build:
       context: .
       dockerfile: ./OrderHistoryService/Dockerfile
-    image: registry.eatx.pk/ygensystems/orderhistoryservice:latest
+    image: registry.eatx.pk/orderhistoryservice:latest
     ports:
       - "8080"
     environment:
@@ -134,7 +134,7 @@ services:
     build:
       context: .
       dockerfile: ./SettingsDataService/Dockerfile
-    image: registry.eatx.pk/ygensystems/settingsdataservice:latest
+    image: registry.eatx.pk/settingsdataservice:latest
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -153,7 +153,7 @@ services:
     build:
       context: .
       dockerfile: ./ClientNotificationService/Dockerfile
-    image: registry.eatx.pk/ygensystems/clientnotifyservice:latest
+    image: registry.eatx.pk/clientnotifyservice:latest
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -172,7 +172,7 @@ services:
     build:
       context: .
       dockerfile: ./OrderUpdateService/Dockerfile
-    image: registry.eatx.pk/ygensystems/orderupdateservice:latest
+    image: registry.eatx.pk/orderupdateservice:latest
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -191,7 +191,7 @@ services:
     build:
       context: .
       dockerfile: ./ImportService/Dockerfile
-    image: registry.eatx.pk/ygensystems/importservice:latest
+    image: registry.eatx.pk/importservice:latest
     environment:
       - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
       - CONNECTIONSTRINGS__POSTGRES=${RWSQLCONNECTION}
@@ -207,7 +207,7 @@ services:
     build:
       context: .
       dockerfile: ./CreateOrderService/Dockerfile
-    image: registry.eatx.pk/ygensystems/createorderservice:latest
+    image: registry.eatx.pk/createorderservice:latest
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://createorderservice:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
@@ -230,7 +230,7 @@ services:
     build:
       context: .
       dockerfile: ./GatewayService/Dockerfile
-    image: registry.eatx.pk/ygensystems/gatewayservice:latest
+    image: registry.eatx.pk/gatewayservice:latest
     ports:
       - "8090:8080"
     environment:
