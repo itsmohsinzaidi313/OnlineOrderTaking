@@ -36,16 +36,13 @@ jobs:
                 ${{ secrets.ENV_FILE }}
                 EOF
 
-            - name: Create .env
+            - name: Verify .env
               shell: bash
               run: |
-                cat > .env <<EOF
-                ${{ secrets.ENV_FILE }}
-                EOF
-
-            - name: Generate checksum
-              run: |
-                sha256sum .env  
+                echo "----- START -----"
+                cat .env
+                echo "----- END -----"
+                sha256sum .env
 
             - name: Build all images
               run: docker compose -f docker-compose-ci.yml build ${{ inputs.service }}
