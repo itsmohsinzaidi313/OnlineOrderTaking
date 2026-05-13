@@ -1,14 +1,8 @@
 services:
-  
   exportservice:
     image: registry.eatx.pk/online-order-taking/exportservice:latest
     networks:
       - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
 
   generalseodataservice:
     image: registry.eatx.pk/online-order-taking/generalseodataservice:latest
@@ -20,11 +14,6 @@ services:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
     networks:
       - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
 
   pushnotificationservice:
     image: registry.eatx.pk/online-order-taking/pushnotificationservice:latest
@@ -45,11 +34,6 @@ services:
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
     networks:
       - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
 
   customerorderhistoryservice:
     image: registry.eatx.pk/online-order-taking/customerorderhistoryservice:latest
@@ -61,11 +45,6 @@ services:
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
     networks:
       - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
 
   menuservice:
     build:
@@ -79,11 +58,6 @@ services:
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
     networks:
       - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
 
   orderhistoryservice:
     build:
@@ -103,11 +77,6 @@ services:
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
     networks:
       - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
 
   settingsdataservice:
     build:
@@ -121,11 +90,6 @@ services:
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
     networks:
       - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
 
   clientnotifyservice:
     build:
@@ -139,11 +103,6 @@ services:
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
     networks:
       - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
 
   orderupdateservice:
     build:
@@ -157,11 +116,6 @@ services:
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
     networks:
       - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
 
   importservice:
     build:
@@ -172,11 +126,6 @@ services:
       - CONNECTIONSTRINGS__POSTGRES=${RWSQLCONNECTION}
     networks:
       - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
 
   createorderservice:
     build:
@@ -194,11 +143,6 @@ services:
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
     networks:
       - patroni-net
-    depends_on:
-      haproxy:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
 
   gatewayservice:
     build:
@@ -224,32 +168,6 @@ services:
       - JWT__EXPIREMINUTES=${GATEWAY_JWT_EXPIREMINUTES}
     networks:
       - patroni-net
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-  
-  # etcd for Patroni configuration management
-  etcd:
-    build:
-      context: ./etcd
-      dockerfile: Dockerfile
-    container_name: etcd
-    environment:
-      - ETCD_NAME=${ETCD_NAME}
-      - ETCD_DATA_DIR=${ETCD_DATA_DIR}
-      - ETCD_LISTEN_CLIENT_URLS=${ETCD_LISTEN_CLIENT_URLS}
-      - ETCD_LISTEN_PEER_URLS=${ETCD_LISTEN_PEER_URLS}
-      - ETCD_ADVERTISE_CLIENT_URLS=${ETCD_ADVERTISE_CLIENT_URLS}
-    volumes:
-      - etcd_data:/etcd-data
-    networks:
-      - patroni-net
-    healthcheck:
-      test: ["CMD", "etcdctl", "endpoint", "health", "--dial-timeout=5s", "--command-timeout=5s"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
 
 networks:
   patroni-net:
