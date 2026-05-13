@@ -30,7 +30,7 @@ jobs:
           script: |
             cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
             # Pull the latest images from your registry
-            docker compose pull
+            docker compose pull ${{ inputs.service }}
 
             # Recreate containers with the new images
-            docker compose up -d --remove-orphans
+            docker compose up -d --remove-orphans ${{ inputs.service }}

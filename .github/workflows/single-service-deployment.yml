@@ -21,23 +21,8 @@ jobs:
     secrets: inherit
 
   deploy-service:
-    needs: build-service
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-    steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.VPS_PORT }}
-          script: |
-            # Navigate to the directory containing your docker-compose.yml
-            cd ~/OnlineOrderTaking
-
-            # Pull the latest images from your registry
-            docker compose pull
-
-            # Recreate containers with the new images
-            docker compose up -d --remove-orphans
+    uses: ./.github/workflows/deploy-image.yml
+    with:
+      environment: ${{ inputs.environment }}
+      service: ${{ inputs.service }}
+    secrets: inherit

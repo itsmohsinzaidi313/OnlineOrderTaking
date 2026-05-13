@@ -34,54 +34,8 @@ jobs:
         run: |
           echo "${{ secrets.ENV_FILE_BASE64 }}" | base64 -d > .env
 
-      - name: Verify
-        run: |
-          sha256sum .env
-
       - name: Build all images
         run: docker compose -f docker-compose-ci.yml build ${{ inputs.service }}
 
       - name: Push all images
         run: docker compose -f docker-compose-ci.yml push ${{ inputs.service }}
-
-  # build-image:
-  #     runs-on: ubuntu-latest
-  #     environment: ${{ inputs.environment }}
-  #     if: contains(inputs.service, 'service')
-  #     steps:
-  #         - name: Checkout code
-  #           uses: actions/checkout@v6
-
-  #         - name: Build ${{ inputs.service }}
-  #           run: |
-  #               docker compose build ${{ inputs.service }}
-  #               # Resolve actual image name produced by docker compose build.
-  #               IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^((onlineordertaking-)?${{ inputs.service }}):" | head -1)
-  #               if [ -z "$IMAGE_NAME" ]; then
-  #                   for candidate in "onlineordertaking-${{ inputs.service }}" "${{ inputs.service }}"; do
-  #                   if docker image inspect "$candidate" >/dev/null 2>&1; then
-  #                       IMAGE_NAME="$candidate"
-  #                       break
-  #                   fi
-  #                   done
-  #               fi
-  #               if [ -z "$IMAGE_NAME" ]; then
-  #                   echo "No image found for ${{ inputs.service }} after build."
-  #                   docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "${{ inputs.service }}|onlineordertaking-${{ inputs.service }}" || true
-  #                   exit 1
-  #               fi
-  #               echo "Saving image: $IMAGE_NAME"
-  #               docker save "$IMAGE_NAME" | gzip > "${{ inputs.service }}.tar.gz"
-  #               du -h "${{ inputs.service }}.tar.gz"
-
-  #         - name: Upload ${{ inputs.service }} to image cache
-  #           uses: appleboy/scp-action@v1
-  #           with:
-  #               host: ${{ secrets.ARTIFACTS_HOST }}
-  #               username: ${{ secrets.ARTIFACTS_USERNAME }}
-  #               key: ${{ secrets.ARTIFACTS_SSH_KEY }}
-  #               port: ${{ secrets.ARTIFACTS_SSH_PORT }}
-  #               source: "${{ inputs.service }}.tar.gz"
-  #               target: "/home/${{ secrets.ARTIFACTS_USERNAME }}/GithubArtifacts/"
-  #               timeout: "30s"
-  #               command_timeout: "10m"
