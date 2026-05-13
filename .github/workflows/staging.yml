@@ -26,6 +26,7 @@ on:
           - createorderservice
           - gatewayservice
           - website
+          - backpanel
           - infrastructure
 
 jobs:
@@ -46,6 +47,13 @@ jobs:
   deploy-website:
     if: github.event.inputs.service == 'website'
     uses: ./.github/workflows/website-deployment.yml
+    with:
+      environment: development
+    secrets: inherit
+
+  deploy-backpanel:
+    if: github.event.inputs.service == 'backpanel'
+    uses: ./.github/workflows/backpanel-deployment.yml
     with:
       environment: development
     secrets: inherit
