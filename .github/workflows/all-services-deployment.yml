@@ -39,25 +39,24 @@ jobs:
     name: Deploy services in parallel to ${{ inputs.environment }}
     needs: build-services
     if: github.event.inputs.service == 'all' || github.event_name == 'push'
-    strategy:
-      max-parallel: 4
-      matrix:
-        service:
-          - exportservice
-          - generalseodataservice
-          - pushnotificationservice
-          - customerorderhistoryservice
-          - menuservice
-          - orderhistoryservice
-          - settingsdataservice
-          - clientnotifyservice
-          - orderupdateservice
-          - importservice
-          - createorderservice
-          - gatewayservice
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    uses: ./.github/workflows/deploy-image.yml
-    with:
-      environment: ${{ inputs.environment }}
-      service: ${{ matrix.service }}
-    secrets: inherit
+      - name: Deploy all services
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
+            git pull
+            # Pull the latest images from your registry
+            docker compose -f docker-compose.yml pull
+
+            # Recreate containers with the new images
+            docker compose -f docker-compose.yml up -d --remove-orphans

@@ -29,14 +29,7 @@ on:
           - infrastructure
 
 jobs:
-  transfer-base-files:
-    uses: ./.github/workflows/transfer-base-files.yml
-    with:
-      environment: development
-    secrets: inherit
-
   infrastructure:
-    needs: transfer-base-files
     if: github.event.inputs.service == 'infrastructure'
     uses: ./.github/workflows/infrastructure-deployment.yml
     with:
@@ -44,7 +37,6 @@ jobs:
     secrets: inherit
 
   deploy-all-services:
-    needs: transfer-base-files
     if: github.event.inputs.service == 'all'
     uses: ./.github/workflows/all-services-deployment.yml
     with:
@@ -53,14 +45,12 @@ jobs:
 
   deploy-website:
     if: github.event.inputs.service == 'website'
-    needs: transfer-base-files
     uses: ./.github/workflows/website-deployment.yml
     with:
       environment: development
     secrets: inherit
 
   single-service-deployment:
-    needs: transfer-base-files
     if: contains(github.event.inputs.service, 'service')
     uses: ./.github/workflows/single-service-deployment.yml
     with:
