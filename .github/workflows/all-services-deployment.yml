@@ -35,36 +35,9 @@ jobs:
       service: ${{ matrix.service }}
     secrets: inherit
 
-  transfer-services:
-    name: Transfer services in parallel to ${{ inputs.environment }}
-    needs: build-services
-    if: github.event.inputs.service == 'all' || github.event_name == 'push'
-    strategy:
-      max-parallel: 1
-      matrix:
-        service:
-          - exportservice
-          - generalseodataservice
-          - pushnotificationservice
-          - customerorderhistoryservice
-          - menuservice
-          - orderhistoryservice
-          - settingsdataservice
-          - clientnotifyservice
-          - orderupdateservice
-          - importservice
-          - createorderservice
-          - gatewayservice
-
-    uses: ./.github/workflows/transfer-image.yml
-    with:
-      environment: ${{ inputs.environment }}
-      service: ${{ matrix.service }}
-    secrets: inherit
-
   deploy-services:
     name: Deploy services in parallel to ${{ inputs.environment }}
-    needs: transfer-services
+    needs: build-services
     if: github.event.inputs.service == 'all' || github.event_name == 'push'
     strategy:
       max-parallel: 4
