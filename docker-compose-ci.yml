@@ -258,3 +258,4 @@ services:
 networks:
   patroni-net:
     driver: bridge
+    name: patroni-net
