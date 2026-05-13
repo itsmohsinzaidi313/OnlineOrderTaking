@@ -27,8 +27,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: registry.eatx.pk
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: "${{ secrets.REGISTRY_PASSWORD }}"
+          username: "ygensystems"
+          password: "$2y$05$o54NnejK7KomeBFAbQwgieJC7A0cXf7tPYDGYH5qEG7MnLs9CD01."
 
       - name: Restore .env
         run: |
