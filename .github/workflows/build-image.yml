@@ -28,7 +28,7 @@ jobs:
         with:
           registry: registry.eatx.pk
           username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+          password: "${{ secrets.REGISTRY_PASSWORD }}"
 
       - name: Restore .env
         run: |
