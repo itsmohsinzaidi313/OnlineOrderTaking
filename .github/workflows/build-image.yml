@@ -1,56 +1,41 @@
 name: Build Image
 
 on:
-    workflow_call:
-        inputs:
-            service:
-                description: "Service to build (or 'all' for all services)"
-                required: true
-                type: string
-            environment:
-                description: "Deployment environment (production or development)"
-                required: true
-                type: string
+  workflow_call:
+    inputs:
+      service:
+        description: "Service to build (or 'all' for all services)"
+        required: true
+        type: string
+      environment:
+        description: "Deployment environment (production or development)"
+        required: true
+        type: string
 
 jobs:
-    build-image:
-        runs-on: ubuntu-latest
-        environment: ${{ inputs.environment }}
-        if: contains(inputs.service, 'service')
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v6
+  build-and-push:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            - name: Build ${{ inputs.service }}
-              run: |
-                  docker compose build ${{ inputs.service }}
-                  # Resolve actual image name produced by docker compose build.
-                  IMAGE_NAME=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^((onlineordertaking-)?${{ inputs.service }}):" | head -1)
-                  if [ -z "$IMAGE_NAME" ]; then
-                      for candidate in "onlineordertaking-${{ inputs.service }}" "${{ inputs.service }}"; do
-                      if docker image inspect "$candidate" >/dev/null 2>&1; then
-                          IMAGE_NAME="$candidate"
-                          break
-                      fi
-                      done
-                  fi
-                  if [ -z "$IMAGE_NAME" ]; then
-                      echo "No image found for ${{ inputs.service }} after build."
-                      docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "${{ inputs.service }}|onlineordertaking-${{ inputs.service }}" || true
-                      exit 1
-                  fi
-                  echo "Saving image: $IMAGE_NAME"
-                  docker save "$IMAGE_NAME" | gzip > "${{ inputs.service }}.tar.gz"
-                  du -h "${{ inputs.service }}.tar.gz"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-            - name: Upload ${{ inputs.service }} to image cache
-              uses: appleboy/scp-action@v1
-              with:
-                host: ${{ secrets.ARTIFACTS_HOST }}
-                username: ${{ secrets.ARTIFACTS_USERNAME }}
-                key: ${{ secrets.ARTIFACTS_SSH_KEY }}
-                port: ${{ secrets.ARTIFACTS_SSH_PORT }}
-                source: "${{ inputs.service }}.tar.gz"
-                target: "/home/${{ secrets.ARTIFACTS_USERNAME }}/GithubArtifacts/"
-                timeout: "30s"
-                command_timeout: "10m"
+      - name: Log in to private registry
+        uses: docker/login-action@v3
+        with:
+          registry: registry.eatx.pk
+          username: "ygensystems"
+          password: "$2y$05$o54NnejK7KomeBFAbQwgieJC7A0cXf7tPYDGYH5qEG7MnLs9CD01."
+
+      - name: Restore .env
+        run: |
+          echo "${{ secrets.ENV_FILE_BASE64 }}" | base64 -d > .env
+
+      - name: Build all images
+        run: docker compose -f docker-compose-ci.yml build ${{ inputs.service }}
+
+      - name: Push all images
+        run: docker compose -f docker-compose-ci.yml push ${{ inputs.service }}

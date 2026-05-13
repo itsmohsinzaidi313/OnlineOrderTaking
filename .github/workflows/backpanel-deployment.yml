@@ -25,13 +25,13 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT }}
           script: |
-            if [ -d "OnlineOrderTaking/nextjs/web-ordering" ]; then
-              echo Website directory exists on VPS
+            if [ -d "OnlineOrderTaking/Backpanel/ygen_backpanel" ]; then
+              echo Backpanel directory exists on VPS
             else
-              echo Website directory does not exist on VPS && exit 1
+              echo Backpanel directory does not exist on VPS && exit 1
             fi
 
-      - name: Transfer Docker for website
+      - name: Transfer Docker for backpanel
         uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -51,10 +51,10 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT }}
           script: |
-            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/Backpanel
+            cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking/Backpanel/ygen_backpanel
             git pull && cd ..
             # Build and restart backpanel
             docker compose stop backpanel 2>/dev/null || true
             docker rm backpanel 2>/dev/null || true
-            docker compose build backpanel --no-cache
-            docker compose up -d backpanel
+            docker compose build --no-cache
+            docker compose up -d --remove-orphans

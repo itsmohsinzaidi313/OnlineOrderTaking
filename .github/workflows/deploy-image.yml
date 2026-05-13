@@ -29,9 +29,9 @@ jobs:
           port: ${{ secrets.VPS_SSH_PORT }}
           script: |
             cd /home/${{ secrets.VPS_USERNAME }}/OnlineOrderTaking
-            docker compose stop ${{ inputs.service }} 2>/dev/null || true
-            docker compose rm -f ${{ inputs.service }} 2>/dev/null || true
-            docker image rm "onlineordertaking-${{ inputs.service }}" 2>/dev/null || true
-            gunzip -c ${{ inputs.service }}.tar.gz | docker load 2>/dev/null || true
-            docker compose up -d ${{ inputs.service }} --remove-orphans 2>/dev/null || true
-            rm -f ${{ inputs.service }}.tar.gz 2>/dev/null || true
+            git pull
+            # Pull the latest images from your registry
+            docker compose pull ${{ inputs.service }}
+
+            # Recreate containers with the new images
+            docker compose up -d --remove-orphans ${{ inputs.service }}

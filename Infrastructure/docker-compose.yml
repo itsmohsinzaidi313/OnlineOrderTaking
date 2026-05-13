@@ -1,0 +1,197 @@
+services:
+# etcd for Patroni configuration management
+  etcd:
+    build:
+      context: ./etcd
+      dockerfile: Dockerfile
+    container_name: etcd
+    environment:
+      - ETCD_NAME=${ETCD_NAME}
+      - ETCD_DATA_DIR=${ETCD_DATA_DIR}
+      - ETCD_LISTEN_CLIENT_URLS=${ETCD_LISTEN_CLIENT_URLS}
+      - ETCD_LISTEN_PEER_URLS=${ETCD_LISTEN_PEER_URLS}
+      - ETCD_ADVERTISE_CLIENT_URLS=${ETCD_ADVERTISE_CLIENT_URLS}
+    volumes:
+      - etcd_data:/etcd-data
+    networks:
+      - patroni-net
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health", "--dial-timeout=5s", "--command-timeout=5s"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  # Patroni Node 1
+  patroni1:
+    build:
+      context: ./patroni-docker
+      dockerfile: Dockerfile
+    container_name: patroni1
+    hostname: patroni1
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      PGDATA: "${PGDATA}"
+      PATRONI_SCOPE: "${PATRONI_SCOPE}"
+      PATRONI_NAME: "${PATRONI_NAME}"
+      PATRONI_NAMESPACE: "${PATRONI_NAMESPACE}"
+      PATRONI_ETCD3_HOSTS: "${PATRONI_ETCD3_HOSTS}"
+      PATRONI_RESTAPI_LISTEN: "${PATRONI_RESTAPI_LISTEN}"
+      PATRONI_RESTAPI_CONNECT_ADDRESS: "${PATRONI_RESTAPI_CONNECT_ADDRESS}"
+      PATRONI_POSTGRESQL_LISTEN: "${PATRONI_POSTGRESQL_LISTEN}"
+      PATRONI_POSTGRESQL_CONNECT_ADDRESS: "${PATRONI_POSTGRESQL_CONNECT_ADDRESS}"
+      PATRONI_POSTGRESQL_DATA_DIR: "${PATRONI_POSTGRESQL_DATA_DIR}"
+      PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_USERNAME: "${PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_USERNAME}"
+      PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_PASSWORD: "${PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_PASSWORD}"
+      PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME: "${PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME}"
+      PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD: "${PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD}"
+    volumes:
+      - ~/patroni_storage/patroni1:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - patroni-net
+    depends_on:
+      - etcd
+
+  # Patroni Node 2  
+  patroni2:
+    build:
+      context: ./patroni-docker
+      dockerfile: Dockerfile
+    container_name: patroni2
+    hostname: patroni2
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      PGDATA: "${PGDATA}"
+      PATRONI_SCOPE: "${PATRONI_SCOPE}"
+      PATRONI_NAME: "patroni2"
+      PATRONI_NAMESPACE: "${PATRONI_NAMESPACE}"
+      PATRONI_ETCD3_HOSTS: "${PATRONI_ETCD3_HOSTS}"
+      PATRONI_RESTAPI_LISTEN: "${PATRONI_RESTAPI_LISTEN}"
+      PATRONI_RESTAPI_CONNECT_ADDRESS: "patroni2:8008"
+      PATRONI_POSTGRESQL_LISTEN: "${PATRONI_POSTGRESQL_LISTEN}"
+      PATRONI_POSTGRESQL_CONNECT_ADDRESS: "patroni2:5433"
+      PATRONI_POSTGRESQL_DATA_DIR: "${PATRONI_POSTGRESQL_DATA_DIR}"
+      PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_USERNAME: "${PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_USERNAME}"
+      PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_PASSWORD: "${PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_PASSWORD}"
+      PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME: "${PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME}"
+      PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD: "${PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD}"
+    volumes:
+      - ~/patroni_storage/patroni2:/var/lib/postgresql/data
+    networks:
+      - patroni-net
+    depends_on:
+      - etcd
+      - patroni1
+
+  # Patroni Node 3
+  patroni3:
+    build:
+      context: ./patroni-docker
+      dockerfile: Dockerfile
+    container_name: patroni3
+    hostname: patroni3
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      PGDATA: "${PGDATA}"
+      PATRONI_SCOPE: "${PATRONI_SCOPE}"
+      PATRONI_NAME: "patroni3"
+      PATRONI_NAMESPACE: "${PATRONI_NAMESPACE}"
+      PATRONI_ETCD3_HOSTS: "${PATRONI_ETCD3_HOSTS}"
+      PATRONI_RESTAPI_LISTEN: "${PATRONI_RESTAPI_LISTEN}"
+      PATRONI_RESTAPI_CONNECT_ADDRESS: "patroni3:8008"
+      PATRONI_POSTGRESQL_LISTEN: "${PATRONI_POSTGRESQL_LISTEN}"
+      PATRONI_POSTGRESQL_CONNECT_ADDRESS: "patroni3:5433"
+      PATRONI_POSTGRESQL_DATA_DIR: "${PATRONI_POSTGRESQL_DATA_DIR}"
+      PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_USERNAME: "${PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_USERNAME}"
+      PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_PASSWORD: "${PATRONI_POSTGRESQL_AUTHENTICATION_REPLICATION_PASSWORD}"
+      PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME: "${PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_USERNAME}"
+      PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD: "${PATRONI_POSTGRESQL_AUTHENTICATION_SUPERUSER_PASSWORD}"
+    volumes:
+      - ~/patroni_storage/patroni3:/var/lib/postgresql/data
+    networks:
+      - patroni-net
+    depends_on:
+      - etcd
+      - patroni1
+
+  # HAProxy for load balancing
+  haproxy:
+    build:
+      context: ./haproxy
+      dockerfile: Dockerfile
+    container_name: haproxy
+    ports:
+      - "127.0.0.1:${HAPROXY_PORT_PRIMARY}:${HAPROXY_PORT_PRIMARY}"   # PostgreSQL (host port primary -> container primary)
+      - "127.0.0.1:${HAPROXY_PORT_REPLICA}:${HAPROXY_PORT_REPLICA}"   # PostgreSQL read-only frontend (host replica -> container replica)
+      - "127.0.0.1:${HAPROXY_STATS_PORT}:${HAPROXY_STATS_PORT}"   # HAProxy stats
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - patroni-net
+    depends_on:
+      - patroni1
+      - patroni2
+      - patroni3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${HAPROXY_STATS_PORT}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - patroni-net
+ 
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    ports:
+      - "8085:8081"
+    depends_on:
+      - redis
+    networks:
+      - patroni-net
+    restart: unless-stopped
+
+  # RabbitMQ broker with management UI
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+      - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST}
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - patroni-net
+
+volumes:
+  etcd_data:
+  redis_data:
+  rabbitmq_data:
+
+networks:
+  patroni-net:
+    external: true
+    name: patroni-net
