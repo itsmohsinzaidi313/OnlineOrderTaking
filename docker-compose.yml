@@ -1,6 +1,6 @@
 services:
   exportservice:
-    image: registry.eatx.pk/online-order-taking/exportservice:latest
+    image: registry.eatx.pk/online-order-taking/exportservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
@@ -12,7 +12,7 @@ services:
       - patroni-net
 
   generalseodataservice:
-    image: registry.eatx.pk/online-order-taking/generalseodataservice:latest
+    image: registry.eatx.pk/online-order-taking/generalseodataservice:${IMAGE_TAG}
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://generalseodataservice:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
@@ -23,7 +23,7 @@ services:
       - patroni-net
 
   pushnotificationservice:
-    image: registry.eatx.pk/online-order-taking/pushnotificationservice:latest
+    image: registry.eatx.pk/online-order-taking/pushnotificationservice:${IMAGE_TAG}
     ports:
       - "8080"
     environment:
@@ -43,7 +43,7 @@ services:
       - patroni-net
 
   customerorderhistoryservice:
-    image: registry.eatx.pk/online-order-taking/customerorderhistoryservice:latest
+    image: registry.eatx.pk/online-order-taking/customerorderhistoryservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}

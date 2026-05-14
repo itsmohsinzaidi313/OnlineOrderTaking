@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: ./ExportService/Dockerfile
-    image: registry.eatx.pk/online-order-taking/exportservice:latest
+    image: registry.eatx.pk/online-order-taking/exportservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
@@ -19,7 +19,7 @@ services:
     build:
       context: .
       dockerfile: ./GeneralSeoDataService/Dockerfile
-    image: registry.eatx.pk/online-order-taking/generalseodataservice:latest
+    image: registry.eatx.pk/online-order-taking/generalseodataservice:${IMAGE_TAG}
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://generalseodataservice:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
@@ -33,7 +33,7 @@ services:
     build:
       context: .
       dockerfile: ./PushNotificationService/Dockerfile
-    image: registry.eatx.pk/online-order-taking/pushnotificationservice:latest
+    image: registry.eatx.pk/online-order-taking/pushnotificationservice:${IMAGE_TAG}
     ports:
       - "8080"
     environment:
@@ -56,7 +56,7 @@ services:
     build:
       context: .
       dockerfile: ./CustomerOrderHistoryService/Dockerfile
-    image: registry.eatx.pk/online-order-taking/customerorderhistoryservice:latest
+    image: registry.eatx.pk/online-order-taking/customerorderhistoryservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -70,7 +70,7 @@ services:
     build:
       context: .
       dockerfile: ./MenuService/Dockerfile
-    image: registry.eatx.pk/online-order-taking/menuservice:latest
+    image: registry.eatx.pk/online-order-taking/menuservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -84,7 +84,7 @@ services:
     build:
       context: .
       dockerfile: ./OrderHistoryService/Dockerfile
-    image: registry.eatx.pk/online-order-taking/orderhistoryservice:latest
+    image: registry.eatx.pk/online-order-taking/orderhistoryservice:${IMAGE_TAG}
     ports:
       - "8080"
     environment:
@@ -104,7 +104,7 @@ services:
     build:
       context: .
       dockerfile: ./SettingsDataService/Dockerfile
-    image: registry.eatx.pk/online-order-taking/settingsdataservice:latest
+    image: registry.eatx.pk/online-order-taking/settingsdataservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -118,7 +118,7 @@ services:
     build:
       context: .
       dockerfile: ./ClientNotificationService/Dockerfile
-    image: registry.eatx.pk/online-order-taking/clientnotifyservice:latest
+    image: registry.eatx.pk/online-order-taking/clientnotifyservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -132,7 +132,7 @@ services:
     build:
       context: .
       dockerfile: ./OrderUpdateService/Dockerfile
-    image: registry.eatx.pk/online-order-taking/orderupdateservice:latest
+    image: registry.eatx.pk/online-order-taking/orderupdateservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -146,7 +146,7 @@ services:
     build:
       context: .
       dockerfile: ./ImportService/Dockerfile
-    image: registry.eatx.pk/online-order-taking/importservice:latest
+    image: registry.eatx.pk/online-order-taking/importservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
       - CONNECTIONSTRINGS__POSTGRES=${RWSQLCONNECTION}
@@ -157,7 +157,7 @@ services:
     build:
       context: .
       dockerfile: ./CreateOrderService/Dockerfile
-    image: registry.eatx.pk/online-order-taking/createorderservice:latest
+    image: registry.eatx.pk/online-order-taking/createorderservice:${IMAGE_TAG}
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://createorderservice:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
@@ -175,7 +175,7 @@ services:
     build:
       context: .
       dockerfile: ./GatewayService/Dockerfile
-    image: registry.eatx.pk/online-order-taking/gatewayservice:latest
+    image: registry.eatx.pk/online-order-taking/gatewayservice:${IMAGE_TAG}
     ports:
       - "8090:8080"
     environment:

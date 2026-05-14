@@ -29,7 +29,7 @@ jobs:
 
       - name: Restore .env
         run: |
-          echo "${{ secrets.ENV_FILE_BASE64 }}" | base64 -d > .env
+          echo "${{ secrets.SERVICES_ENV }}" | base64 -d > .env
 
       - name: Build all images
         run: docker compose -f docker-compose-ci.yml build
