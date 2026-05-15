@@ -1,4 +1,5 @@
 services:
+
   exportservice:
     image: registry.eatx.pk/online-order-taking/exportservice:${IMAGE_TAG}
     environment:
@@ -54,9 +55,7 @@ services:
       - patroni-net
 
   menuservice:
-    build:
-      context: .
-      dockerfile: ./MenuService/Dockerfile
+    image: registry.eatx.pk/online-order-taking/menuservice:latest
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -67,9 +66,7 @@ services:
       - patroni-net
 
   orderhistoryservice:
-    build:
-      context: .
-      dockerfile: ./OrderHistoryService/Dockerfile
+    image: registry.eatx.pk/online-order-taking/orderhistoryservice:latest
     ports:
       - "8080"
     environment:
@@ -86,9 +83,7 @@ services:
       - patroni-net
 
   settingsdataservice:
-    build:
-      context: .
-      dockerfile: ./SettingsDataService/Dockerfile
+    image: registry.eatx.pk/online-order-taking/settingsdataservice:latest
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -99,9 +94,7 @@ services:
       - patroni-net
 
   clientnotifyservice:
-    build:
-      context: .
-      dockerfile: ./ClientNotificationService/Dockerfile
+    image: registry.eatx.pk/online-order-taking/clientnotifyservice:latest
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -112,9 +105,7 @@ services:
       - patroni-net
 
   orderupdateservice:
-    build:
-      context: .
-      dockerfile: ./OrderUpdateService/Dockerfile
+    image: registry.eatx.pk/online-order-taking/orderupdateservice:latest
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -125,9 +116,7 @@ services:
       - patroni-net
 
   importservice:
-    build:
-      context: .
-      dockerfile: ./ImportService/Dockerfile
+    image: registry.eatx.pk/online-order-taking/importservice:latest
     environment:
       - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
       - CONNECTIONSTRINGS__POSTGRES=${RWSQLCONNECTION}
@@ -135,9 +124,7 @@ services:
       - patroni-net
 
   createorderservice:
-    build:
-      context: .
-      dockerfile: ./CreateOrderService/Dockerfile
+    image: registry.eatx.pk/online-order-taking/createorderservice:latest
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://createorderservice:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
@@ -152,9 +139,7 @@ services:
       - patroni-net
 
   gatewayservice:
-    build:
-      context: .
-      dockerfile: ./GatewayService/Dockerfile
+    image: registry.eatx.pk/online-order-taking/gatewayservice:latest
     ports:
       - "8090:8080"
     environment:
