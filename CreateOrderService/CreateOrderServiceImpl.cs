@@ -6,6 +6,9 @@ using static PointofSaleModels.Protos.CreateOrderService;
 using PointofSaleModels.Application;
 using System.Text.Json;
 using PointofSaleModels.PGDatabaseModels;
+using PointofSaleModels.Settings;
+using PointofSaleModels.ServicePayloads;
+using PointofSaleModels.Services;
 
 namespace CreateOrderService
 {
@@ -14,11 +17,13 @@ namespace CreateOrderService
         private readonly JsonSerializerOptions options;
         private readonly IDbContextFactory<RestaurantsContext> contextFactory;
         private readonly Implementation impl;
+        private readonly IRabbitMqPublisher publisher;
 
-        public CreateOrderServiceImpl(IDbContextFactory<Db.RestaurantsContext> contextFactory, Implementation impl)
+        public CreateOrderServiceImpl(IDbContextFactory<Db.RestaurantsContext> contextFactory, Implementation impl, IRabbitMqPublisher publisher)
         {
             this.contextFactory = contextFactory;
             this.impl = impl;
+            this.publisher = publisher;
             options = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
@@ -32,11 +37,13 @@ namespace CreateOrderService
             try
             {
                 await impl.SaveOrderAsync(connectionString, order!);
-                var orderToken = order?.OrderToken;
+                var orderToken = order?.OrderToken ?? throw new Exception("Order token not generated");
+                order.OrderStatusLogs = await impl.OrderStatusLogs(connectionString, orderToken);
                 if (orderToken == null)
                 {
                     return new PlaceOrderResponse { Success = false, Message = "Failed to place order" };
                 }
+                await NotifyServices(connectionString, order);
                 var response = new PlaceOrderResponse { Success = true, OrderNumber = orderToken, Message = "Order placed successfully" };
                 return response;
             }
@@ -59,6 +66,38 @@ namespace CreateOrderService
                 Success = placeOrderResponse.Success,
                 ResponseJson = JsonSerializer.Serialize(legacyResponse)
             };
+        }
+
+        private async Task NotifyServices(string connectionString, CustomerOrder order)
+        {
+            var requestPayload = new OrderServicePayload
+            {
+                BranchId = order.BranchId,
+                RestaurantId = 0,
+                DomainName = order.Domain,
+                ResponseKey = "CreateOrderResponse",
+                SignalRMethodName = "PlaceOrder"
+            };
+            await foreach (var userId in impl.GetBranchUsersIdsAsync(connectionString, requestPayload.BranchId))
+            {
+                await publisher.PublishToQueueAsync(RabbitMqQueues.PushNotificationRequestQueue, new PushNotificationServicePayload
+                {
+                    ClientId = $"branch:{userId}:*",
+                    Title = "New Order Received!",
+                    Message = $" New order received from the {order?.BranchName} branch - Order# {order?.OrderToken} — Rs.{double.Round(order?.AmountWithGst ?? 0.0 + order.DeliveryCharges ?? 0)}.",
+                });
+
+            }
+            await publisher.PublishToQueueAsync(RabbitMqQueues.OrderHistoryRequestQueue,
+                   new DataServicePayload(requestPayload)
+                   {
+                       OrderToken = order.OrderToken
+                   });
+            await publisher.PublishToQueueAsync(RabbitMqQueues.ExportRequestQueue, new ExportServicePayload(requestPayload)
+            {
+                ExportType = "NewOrder",
+                OrderNumber = order.OrderToken,
+            });
         }
 
         private CustomerOrder DeserializeJson(string orderJson)
