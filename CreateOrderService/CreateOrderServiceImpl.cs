@@ -6,9 +6,9 @@ using static PointofSaleModels.Protos.CreateOrderService;
 using PointofSaleModels.Application;
 using System.Text.Json;
 using PointofSaleModels.PGDatabaseModels;
-using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using PointofSaleModels.ServicePayloads;
+using PointofSaleModels.Services;
 
 namespace CreateOrderService
 {
@@ -17,9 +17,9 @@ namespace CreateOrderService
         private readonly JsonSerializerOptions options;
         private readonly IDbContextFactory<RestaurantsContext> contextFactory;
         private readonly Implementation impl;
-        private readonly RabbitMqPublisher publisher;
+        private readonly IRabbitMqPublisher publisher;
 
-        public CreateOrderServiceImpl(IDbContextFactory<Db.RestaurantsContext> contextFactory, Implementation impl, RabbitMqPublisher publisher)
+        public CreateOrderServiceImpl(IDbContextFactory<Db.RestaurantsContext> contextFactory, Implementation impl, IRabbitMqPublisher publisher)
         {
             this.contextFactory = contextFactory;
             this.impl = impl;
