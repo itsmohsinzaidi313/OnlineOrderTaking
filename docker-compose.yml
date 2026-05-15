@@ -55,7 +55,7 @@ services:
       - patroni-net
 
   menuservice:
-    image: registry.eatx.pk/online-order-taking/menuservice${IMAGE_TAG}
+    image: registry.eatx.pk/online-order-taking/menuservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -66,7 +66,7 @@ services:
       - patroni-net
 
   orderhistoryservice:
-    image: registry.eatx.pk/online-order-taking/orderhistoryservice${IMAGE_TAG}
+    image: registry.eatx.pk/online-order-taking/orderhistoryservice:${IMAGE_TAG}
     ports:
       - "8080"
     environment:
@@ -83,7 +83,7 @@ services:
       - patroni-net
 
   settingsdataservice:
-    image: registry.eatx.pk/online-order-taking/settingsdataservice${IMAGE_TAG}
+    image: registry.eatx.pk/online-order-taking/settingsdataservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -94,7 +94,7 @@ services:
       - patroni-net
 
   clientnotifyservice:
-    image: registry.eatx.pk/online-order-taking/clientnotifyservice${IMAGE_TAG}
+    image: registry.eatx.pk/online-order-taking/clientnotifyservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -105,7 +105,7 @@ services:
       - patroni-net
 
   orderupdateservice:
-    image: registry.eatx.pk/online-order-taking/orderupdateservice${IMAGE_TAG}
+    image: registry.eatx.pk/online-order-taking/orderupdateservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
       - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
@@ -116,7 +116,7 @@ services:
       - patroni-net
 
   importservice:
-    image: registry.eatx.pk/online-order-taking/importservice${IMAGE_TAG}
+    image: registry.eatx.pk/online-order-taking/importservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
       - CONNECTIONSTRINGS__POSTGRES=${RWSQLCONNECTION}
@@ -124,7 +124,7 @@ services:
       - patroni-net
 
   createorderservice:
-    image: registry.eatx.pk/online-order-taking/createorderservice${IMAGE_TAG}
+    image: registry.eatx.pk/online-order-taking/createorderservice:${IMAGE_TAG}
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://createorderservice:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
@@ -139,7 +139,7 @@ services:
       - patroni-net
 
   gatewayservice:
-    image: registry.eatx.pk/online-order-taking/gatewayservice${IMAGE_TAG}
+    image: registry.eatx.pk/online-order-taking/gatewayservice:${IMAGE_TAG}
     ports:
       - "8090:8080"
     environment:
