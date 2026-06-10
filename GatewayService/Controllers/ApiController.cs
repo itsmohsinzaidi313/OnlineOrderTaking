@@ -17,6 +17,7 @@ using static PointofSaleModels.Protos.OrderHistoryService;
 using static PointofSaleModels.Protos.PushNotificationService;
 using App = PointofSaleModels.Application;
 
+
 namespace GatewayService.Controllers
 {
     [ApiController]
