@@ -14,6 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		docker-compose.yml = docker-compose.yml
 		Backpanel\docker-compose.yml = Backpanel\docker-compose.yml
 		Website\docker-compose.yml = Website\docker-compose.yml
+		Infrastructure\docker-compose.yml = Infrastructure\docker-compose.yml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImportService", "ImportService\ImportService.csproj", "{2E75778C-5ECF-49A0-BEEC-8C216369B75D}"
@@ -39,6 +40,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomerOrderHistoryService", "CustomerOrderHistoryService\CustomerOrderHistoryService.csproj", "{37AF16E4-B1BD-4047-9C60-6AA4082EDF70}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralSeoDataService", "GeneralSeoDataService\GeneralSeoDataService.csproj", "{1D0F2A00-428A-4D50-AAD9-17C576721CCD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FoodpandaIntegrationService", "FoodpandaIntegrationService\FoodpandaIntegrationService.csproj", "{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -218,6 +221,18 @@ Global
 		{1D0F2A00-428A-4D50-AAD9-17C576721CCD}.Release|x64.Build.0 = Release|Any CPU
 		{1D0F2A00-428A-4D50-AAD9-17C576721CCD}.Release|x86.ActiveCfg = Release|Any CPU
 		{1D0F2A00-428A-4D50-AAD9-17C576721CCD}.Release|x86.Build.0 = Release|Any CPU
+		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Debug|x64.Build.0 = Debug|Any CPU
+		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Debug|x86.Build.0 = Debug|Any CPU
+		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Release|x64.ActiveCfg = Release|Any CPU
+		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Release|x64.Build.0 = Release|Any CPU
+		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Release|x86.ActiveCfg = Release|Any CPU
+		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,6 @@
+@FoodpandaIntegrationService_HostAddress = http://localhost:5290
+
+GET {{FoodpandaIntegrationService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

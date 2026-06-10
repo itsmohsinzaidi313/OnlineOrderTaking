@@ -3,8 +3,11 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using PointofSaleModels.;
+using PointofSaleModels.Integrations;
 using PointofSaleModels.Protos;
 using PointofSaleModels.ServicePayloads;
+using PointofSaleModels.Settings;
 using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -20,9 +23,20 @@ namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient, GeneralSeoDataServiceClient seoDataClient, CreateOrderServiceClient createOrderClient) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient, GeneralSeoDataServiceClient seoDataClient, CreateOrderServiceClient createOrderClient, Implementation impl) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
+
+        [HttpPost("PosIntegration/{token}/{order}/{remoteId}")]
+        public async Task<IActionResult> FoodpandaIntegration(string token, string order, string remoteId, [FromBody] FoodPandaPayloadModel payloadModel)
+        {
+            var payload = new IntegrationServicePayload<FoodPandaPayloadModel>
+            {
+                OrderPayload = payloadModel
+            };
+            await impl.QueueRequestPayload(RabbitMqQueues.FoodpandaIntegrationRequestQueue, payload);
+            return Ok();
+        }
 
         [HttpGet("seo")]
         public async Task<IActionResult> GetSeoData([FromQuery] string domain)
