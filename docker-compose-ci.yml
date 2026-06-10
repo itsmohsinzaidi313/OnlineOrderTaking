@@ -3,7 +3,7 @@ services:
   fpintegrationservice:
     build:
       context: .
-      dockerfile: ./FoodPandaIntegrationService/Dockerfile
+      dockerfile: ./FoodpandaIntegrationService/Dockerfile
     image: registry.eatx.pk/online-order-taking/fpintegrationservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
