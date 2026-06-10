@@ -1,9 +1,7 @@
 using GatewayService.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using PointofSaleModels.;
 using PointofSaleModels.Integrations;
 using PointofSaleModels.Protos;
 using PointofSaleModels.ServicePayloads;
