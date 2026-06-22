@@ -4,6 +4,7 @@ using PointofSaleModels.HealthChecks;
 using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
+using static PointofSaleModels.Protos.CreateOrderService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,11 @@ builder.Services
     .AddHostedService<RequestQueueListener>()
     .AddHealthChecks()
     .AddCheck<PostgresHealth>("health_check");
+builder.Services.AddGrpcClient<CreateOrderServiceClient>(x =>
+{
+    var address = builder.Configuration["GRPC:CREATEORDERHOST"] ?? throw new InvalidOperationException("CreateOrderService gRPC host is not configured.");
+    x.Address = new Uri(address);
+});
 
 var app = builder.Build();
 

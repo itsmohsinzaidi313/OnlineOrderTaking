@@ -1,12 +1,12 @@
 ﻿using System.Security.Cryptography;
 
-namespace CreateOrderService
+namespace PointofSaleModels
 {
-    internal static class TokenGenerator
+    public static class TokenGenerator
     {
         private const string Characters = "abcdefghijklmnopqrstuvwxyz0123456789";
 
-        internal static string GenerateToken(int halfLength = 4)
+        public static string GenerateToken(int halfLength = 4)
         {
             if (halfLength <= 0)
                 throw new ArgumentException("Length must be positive.", nameof(halfLength));
