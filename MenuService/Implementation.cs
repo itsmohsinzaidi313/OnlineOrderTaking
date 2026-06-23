@@ -184,7 +184,7 @@ internal class Implementation()
                     Description = dbProduct.ProductDescription ?? "N/A",
                     SortOrder = dbProduct.SortOrder,
                 };
-                foreach (var dbProductDetail in dbMenuData.ProductDetails.Where(x => x.ProductId == dbProduct.ProductId))
+                foreach (var dbProductDetail in dbMenuData.ProductDetails.Where(x => x.ProductId == dbProduct.ProductId && x.OnlyForDeal == false))
                 {
                     //var orderMode = dbMenuData.OrderModes.Join(dbMenuData.OrderModeDiscountMappings, a => a.SetupDetailId, b => b.OrderModeId, (a, b) => new { OrderMode = a.Flex1, b.DiscountId })
                     //.ToDictionary(x => x.DiscountId, x => x.OrderMode);
