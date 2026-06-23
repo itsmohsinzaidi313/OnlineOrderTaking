@@ -172,7 +172,10 @@ internal class Implementation()
                 Layout = dbCategory.ProductCardStyle ?? "vertical",
                 Order = dbCategory.SortOrder,
             };
-            foreach (var dbProduct in dbMenuData.Products.Where(x => x.ProductCategoryId == dbCategory.CategoryId))
+            foreach (var dbProduct in dbMenuData.Products
+                .Join(dbMenuData.ProductDetails, a => a.ProductId, b => b.ProductId, (a,b) => new {b.OnlyForDeal, a})
+                .Where(x => x.a.ProductCategoryId == dbCategory.CategoryId && x.OnlyForDeal == false)
+                .Select(x => x.a))
             {
                 var item = new MenuItem
                 {
@@ -184,7 +187,7 @@ internal class Implementation()
                     Description = dbProduct.ProductDescription ?? "N/A",
                     SortOrder = dbProduct.SortOrder,
                 };
-                foreach (var dbProductDetail in dbMenuData.ProductDetails.Where(x => x.ProductId == dbProduct.ProductId && x.OnlyForDeal == false))
+                foreach (var dbProductDetail in dbMenuData.ProductDetails.Where(x => x.ProductId == dbProduct.ProductId))
                 {
                     //var orderMode = dbMenuData.OrderModes.Join(dbMenuData.OrderModeDiscountMappings, a => a.SetupDetailId, b => b.OrderModeId, (a, b) => new { OrderMode = a.Flex1, b.DiscountId })
                     //.ToDictionary(x => x.DiscountId, x => x.OrderMode);
