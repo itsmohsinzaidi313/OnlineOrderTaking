@@ -31,6 +31,9 @@ namespace GatewayService.Controllers
         {
             var payload = new IntegrationServicePayload<FoodPandaPayloadModel>
             {
+                Token = token,
+                Order = order,
+                RemoteId = remoteId,
                 OrderPayload = payloadModel
             };
             await impl.QueueRequestPayload(RabbitMqQueues.FoodpandaIntegrationRequestQueue, payload);

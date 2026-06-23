@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PointofSaleModels.Application;
 using PointofSaleModels.Integrations;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
@@ -23,8 +24,14 @@ namespace FoodpandaIntegrationService
                 var accessToken = await RequestAccessTokenAsync() ?? throw new Exception("Access token is missing");
 
                 await OrderAcceptedStatus(accessToken, orderCode, url.ToString());
-
-                await SaveToDatabase(order);
+                var restaurantsContext = contextFactory.CreateDbContext();
+                var domain = order.Code switch
+                {
+                    "POS123" => "pathan.eatx.pk",
+                    _ => throw new Exception("Unknown order code")
+                };
+                var restaurant = await restaurantsContext.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domain) ?? throw new Exception("Restaurant not found");
+                await SaveToDatabase(restaurant.ConnectionString, order);
             }
             catch (Exception ex)
             {
@@ -33,10 +40,23 @@ namespace FoodpandaIntegrationService
             }
         }
 
-        private static async Task SaveToDatabase(FoodPandaPayloadModel order)
+        private async Task SaveToDatabase(string connectionString, FoodPandaPayloadModel order)
         {
-            var dbContext = GetDbContext("");
+            var dbContext = GetDbContext(connectionString);
             var strategy = dbContext.Database.CreateExecutionStrategy();
+            var companyId = await dbContext.SetupCompanies.Select(x => x.CompanyId).FirstOrDefaultAsync();
+            var branchId = await dbContext.BranchMasters.Select(x => x.BranchId).FirstOrDefaultAsync();
+            var areaId = await dbContext.BranchDetails.Where(x=> x.BranchId == branchId).Select(x => x.AreaId).FirstOrDefaultAsync();
+            var itemIds = order.Products?.Select(x => int.Parse(x.Id.ToString())).ToList() ?? [];
+            var deals = await dbContext.DealItemDetails
+                .Where(x => itemIds.Contains(x.ProductDetailId))
+                .ToListAsync();
+            var dealIds = deals.Select(d => d.ProductDetailId).Distinct().ToList();
+            itemIds.RemoveAll(dealIds.Contains);
+
+            var products = await dbContext.ProductDetails
+                .Where(x => itemIds.Contains(x.ProductDetailId))
+                .ToListAsync();
 
             await strategy.ExecuteAsync(
                 order,
@@ -47,18 +67,26 @@ namespace FoodpandaIntegrationService
                     {
                         var orderMaster = new Db.OrderMaster
                         {
+                            CompanyId = companyId,
+                            BranchId = branchId,
+                            AreaId = areaId,
+                            
+                            IsActive = true,
                             SpecialInstruction = orderData.Comments?.CustomerComment,
                         };
 
                         foreach (var product in orderData.Products ?? [])
                         {
+                            var pd = products.FirstOrDefault(p => p.ProductDetailId == int.Parse(product.Id.ToString())) ?? throw new Exception("Product not found");
                             var orderDetail = new Db.OrderDetail
                             {
-                                ProductDetailId = int.Parse(product.Id.ToString()),
+                                OrderMasterId = orderMaster.OrderMasterId,
+                                ProductDetailId = pd.ProductDetailId,
                                 IsActive = true,
-                                PriceWithoutGst = (double)product.UnitPrice,
+                                PriceWithoutGst = pd.Price,
                                 Quantity = (int)product.Quantity,
-                                SpecialInstruction = product.Comment
+                                SpecialInstruction = product.Comment,
+                                RandomId = new Random().Next(8999) + 1000,
                             };
                             orderMaster.OrderDetails.Add(orderDetail);
                         }
@@ -73,7 +101,7 @@ namespace FoodpandaIntegrationService
                         await dbContext.OrderMasters.AddAsync(orderMaster, ct);
                         await dbContext.SaveChangesAsync(ct);
                         await transaction.CommitAsync(ct);
-                        
+
                         return true;
                     }
                     catch

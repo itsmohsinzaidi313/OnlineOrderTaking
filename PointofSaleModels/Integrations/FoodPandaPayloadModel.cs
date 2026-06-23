@@ -143,7 +143,7 @@ namespace PointofSaleModels.Integrations
                         AlternateNumber = string.Empty,
 
                     },
-                    Products = (from Product x in Products
+                    Products = [.. (from Product x in Products
                                 select new PayloadProductModel
                                 {
                                     Comments = x.Comment,
@@ -152,7 +152,7 @@ namespace PointofSaleModels.Integrations
                                     POSCode = x.RemoteCode,
                                     Price = x.UnitPrice.ToString(),
                                     Quantity = x.Quantity.ToString(),
-                                }).ToList(),
+                                })],
                     PaymentDetail = new()
                     {
                         DeliveryCharges = Price.DeliveryFee.ToString(),
