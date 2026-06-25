@@ -25,6 +25,7 @@ namespace CreateOrderService
                 await impl.SaveOrderAsync(connectionString, requestPayload.Order!);
                 var orderToken = requestPayload.Order.OrderToken ?? throw new Exception("Order token not generated");
                 await SaveToken(requestPayload.DomainName, orderToken);
+                logger.LogInformation("Order processed successfully {orderToken}", orderToken);
                 requestPayload.Order.OrderStatusLogs = await impl.OrderStatusLogs(connectionString, orderToken);
                 response = new { Success = true, Message = "Order processed successfully", OrderNumber = orderToken };
                 await foreach (var userId in impl.GetBranchUsersIdsAsync(connectionString, requestPayload.BranchId))
