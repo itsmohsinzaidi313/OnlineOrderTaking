@@ -18,7 +18,10 @@ namespace GatewayService.ServiceResponseListeners
             var orderNumber = root.GetProperty("DataPayload").GetProperty("OrderNumber").GetString() ?? throw new Exception("OrderNumber not found");
             var signalrMethodName = root.GetProperty("SignalRMethodName").GetString() ?? throw new Exception("SignalRMethodName not found");
             logger.LogInformation("Received order response for order {OrderNumber} and user {UserId}\n{svcPayload}", orderNumber, clientId, svcPayload);
-            await implementation.SendToUser<OrderServicePayload>(svcPayload);
+            for (int i = 0; i < 3; i++)
+            {
+                await implementation.SendToUser<OrderServicePayload>(svcPayload);
+            }
             var db = redis.GetDatabase();
             await db.StringSetAsync($"order:{orderNumber}:{clientId}", svcPayload, expiry: TimeSpan.FromHours(2));
         }
