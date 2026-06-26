@@ -11,7 +11,6 @@ namespace GatewayService.ServiceResponseListeners
         public override string QueueName() => RabbitMqQueues.OrderResponseQueue;
         public override async Task OnMessage(string svcPayload)
         {
-            await Task.Delay(1000);
             using var doc = JsonDocument.Parse(svcPayload);
             var root = doc.RootElement;
             var clientId = root.GetProperty("UserId").GetString() ?? throw new Exception("UserId not found");

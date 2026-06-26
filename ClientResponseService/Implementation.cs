@@ -13,42 +13,6 @@ namespace ClientResponseService
         private const string PendingKeySuffix = ":pending";
         private const string ConnectionKeySuffix = ":connection";
 
-        internal async Task SendPendingPayload(string userId)
-        {
-            var db = redis.GetDatabase();
-            var pendingKey = $"{userId}{PendingKeySuffix}";
-            var deserializers = new Dictionary<string, Func<string, ServicePayload?>>()
-            {
-                { "DataResponse", json => JsonSerializer.Deserialize<DataServicePayload>(json) },
-                { "OrderResponse", json => JsonSerializer.Deserialize<OrderServicePayload>(json) }
-            };
-            while (true)
-            {
-                var item = await db.ListLeftPopAsync(pendingKey);
-                if (!item.HasValue) break;
-
-                var json = item.ToString();
-                using var doc = JsonDocument.Parse(json);
-                var root = doc.RootElement;
-
-                if (!root.TryGetProperty("Payload", out var payloadProp)) continue;
-                var payloadJson = payloadProp.GetRawText();
-
-                if (!payloadProp.TryGetProperty("SignalRMethodName", out var methodProp)) continue;
-
-                var method = methodProp.GetString();
-                if (string.IsNullOrEmpty(method)) continue;
-
-                var payload = deserializers[method](payloadJson);
-                if (payload == null) continue;
-
-                if (!payloadProp.TryGetProperty("ResponseKey", out var responseKeyProp)) continue;
-                var responseKey = responseKeyProp.GetString() ?? throw new Exception("ResposneKey not found");
-
-                await hub.Clients.User(userId).SendAsync(responseKey, payload);
-            }
-        }
-
         private bool UserOnline(string clientId)
         {
             var db = redis.GetDatabase();
@@ -85,6 +49,7 @@ namespace ClientResponseService
         {
             await hub.Clients.User(clientId).SendAsync(method, payload);
         }
+
         public async Task SendToUsers<T>(List<string> clientIds, string method, T payload) where T : ServicePayload
         {
             await hub.Clients.Users(clientIds).SendAsync(method, payload);
