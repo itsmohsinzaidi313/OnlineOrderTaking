@@ -140,8 +140,6 @@ services:
 
   clientresponseservice:
     image: registry.eatx.pk/online-order-taking/clientresponseservice:${IMAGE_TAG}
-    ports:
-      - "8090:8081"
     environment:
       - ASPNETCORE_ENVIRONMENT=${GATEWAY_ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=${GATEWAY_ASPNETCORE_URLS}
