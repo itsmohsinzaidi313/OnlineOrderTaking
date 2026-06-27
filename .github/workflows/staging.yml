@@ -26,7 +26,6 @@ on:
           - importservice
           - createorderservice
           - gatewayservice
-          - clientresponseservice
           - website
           - backpanel
           - infrastructure

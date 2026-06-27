@@ -1,13 +1,14 @@
-using ClientResponseService;
-using ClientResponseService.Models;
-using ClientResponseService.ServiceResponseListeners;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using PointofSaleModels.HealthChecks;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
 using StackExchange.Redis;
 using System.Text;
+using static PointofSaleModels.Protos.PushNotificationService;
+using static PointofSaleModels.Protos.OrderHistoryService;
+using static PointofSaleModels.Protos.GeneralSeoDataService;
+using PointofSaleModels.HealthChecks;
+using static PointofSaleModels.Protos.CreateOrderService;
+using ClientResponseService.ServiceResponseListeners;
+using ClientResponseService;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -19,6 +20,17 @@ builder.Services
     .Configure<RedisSettings>(builder.Configuration.GetSection("REDIS"));
 
 var redisSettings = builder.Configuration.GetSection("REDIS").Get<RedisSettings>() ?? new RedisSettings();
+
+// Services
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 builder.Services
     .AddSignalR()
@@ -44,40 +56,6 @@ builder.Services
 
 builder.Services.AddEndpointsApiExplorer();
 
-// JWT
-var jwtSettings = builder.Configuration.GetSection("JWT").Get<JwtSettings>() ?? new JwtSettings();
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        if (!string.IsNullOrWhiteSpace(jwtSettings.Key))
-        {
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
-                ValidateIssuer = true,
-                ValidIssuer = jwtSettings.Issuer,
-                ValidateAudience = true,
-                ValidAudience = jwtSettings.Audience,
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
-            };
-        }
-
-        // Allow SignalR to receive token via "access_token" query for websocket transport
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = ctx =>
-            {
-                var accessToken = ctx.Request.Query["access_token"].ToString();
-                if (!string.IsNullOrEmpty(accessToken) && ctx.HttpContext.Request.Path.StartsWithSegments("/gatewayHub"))
-                    ctx.Token = accessToken;
-                return Task.CompletedTask;
-            }
-        };
-    });
-
-
 builder.Services.AddAuthorization();
 
 builder.Services.AddHealthChecks()
@@ -86,6 +64,7 @@ builder.Services.AddHealthChecks()
 var app = builder.Build();
 
 app.UseRouting();
+app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
