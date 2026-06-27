@@ -172,9 +172,6 @@ services:
       - patroni-net
 
   clientresponseservice:
-    build:
-      context: .
-      dockerfile: ./ClientResponseService/Dockerfile
     image: registry.eatx.pk/online-order-taking/clientresponseservice:${IMAGE_TAG}
     environment:
       - ASPNETCORE_ENVIRONMENT=${GATEWAY_ASPNETCORE_ENVIRONMENT}
