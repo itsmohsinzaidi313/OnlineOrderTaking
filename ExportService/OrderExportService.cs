@@ -261,8 +261,21 @@ namespace ExportService
                     });
 
                     await sqlContext.OrderStatusLogs.AddRangeAsync(pgOrderStatusLogs);
-                    await sqlContext.SaveChangesAsync();
 
+                    var orderMasterLog = new OrderMasterLog
+                    {
+                        OrderMasterId = sqlOrderMaster.OrderMasterId,
+                        CompanyId = sqlOrderMaster.CompanyId,
+                        BranchId = sqlOrderMaster.BranchId,
+                        OrderStatusId = sqlOrderMaster.OrderStatusId,
+                        OrderDate = sqlOrderMaster.OrderDate,
+                        OrderTime = sqlOrderMaster.OrderTime,
+                        CreatedDate = createdDate,
+                        IsActive = true,
+                        IsSyncToPos = false
+                    };
+                    await sqlContext.OrderMasterLogs.AddAsync(orderMasterLog);
+                    await sqlContext.SaveChangesAsync();
 
                     await transaction.CommitAsync();
                     return true;
