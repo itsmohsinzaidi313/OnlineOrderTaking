@@ -63,7 +63,7 @@ namespace GatewayService
             var clientId = root.GetProperty("UserId").GetString() ?? throw new Exception("UserId not found");
             var responseKey = root.GetProperty("ResponseKey").GetString() ?? throw new Exception("ResponseKey not found");
 
-            logger.LogInformation("Gateway: Received {method} message", responseKey);
+            logger.LogInformation("Gateway: Received {responseKey} message", responseKey);
             var payload = JsonSerializer.Deserialize<T>(svcPayload)!;
 
             if (!UserOnline(clientId))
@@ -77,6 +77,7 @@ namespace GatewayService
             }
             else
             {
+                logger.LogInformation("Gateway: Sending {responseKey} message to user {clientId}", responseKey, clientId);
                 await SendToUser(clientId, responseKey, payload);
             }
         }

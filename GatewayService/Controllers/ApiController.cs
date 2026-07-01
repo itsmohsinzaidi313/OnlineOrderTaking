@@ -1,5 +1,4 @@
 using GatewayService.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -175,23 +174,6 @@ namespace GatewayService.Controllers
                 pendingKeys++;
             }
 
-            //foreach (var key in server.Keys(pattern: "subscription:*"))
-            //{
-            //    await db.KeyDeleteAsync(key);
-            //    subscriptions++;
-            //}
-
-            //foreach (var key in server.Keys(pattern: "*:connection"))
-            //{
-            //    await db.KeyDeleteAsync(key);
-            //    connections++;
-            //}
-
-            //foreach (var key in server.Keys(pattern: "order:*"))
-            //{
-            //    await db.KeyDeleteAsync(key);
-            //    orders++;
-            //}
             return Ok(new { Menu = menuKeys, DAndP = dAndPKeys, Pending = pendingKeys, Subscriptions = subscriptions, Connections = connections, Orders = orders });
         }
 

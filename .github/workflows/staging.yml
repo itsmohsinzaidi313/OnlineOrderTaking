@@ -3,7 +3,8 @@ name: Staging Deployment
 on:
   pull_request:
     types: [closed]
-    branches: [staging, private_registry_setup]
+    branches:
+      - staging
   workflow_dispatch:
     inputs:
       service:

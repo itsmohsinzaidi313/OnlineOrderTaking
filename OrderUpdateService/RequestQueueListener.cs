@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;

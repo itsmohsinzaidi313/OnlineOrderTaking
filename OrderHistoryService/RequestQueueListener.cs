@@ -29,6 +29,12 @@ namespace OrderHistoryService
                     var branches = await impl.GetBranchesAsync(connectionString);
                     payload = new { Orders = orders, OrderStatuses = orderStatuses, Riders = riders, Branches = branches };
                     success = true;
+                    var response = new DataServicePayload(requestPayload)
+                    {
+                        Success = success,
+                        DataPayload = payload
+                    };
+                    await publisher.PublishToQueueAsync(RabbitMqQueues.OrderHistoryResponseQueue, response);
                 }
                 else
                 {
@@ -51,12 +57,6 @@ namespace OrderHistoryService
                     Message = ex.InnerException == null ? ex.Message : ex.InnerException.Message
                 };
             }
-            var response = new DataServicePayload(requestPayload)
-            {
-                Success = success,
-                DataPayload = payload
-            };
-            await publisher.PublishToQueueAsync(RabbitMqQueues.OrderHistoryResponseQueue, response);
         }
 
         private async Task<string> GetConnectionString(string domainName)
