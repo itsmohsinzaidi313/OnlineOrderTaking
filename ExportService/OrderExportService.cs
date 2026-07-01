@@ -268,7 +268,7 @@ namespace ExportService
                         CompanyId = sqlOrderMaster.CompanyId,
                         BranchId = sqlOrderMaster.BranchId,
                         OrderStatusId = sqlOrderMaster.OrderStatusId,
-                        OrderDate = sqlOrderMaster.OrderDate?.ToDateTime(TimeOnly.MinValue),
+                        OrderDate = sqlOrderMaster.OrderDate,
                         OrderTime = sqlOrderMaster.OrderTime,
                         CreatedDate = createdDate,
                         IsActive = true,
@@ -293,7 +293,7 @@ namespace ExportService
         {
             var orderTime = pgOrderMaster.OrderTime;
             var orderDate = pgOrderMaster.OrderDate;
-            DateTime orderDateTime = ConvertToPkTime(orderDate?.ToDateTime(orderTime) ?? DateTime.MinValue);
+            DateTime orderDateTime = ConvertToPkTime(orderDate ?? DateTime.MinValue);
             return new OrderMaster
             {
                 CompanyId = pgOrderMaster.CompanyId,
@@ -306,7 +306,7 @@ namespace ExportService
                 OrderStatusId = pgOrderMaster.OrderStatusId,
                 IsAdvanceOrder = pgOrderMaster.IsAdvanceOrder,
                 SpecialInstruction = pgOrderMaster.SpecialInstruction,
-                OrderDate = DateOnly.FromDateTime(orderDateTime),
+                OrderDate = orderDateTime,
                 OrderTime = TimeOnly.FromDateTime(orderDateTime),
                 TotalAmountWithoutGst = pgOrderMaster.TotalAmountWithoutGst,
                 Gstid = pgOrderMaster.Gstid,
