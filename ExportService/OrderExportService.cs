@@ -268,7 +268,7 @@ namespace ExportService
                         CompanyId = sqlOrderMaster.CompanyId,
                         BranchId = sqlOrderMaster.BranchId,
                         OrderStatusId = sqlOrderMaster.OrderStatusId,
-                        OrderDate = sqlOrderMaster.OrderDate,
+                        OrderDate = sqlOrderMaster.OrderDate?.ToDateTime(TimeOnly.MinValue),
                         OrderTime = sqlOrderMaster.OrderTime,
                         CreatedDate = createdDate,
                         IsActive = true,
