@@ -67,8 +67,10 @@ var app = builder.Build();
 SimpleHttpRuleProvider ruleProvider = new();
 await ruleProvider.BuildAsync();
 // Optional: minimal endpoint (useful for health checks)
-app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogger<Program> logger, [FromServices] Implementation impl, [FromServices] IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory, HttpContext httpContext, [FromQuery] string selection = "") =>
+app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogger<Program> logger, [FromServices] Implementation impl, [FromServices] IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory, [FromServices] IDbContextFactory<RestaurantsDbContext> restaurantsDbContextFactory, HttpContext httpContext, [FromQuery] string selection = "") =>
 {
+    var restaurantDbContext = restaurantsDbContextFactory.CreateDbContext();
+    await restaurantDbContext.Database.EnsureCreatedAsync(httpContext.RequestAborted);
     List<string> list = ["all", "setupCompany", "setupMaster", "setupMasterDetail", "city", "area", "branchMaster", "productSize", "flavour", "menu", "paymentMode", "setupCompanySettings", "discount", "gst", "userLogin", "riders", "orderMode"];
 
     if (string.IsNullOrEmpty(selection) || !list.Contains(selection))
