@@ -331,6 +331,7 @@ internal class Implementation()
         }
         settingsData["PaymentModes"] = paymentModes;
         settingsData["RestaurantName"] = await dbContext.SetupCompanies.Select(x => x.CompanyName).FirstOrDefaultAsync() ?? string.Empty;
+        settingsData["UAN"] = await dbContext.SetupCompanies.Select(x => x.Contact1).FirstOrDefaultAsync() ?? string.Empty;
         return settingsData;
     }
 
