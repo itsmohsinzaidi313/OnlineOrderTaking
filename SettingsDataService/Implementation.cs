@@ -268,6 +268,7 @@ internal class Implementation()
             "UPLOAD_LOGO",
             "UPLOAD_SPLASH_BANNER",
             "UPLOAD_BACKGROUND",
+            "SHAPE_LOGO",
         };
 
         var settings = await dbContext.SetupMasterDetails
@@ -278,10 +279,12 @@ internal class Implementation()
         var restaurantLogo = settings.GetValueOrDefault("UPLOAD_LOGO", string.Empty);
         var splashBanner = settings.GetValueOrDefault("UPLOAD_SPLASH_BANNER", string.Empty);
         var websiteBackgroundImage = settings.GetValueOrDefault("UPLOAD_BACKGROUND", string.Empty);
+        var shapeLogo = settings.GetValueOrDefault("SHAPE_LOGO", string.Empty);
 
         settingsData["RESTAURANT_LOGO"] = restaurantLogo;
         settingsData["SPLASH_BANNER"] = splashBanner;
         settingsData["WEBSITE_BACKGROUND_IMAGE"] = websiteBackgroundImage;
+        settingsData["SHAPE_LOGO"] = shapeLogo;
 
         var s = await dbContext.SetupMasterDetails.Where(x => x.Flex1 == "UPLOAD_BANNER").Select(x => x.SetupDetailId).FirstOrDefaultAsync();
         var s2 = await dbContext.SetupCompanySettings.Where(x => x.SetupDetailId == s && x.IsActive == true).ToListAsync();
