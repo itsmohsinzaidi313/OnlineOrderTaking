@@ -203,13 +203,7 @@ namespace GatewayService.Controllers
                 Timeout = TimeSpan.FromMinutes(5),
                 BaseAddress = new Uri("http://importservice:8080"),
             };
-
-            var healthResponse = await httpClient.GetAsync("health");
-            if (!healthResponse.IsSuccessStatusCode)
-            {
-                return StatusCode((int)healthResponse.StatusCode, "Import service is not healthy.");
-            }
-
+            
             var response = await httpClient.GetAsync($"import/{companyId}?selection={selection}");
 
             if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
