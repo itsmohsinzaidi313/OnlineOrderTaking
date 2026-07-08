@@ -112,7 +112,7 @@ namespace ExportService
                             OrderMasterId = sqlOrderMaster.OrderMasterId,
                             CompanyId = sqlOrderMaster.CompanyId,
                             BranchId = sqlOrderMaster.BranchId,
-                            OrderStatusId = sqlOrderMaster.OrderStatusId,
+                            OrderStatusId = newSqlLog.OrderStatusId,
                             OrderDate = orderDate,
                             OrderTime = orderTime,
                             CreatedDate = pgLog.CreatedDate,
