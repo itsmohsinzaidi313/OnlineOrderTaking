@@ -115,7 +115,7 @@ namespace ExportService
                             OrderStatusId = newSqlLog.OrderStatusId,
                             OrderDate = orderDate,
                             OrderTime = orderTime,
-                            CreatedDate = pgLog.CreatedDate,
+                            CreatedDate = sqlOrderMaster.CreatedDate,
                             IsActive = true,
                             IsSyncToPos = false
                         };
