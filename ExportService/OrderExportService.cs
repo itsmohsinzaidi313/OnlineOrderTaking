@@ -63,15 +63,14 @@ namespace ExportService
             await using var sqlContext = sqlContextFactory.CreateDbContext();
             await using var postgresContext = GetDbContext(connectionString);
             var companyId = await GetCompanyIdAsync(connectionString);
-            var pgOrderMasterId = await postgresContext.OrderMasters
+            var pgOrderMaster = await postgresContext.OrderMasters
                                             .Where(x => x.OrderNumber == orderNumber)
-                                            .Select(x => x.OrderMasterId)
                                             .FirstAsync();
-            var sqlOrderMasterId = await sqlContext.OrderMasters
+            var sqlOrderMaster = await sqlContext.OrderMasters
                                             .Where(x => x.OrderNumber == orderNumber && x.CompanyId == companyId)
-                                            .Select(x => x.OrderMasterId)
                                             .FirstAsync();
-
+            var pgOrderMasterId = pgOrderMaster.OrderMasterId;
+            var sqlOrderMasterId = sqlOrderMaster.OrderMasterId;
             var pgOrderStatusLogs = await postgresContext.OrderStatusLogs
                 .Where(x => x.OrderMasterId == pgOrderMasterId)
                 .ToListAsync();
@@ -81,6 +80,7 @@ namespace ExportService
                 .ToListAsync();
 
             var createdBy = postgresContext.UserLogins.FirstOrDefault()?.UserId ?? 0;
+            var confirmedId = postgresContext.OrderStatuses.Where(x => x.OrderStatusName == "Confirmed").Select(x => x.OrderStatusId).FirstOrDefault();
 
             foreach (var pgLog in pgOrderStatusLogs)
             {
@@ -97,6 +97,30 @@ namespace ExportService
                         IsActive = true,
                     };
                     await sqlContext.OrderStatusLogs.AddAsync(newSqlLog);
+                    if (newSqlLog.OrderStatusId == confirmedId)
+                    {
+                        var orderTime = pgOrderMaster.OrderTime;
+                        var orderDate = pgOrderMaster.OrderDate ?? throw new Exception("Invalid order date");
+
+                        var pgDateTime = new DateTime(DateOnly.FromDateTime(orderDate), TimeOnly.FromTimeSpan(orderTime ?? TimeSpan.Zero));
+                        DateTime orderDateTime = ConvertToPkTime(pgDateTime);
+
+                        orderDate = new DateTime(DateOnly.FromDateTime(orderDateTime), TimeOnly.MinValue);
+                        orderTime = orderDateTime.TimeOfDay;
+                        var orderMasterLog = new OrderMasterLog
+                        {
+                            OrderMasterId = sqlOrderMaster.OrderMasterId,
+                            CompanyId = sqlOrderMaster.CompanyId,
+                            BranchId = sqlOrderMaster.BranchId,
+                            OrderStatusId = sqlOrderMaster.OrderStatusId,
+                            OrderDate = orderDate,
+                            OrderTime = orderTime,
+                            CreatedDate = pgLog.CreatedDate,
+                            IsActive = true,
+                            IsSyncToPos = false
+                        };
+                        await sqlContext.OrderMasterLogs.AddAsync(orderMasterLog);
+                    }
                 }
             }
             await sqlContext.SaveChangesAsync();
@@ -261,27 +285,6 @@ namespace ExportService
                     });
 
                     await sqlContext.OrderStatusLogs.AddRangeAsync(pgOrderStatusLogs);
-                    var orderTime = pgOrderMaster.OrderTime;
-                    var orderDate = pgOrderMaster.OrderDate ?? throw new Exception("Invalid order date");
-
-                    var pgDateTime = new DateTime(DateOnly.FromDateTime(orderDate), TimeOnly.FromTimeSpan(orderTime ?? TimeSpan.Zero));
-                    DateTime orderDateTime = ConvertToPkTime(pgDateTime);
-
-                    orderDate = new DateTime(DateOnly.FromDateTime(orderDateTime), TimeOnly.MinValue);
-                    orderTime = orderDateTime.TimeOfDay;
-                    var orderMasterLog = new OrderMasterLog
-                    {
-                        OrderMasterId = sqlOrderMaster.OrderMasterId,
-                        CompanyId = sqlOrderMaster.CompanyId,
-                        BranchId = sqlOrderMaster.BranchId,
-                        OrderStatusId = sqlOrderMaster.OrderStatusId,
-                        OrderDate = orderDate,
-                        OrderTime = orderTime,
-                        CreatedDate = createdDate,
-                        IsActive = true,
-                        IsSyncToPos = false
-                    };
-                    await sqlContext.OrderMasterLogs.AddAsync(orderMasterLog);
                     await sqlContext.SaveChangesAsync();
 
                     await transaction.CommitAsync();
