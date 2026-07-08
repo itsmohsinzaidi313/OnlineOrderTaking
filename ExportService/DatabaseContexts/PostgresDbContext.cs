@@ -232,6 +232,10 @@ namespace ExportService.DatabaseContexts
                 .HasColumnType("timestamp without time zone");
 
             modelBuilder.Entity<OrderMaster>()
+                .Property(o => o.OrderTime)
+                .HasColumnType("time without time zone");
+
+            modelBuilder.Entity<OrderMaster>()
                 .Property(o => o.AdvanceOrderDate)
                 .HasColumnType("timestamp without time zone");
 

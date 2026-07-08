@@ -261,15 +261,22 @@ namespace ExportService
                     });
 
                     await sqlContext.OrderStatusLogs.AddRangeAsync(pgOrderStatusLogs);
+                    var orderTime = pgOrderMaster.OrderTime;
+                    var orderDate = pgOrderMaster.OrderDate ?? throw new Exception("Invalid order date");
 
+                    var pgDateTime = new DateTime(DateOnly.FromDateTime(orderDate), TimeOnly.FromTimeSpan(orderTime ?? TimeSpan.Zero));
+                    DateTime orderDateTime = ConvertToPkTime(pgDateTime);
+
+                    orderDate = new DateTime(DateOnly.FromDateTime(orderDateTime), TimeOnly.MinValue);
+                    orderTime = orderDateTime.TimeOfDay;
                     var orderMasterLog = new OrderMasterLog
                     {
                         OrderMasterId = sqlOrderMaster.OrderMasterId,
                         CompanyId = sqlOrderMaster.CompanyId,
                         BranchId = sqlOrderMaster.BranchId,
                         OrderStatusId = sqlOrderMaster.OrderStatusId,
-                        OrderDate = sqlOrderMaster.OrderDate,
-                        OrderTime = sqlOrderMaster.OrderTime,
+                        OrderDate = orderDate,
+                        OrderTime = orderTime,
                         CreatedDate = createdDate,
                         IsActive = true,
                         IsSyncToPos = false
@@ -292,8 +299,14 @@ namespace ExportService
         private OrderMaster MapToOrderMaster(OrderMaster pgOrderMaster)
         {
             var orderTime = pgOrderMaster.OrderTime;
-            var orderDate = pgOrderMaster.OrderDate;
-            DateTime orderDateTime = ConvertToPkTime(orderDate ?? DateTime.MinValue);
+            var orderDate = pgOrderMaster.OrderDate ?? throw new Exception("Invalid order date");
+
+            var pgDateTime = new DateTime(DateOnly.FromDateTime(orderDate), TimeOnly.FromTimeSpan(orderTime ?? TimeSpan.Zero));
+            DateTime orderDateTime = ConvertToPkTime(pgDateTime);
+
+            orderDate = new DateTime(DateOnly.FromDateTime(orderDateTime), TimeOnly.MinValue);
+            orderTime = orderDateTime.TimeOfDay;
+
             return new OrderMaster
             {
                 CompanyId = pgOrderMaster.CompanyId,
@@ -306,8 +319,8 @@ namespace ExportService
                 OrderStatusId = pgOrderMaster.OrderStatusId,
                 IsAdvanceOrder = pgOrderMaster.IsAdvanceOrder,
                 SpecialInstruction = pgOrderMaster.SpecialInstruction,
-                OrderDate = orderDateTime,
-                OrderTime = TimeOnly.FromDateTime(orderDateTime),
+                OrderDate = orderDate,
+                OrderTime = orderTime,
                 TotalAmountWithoutGst = pgOrderMaster.TotalAmountWithoutGst,
                 Gstid = pgOrderMaster.Gstid,
                 TotalAmountWithGst = pgOrderMaster.TotalAmountWithGst,

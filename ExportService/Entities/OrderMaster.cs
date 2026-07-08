@@ -33,7 +33,7 @@
 
         public DateTime? OrderDate { get; set; }
 
-        public TimeOnly OrderTime { get; set; }
+        public TimeSpan? OrderTime { get; set; }
 
         public double? TotalAmountWithoutGst { get; set; }
 
