@@ -172,7 +172,13 @@ internal class Implementation()
                 Layout = dbCategory.ProductCardStyle ?? "vertical",
                 Order = dbCategory.SortOrder,
             };
-            foreach (var dbProduct in dbMenuData.Products.Where(x => x.ProductCategoryId == dbCategory.CategoryId))
+            var onlyForDealsId = dbMenuData.Products
+                .Join(dbMenuData.ProductDetails, a => a.ProductId, b => b.ProductId, (a, b) => new { b.OnlyForDeal, a })
+                .Where(x => x.a.ProductCategoryId == dbCategory.CategoryId && x.OnlyForDeal == true)
+                .Select(x => x.a.ProductId)
+                .Distinct()
+                .ToList();
+            foreach (var dbProduct in dbMenuData.Products.Where(p => p.ProductCategoryId == dbCategory.CategoryId && !onlyForDealsId.Contains(p.ProductId)))
             {
                 var item = new MenuItem
                 {

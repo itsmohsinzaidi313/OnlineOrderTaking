@@ -34,8 +34,8 @@ jobs:
         run: |
           echo "${{ secrets.SERVICES_ENV }}" | base64 -d > .env
 
-      - name: Build all images
+      - name: Build image
         run: docker compose -f docker-compose-ci.yml build ${{ inputs.service }}
 
-      - name: Push all images
+      - name: Push image
         run: docker compose -f docker-compose-ci.yml push ${{ inputs.service }}

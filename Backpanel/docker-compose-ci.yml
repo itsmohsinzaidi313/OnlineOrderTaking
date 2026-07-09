@@ -1,5 +1,6 @@
 services:
   backpanel:
+    build: .
     image: registry.eatx.pk/online-order-taking/backpanel:${IMAGE_TAG}
     ports:
       - "3001:80"

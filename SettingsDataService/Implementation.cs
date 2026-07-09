@@ -239,7 +239,7 @@ internal class Implementation()
         var setupDetailIds = settings.Values.ToList();
 
         var settingsDetail = await dbContext.SetupCompanySettings
-            .Where(x => setupDetailIds.Contains(x.SetupDetailId ?? 0))
+            .Where(x => setupDetailIds.Contains(x.SetupDetailId ?? 0) && x.IsActive == true)
             .ToDictionaryAsync(x => x.SetupDetailId ?? 0, x => x.SettingValue ?? string.Empty);
 
         var colorData = new JsonObject();
@@ -268,23 +268,26 @@ internal class Implementation()
             "UPLOAD_LOGO",
             "UPLOAD_SPLASH_BANNER",
             "UPLOAD_BACKGROUND",
+            "SHAPE_LOGO",
         };
 
         var settings = await dbContext.SetupMasterDetails
-            .Join(dbContext.SetupCompanySettings, a => a.SetupDetailId, b => b.SetupDetailId, (a, b) => new { Key = a.Flex1 ?? "", Value = b.SettingValue ?? "" })
+            .Join(dbContext.SetupCompanySettings.Where(x => x.IsActive == true), a => a.SetupDetailId, b => b.SetupDetailId, (a, b) => new { Key = a.Flex1 ?? "", Value = b.SettingValue ?? "" })
             .Where(x => keys.Contains(x.Key))
             .ToDictionaryAsync(x => x.Key, x => x.Value);
 
         var restaurantLogo = settings.GetValueOrDefault("UPLOAD_LOGO", string.Empty);
         var splashBanner = settings.GetValueOrDefault("UPLOAD_SPLASH_BANNER", string.Empty);
         var websiteBackgroundImage = settings.GetValueOrDefault("UPLOAD_BACKGROUND", string.Empty);
+        var shapeLogo = settings.GetValueOrDefault("SHAPE_LOGO", string.Empty);
 
         settingsData["RESTAURANT_LOGO"] = restaurantLogo;
         settingsData["SPLASH_BANNER"] = splashBanner;
         settingsData["WEBSITE_BACKGROUND_IMAGE"] = websiteBackgroundImage;
+        settingsData["SHAPE_LOGO"] = shapeLogo;
 
         var s = await dbContext.SetupMasterDetails.Where(x => x.Flex1 == "UPLOAD_BANNER").Select(x => x.SetupDetailId).FirstOrDefaultAsync();
-        var s2 = await dbContext.SetupCompanySettings.Where(x => x.SetupDetailId == s).ToListAsync();
+        var s2 = await dbContext.SetupCompanySettings.Where(x => x.SetupDetailId == s && x.IsActive == true).ToListAsync();
         var array = new JsonArray();
         foreach (var item in s2)
         {
@@ -331,6 +334,7 @@ internal class Implementation()
         }
         settingsData["PaymentModes"] = paymentModes;
         settingsData["RestaurantName"] = await dbContext.SetupCompanies.Select(x => x.CompanyName).FirstOrDefaultAsync() ?? string.Empty;
+        settingsData["UAN"] = await dbContext.SetupCompanies.Select(x => x.Contact1).FirstOrDefaultAsync() ?? string.Empty;
         return settingsData;
     }
 
@@ -363,7 +367,7 @@ internal class Implementation()
         allKeys.AddRange(externalLinksKeys);
 
         var settings = await dbContext.SetupMasterDetails
-            .Join(dbContext.SetupCompanySettings, a => a.SetupDetailId, b => b.SetupDetailId, (a, b) => new { Id = a.SetupDetailId, Key = a.Flex1 ?? "", Value = b.SettingValue ?? "" })
+            .Join(dbContext.SetupCompanySettings.Where(x => x.IsActive == true), a => a.SetupDetailId, b => b.SetupDetailId, (a, b) => new { Id = a.SetupDetailId, Key = a.Flex1 ?? "", Value = b.SettingValue ?? "" })
             .Where(x => allKeys.Contains(x.Key))
             .ToListAsync();
 

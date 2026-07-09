@@ -227,19 +227,13 @@ namespace ExportService.DatabaseContexts
                 .Ignore(x => x.CreatedDate)
                 .Ignore(x => x.CreatedBy);
 
-            var dateOnlyConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateOnly?, DateTime?>(
-                v => v.HasValue ? v.Value.ToDateTime(TimeOnly.MinValue) : null,
-                v => v.HasValue ? DateOnly.FromDateTime(v.Value) : null);
-
-            modelBuilder.Entity<OrderMaster>(entity =>
-            {
-                entity.Property(e => e.OrderDate)
-                    .HasConversion(dateOnlyConverter);
-            });
-
             modelBuilder.Entity<OrderMaster>()
                 .Property(o => o.OrderDate)
                 .HasColumnType("timestamp without time zone");
+
+            modelBuilder.Entity<OrderMaster>()
+                .Property(o => o.OrderTime)
+                .HasColumnType("time without time zone");
 
             modelBuilder.Entity<OrderMaster>()
                 .Property(o => o.AdvanceOrderDate)

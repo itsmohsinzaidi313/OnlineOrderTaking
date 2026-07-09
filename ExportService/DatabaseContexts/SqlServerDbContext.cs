@@ -45,6 +45,7 @@ namespace ExportService.DatabaseContexts
         public DbSet<Rider> Riders => Set<Rider>();
         public DbSet<OrderMaster> OrderMasters => Set<OrderMaster>();
         public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
+        public DbSet<OrderMasterLog> OrderMasterLogs => Set<OrderMasterLog>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -245,6 +246,10 @@ namespace ExportService.DatabaseContexts
             modelBuilder.Entity<OrderMaster>()
                 .Ignore(o => o.Exported)
                 .Ignore(o => o.OrderToken);
+
+            modelBuilder.Entity<OrderMasterLog>()
+                .ToTable("OrderMasterLog")
+                .HasKey(x => x.OrderMasterId);
         }
     }
 }

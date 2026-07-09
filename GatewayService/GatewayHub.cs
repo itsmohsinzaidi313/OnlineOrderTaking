@@ -199,7 +199,9 @@ namespace GatewayService
                 return false;
             }
 
-            var now = DateTime.Now;
+            var karachiTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+            var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, karachiTimeZone);
+
             var currentDay = now.DayOfWeek;
             var businessTimeNode = businessTimes.FirstOrDefault(x => x["Day"]?.GetValue<string>()?.Equals(currentDay.ToString(), StringComparison.OrdinalIgnoreCase) == true);
 
@@ -213,28 +215,24 @@ namespace GatewayService
             if (!TryParseTime(businessTime["StartTime"], out var startTime) || !TryParseTime(businessTime["EndTime"], out var endTime))
                 return false;
 
-            var isBranchOpen = false;
-            var timeOfDay = DateTime.Now.TimeOfDay;
-            if (startTime > endTime)
+            var startDateTime = now.Date.Add(startTime);
+            var endDateTime = now.Date.Add(endTime);
+            if (endTime < TimeSpan.FromHours(12))
             {
-                var maybeOpen = startTime > timeOfDay;
-                if (maybeOpen)
-                {
-                    isBranchOpen = true;
-                }
-                else
-                {
-                    isBranchOpen = timeOfDay > endTime;
-                }
+                endDateTime = endDateTime.AddDays(1);
             }
-            else if (startTime < endTime)
+            if (startDateTime < now && now < endDateTime)
             {
-                if (timeOfDay >= startTime && timeOfDay <= endTime)
-                {
-                    isBranchOpen = true;
-                }
+                return true;
             }
-            return isBranchOpen;
+            else if (startTime == endTime)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         private static bool TryParseTime(JsonNode? timeNode, out TimeSpan time)
