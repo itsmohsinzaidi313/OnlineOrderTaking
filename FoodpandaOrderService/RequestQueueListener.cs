@@ -90,6 +90,14 @@ namespace FoodpandaOrderService
                             };
 
                             var isDeal = dealIds.Contains(pd.ProductDetailId);
+                            if (isDeal)
+                            {
+
+                            }
+                            else
+                            {
+
+                            }
                             orderMaster.OrderDetails.Add(orderDetail);
                         }
 
