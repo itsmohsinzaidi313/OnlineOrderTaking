@@ -80,7 +80,6 @@ namespace ExportService
                 .ToListAsync();
 
             var createdBy = postgresContext.UserLogins.FirstOrDefault()?.UserId ?? 0;
-            var confirmedId = postgresContext.OrderStatuses.Where(x => x.OrderStatusName == "Confirmed").Select(x => x.OrderStatusId).FirstOrDefault();
 
             foreach (var pgLog in pgOrderStatusLogs)
             {
