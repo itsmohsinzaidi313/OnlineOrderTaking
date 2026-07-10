@@ -1,33 +1,31 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using PointofSaleModels.Application;
+using PointofSaleModels.Services;
 using System.Text.Json.Nodes;
 using Db = PointofSaleModels.PGDatabaseModels;
 using ValueType = PointofSaleModels.Application.ValueType;
 
 namespace CreateOrderService;
 
-public class Implementation()
+public class Implementation(IRestaurantDbContextFactory restaurantDbContextFactory, IDbContextFactory<Db.RestaurantsContext> dbContextFactory)
 {
-    private static Db.PgDbContext GetDbContext(string connectionString)
+    internal async Task SaveToken(string url, string orderToken)
     {
-        var options = new DbContextOptionsBuilder<Db.PgDbContext>()
-            .UseNpgsql(connectionString, options =>
-            {
-                options.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorCodesToAdd: null);
-            })
-            .Options;
-        return new Db.PgDbContext(options);
+        await using var context = dbContextFactory.CreateDbContext();
+        var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == url);
+        var restaurantId = restaurant?.Id ?? throw new Exception("Restaurant not found");
+        var tokenEntity = new Db.OrderTokens { OrderToken = orderToken, CreatedAt = DateTime.UtcNow, RestaurantId = restaurantId };
+        await context.OrderTokens.AddAsync(tokenEntity);
+        await context.SaveChangesAsync();
     }
 
-    internal async Task SaveOrderAsync(string connectionString, CustomerOrder order)
+    internal async Task SaveOrderAsync(string url, CustomerOrder order)
     {
         var branchId = order.BranchId;
         var areaId = order.AreaId;
-        await using var dbContext = GetDbContext(connectionString);
+        await using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url, readOnly: false);
         var strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
@@ -331,17 +329,17 @@ public class Implementation()
         return dbCustomerPhone;
     }
 
-    internal async IAsyncEnumerable<int> GetBranchUsersIdsAsync(string connectionString, int branchId)
+    internal async IAsyncEnumerable<int> GetBranchUsersIdsAsync(string url, int branchId)
     {
-        await using var dbContext = GetDbContext(connectionString);
+        await using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
         foreach (var userId in await dbContext.UserBranchMappings.Where(x => x.BranchId == branchId).Select(x => x.UserId).ToListAsync())
             yield return userId;
     }
 
-    internal async Task<object> OrderStatusLogs(string connectionString, string orderToken)
+    internal async Task<object> OrderStatusLogs(string url, string orderToken)
     {
         var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
-        await using var dbContext = GetDbContext(connectionString);
+        await using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
         var orderMasterId = await dbContext.OrderMasters.Where(x => x.OrderToken == orderToken).Select(x => x.OrderMasterId).FirstOrDefaultAsync();
         var logs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == orderMasterId).ToListAsync();
         return logs.Select(x => new
@@ -354,9 +352,9 @@ public class Implementation()
         });
     }
 
-    internal async Task<JsonObject> GetLegacyResponse(string orderNumber, string connectionString)
+    internal async Task<JsonObject> GetLegacyResponse(string orderNumber, string url)
     {
-        await using var dbContext = GetDbContext(connectionString);
+        await using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
         var om = await dbContext.OrderMasters
             .FirstOrDefaultAsync(x => x.OrderToken == orderNumber);
 
