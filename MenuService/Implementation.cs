@@ -1,31 +1,19 @@
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Application;
+using PointofSaleModels.Services;
 using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace MenuService;
 
-internal class Implementation()
+internal class Implementation(IRestaurantDbContextFactory restaurantDbContextFactory)
 {
-    private static Db.PgDbContext GetDbContext(string connectionString)
-    {
-        var options = new DbContextOptionsBuilder<Db.PgDbContext>()
-            .UseNpgsql(connectionString, options =>
-            {
-                options.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorCodesToAdd: null);
-            })
-            .Options;
-        return new Db.PgDbContext(options);
-    }
 
-    private async Task<DbMenuData> GetDbMenuDataAsync(string connectionString, int branchId)
+    private async Task<DbMenuData> GetDbMenuDataAsync(string url, int branchId)
     {
         var bid = branchId;
         if (bid == 0)
         {
-            using var dbContext = GetDbContext(connectionString);
+            using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
             var activeBranch = dbContext.BranchMasters.FirstOrDefault(x => x.IsActive);
             if (activeBranch != null)
                 bid = activeBranch.BranchId;
@@ -46,69 +34,69 @@ internal class Implementation()
         var dbOrderModes = new List<Db.SetupMasterDetail>();
         var dbProductDetailBranchMapping = new List<int>();
         {
-            using var dbContext = GetDbContext(connectionString);
+            using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
             dbProductDetailBranchMapping.AddRange([.. dbContext.ProductDetailBranchMappings.Where(x => x.BranchId == bid).Select(x => x.ProductDetailId ?? 0)]);
         }
 
         var tasks = new List<Task>
         {
-            Task.Run(() =>
+            Task.Run(async () =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
                 dbSizes.AddRange([.. from a in dbContext.ProductSizes
                                  select a]);
             }),
-            Task.Run(() =>
+            Task.Run(async () =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
                 dbFlavours.AddRange([.. from a in dbContext.Flavours
                                     select a]);
             }),
             Task.Run(async () =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
 
                 dbProducts.AddRange(await (from a in dbContext.Products
                                        join b in dbContext.ProductDetails on a.ProductId equals b.ProductId
                                        where dbProductDetailBranchMapping.Contains(b.ProductDetailId) && a.IsEnable && a.DisplayInWeb
                                        select a).Distinct().ToListAsync());
             }),
-            Task.Run(() =>
+            Task.Run(async () =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
                 dbDealItemDetails.AddRange([.. from a in dbContext.DealItemDetails
                                            select a]);
             }),
-            Task.Run(() =>
+            Task.Run(async () =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
                 dbDealDescription.AddRange([.. from x in dbContext.DealDescriptions select x]);
             }),
             Task.Run(async () =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
                 dbDealDescriptionProducts.AddRange([.. (from a in dbContext.Products
                                                    join b in dbContext.ProductDetails on a.ProductId equals b.ProductId
                                                    join c in dbContext.DealDescriptions on b.ProductDetailId equals c.ProductDetailId
                                                    select a).Distinct()]);
             }),
-            Task.Run(() =>
+            Task.Run(async () =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
                 dbDepartments = (from a in dbContext.ProductCategories
                                 select new { a.CategoryId, a.DepartmentId }).ToDictionary(x => x.CategoryId, x => x.DepartmentId.ToString() ?? "N/A");
             }),
-            Task.Run(() =>
+            Task.Run(async () =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
                 dbProductDetails.AddRange([.. from a in dbContext.ProductDetails
                                             where dbProductDetailBranchMapping.Contains(a.ProductDetailId)
                                             select a]);
 
             }),
-            Task.Run(() =>
+            Task.Run(async () =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
                 dbItemDiscounts.AddRange([.. (from a in dbContext.Discounts
                                             join b in dbContext.DiscountProductDetailMappings on a.DiscountId equals b.DiscountId
                                             join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
@@ -116,25 +104,25 @@ internal class Implementation()
                                             where dbProductDetailBranchMapping.Contains(c.ProductDetailId) && d.BranchId == bid && (a.IsActiveInWeb ?? false) == true
                                             select a).Distinct()]);
             }),
-            Task.Run(() =>
+            Task.Run(async () =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
                 dbItemDiscountsMapping.AddRange([.. (from a in dbContext.DiscountProductDetailMappings
                                                 join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
                                                 where dbProductDetailBranchMapping.Contains(b.ProductDetailId)
                                                 select a).Distinct()]);
             }),
-            Task.Run(() =>             {
-                using var dbContext = GetDbContext(connectionString);
+            Task.Run(async () =>             {
+                using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
                 dbOrderModeDiscountMapping.AddRange([.. (from a in dbContext.DiscountOrderModeMappings
                                                         join b in dbContext.Discounts on a.DiscountId equals b.DiscountId
                                                         join c in dbContext.DiscountBranchMappings on b.DiscountId equals c.DiscountId
                                                         where  c.BranchId == bid
                                                         select a).Distinct()]);
              }),
-            Task.Run(() =>
+            Task.Run(async () =>
             {
-                using var dbContext = GetDbContext(connectionString);
+                using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
                 dbOrderModes.AddRange([.. from a in dbContext.SetupMasterDetails
                                         where a.SetupMasterId == 4
                                         select a]);
@@ -145,19 +133,19 @@ internal class Implementation()
         return new DbMenuData(dbSizes, dbFlavours, dbProducts, dbProductDetails, dbDepartments, dbDealItemDetails, dbDealDescription, dbItemDiscounts, dbItemDiscountsMapping, dbOrderModeDiscountMapping, dbOrderModes);
     }
 
-    internal async IAsyncEnumerable<Category> GetMenuAsync(string connectionString, int branchId)
+    internal async IAsyncEnumerable<Category> GetMenuAsync(string url, int branchId)
     {
 
-        var package = await GetDbMenuDataAsync(connectionString, branchId);
-        foreach (var item in GetCategories(connectionString, package))
+        var package = await GetDbMenuDataAsync(url, branchId);
+        await foreach (var item in GetCategories(url, package))
         {
             yield return item;
         }
     }
 
-    private static IEnumerable<Category> GetCategories(string connectionString, DbMenuData dbMenuData)
+    private async IAsyncEnumerable<Category> GetCategories(string url, DbMenuData dbMenuData)
     {
-        using var dbContext = GetDbContext(connectionString);
+        using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
         foreach (var dbCategory in (from x in dbContext.ProductCategories
                                     where x.IsActive == true && x.IsEnable == true
                                     select x).ToList())

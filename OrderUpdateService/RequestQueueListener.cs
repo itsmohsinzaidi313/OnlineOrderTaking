@@ -7,7 +7,7 @@ using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace OrderUpdateService
 {
-    public class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, IRabbitMqPublisher publisher, IDbContextFactory<Db.RestaurantsContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
+    public class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, IRabbitMqPublisher publisher, IRestaurantDbContextFactory restaurantDbContextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
     {
         public override string QueueName() => RabbitMqQueues.OrderUpdateRequestQueue;
 
@@ -15,7 +15,7 @@ namespace OrderUpdateService
         {
             var requestPayload = System.Text.Json.JsonSerializer.Deserialize<OrderUpdatePayload>(transport);
             object? payload = null;
-            using var dbContext = await GetDbContextAsync(requestPayload.DomainName);
+            using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(requestPayload.DomainName);
             try
             {
                 var orderMaster = await dbContext.OrderMasters.Where(x => x.OrderToken == requestPayload.OrderToken).FirstOrDefaultAsync();
@@ -146,31 +146,6 @@ namespace OrderUpdateService
                 BranchUserIds = branchUserIds,
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.OrderUpdateResponseQueue, response);
-        }
-        private async Task<Db.PgDbContext> GetDbContextAsync(string domainName)
-        {
-            var connectionString = await GetConnectionString(domainName);
-            connectionString = connectionString.Replace("5434", "5433");
-            return GetDbContext(connectionString);
-        }
-        private async Task<string> GetConnectionString(string domainName)
-        {
-            var context = await contextFactory.CreateDbContextAsync();
-            var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
-            return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
-        }
-        private static Db.PgDbContext GetDbContext(string connectionString)
-        {
-            var options = new DbContextOptionsBuilder<Db.PgDbContext>()
-                .UseNpgsql(connectionString, options =>
-                {
-                    options.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(5),
-                        errorCodesToAdd: null);
-                })
-                .Options;
-            return new Db.PgDbContext(options);
         }
     }
 }

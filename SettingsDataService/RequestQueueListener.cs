@@ -18,8 +18,7 @@ namespace SettingsDataService
             var success = false;
             try
             {
-                var connectionString = await GetConnectionString(requestPayload.DomainName);
-                payload = await GetDeliveryAndPickupItemsAsync(connectionString);
+                payload = await GetDeliveryAndPickupItemsAsync(requestPayload.DomainName);
                 success = true;
             }
             catch (Exception ex)
@@ -40,17 +39,10 @@ namespace SettingsDataService
             await publisher.PublishToQueueAsync(RabbitMqQueues.SettingResponseQueue, response);
         }
 
-        private async Task<string> GetConnectionString(string domainName)
-        {
-            using var context = contextFactory.CreateDbContext();
-            var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
-            return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
-        }
-
-        private async Task<JsonObject> GetDeliveryAndPickupItemsAsync(string connectionString)
+        private async Task<JsonObject> GetDeliveryAndPickupItemsAsync(string url)
         {
             logger.LogInformation("🚚 Fetching delivery and pickup items from database...");
-            return await impl.GetDataOneAsync(connectionString: connectionString);
+            return await impl.GetDataOneAsync(url);
         }
     }
 }

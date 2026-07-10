@@ -2,11 +2,10 @@
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
-using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace OrderHistoryService
 {
-    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher, IDbContextFactory<Db.RestaurantsContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
+    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, Implementation impl, IRabbitMqPublisher publisher) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
     {
         public override string QueueName() => RabbitMqQueues.OrderHistoryRequestQueue;
 
@@ -17,22 +16,22 @@ namespace OrderHistoryService
             var success = false;
             try
             {
-                var connectionString = await GetConnectionString(requestPayload.DomainName);
+                var domain = requestPayload.DomainName;
 
                 if (string.IsNullOrEmpty(requestPayload.OrderToken))
                 {
                     if (!requestPayload.OrderUserId.HasValue) throw new Exception("UserId missing for userwise orders list");
-                    var orders = await impl.GetOrdersAsync(connectionString, requestPayload.OrderUserId.Value).ToListAsync();
+                    var orders = await impl.GetOrdersAsync(domain, requestPayload.OrderUserId.Value).ToListAsync();
                     orders.Sort((x, y) => y.OrderTime.CompareTo(x.OrderTime));
-                    var orderStatuses = await impl.GetOrderStatusesAsync(connectionString);
-                    var riders = await impl.GetRidersAsync(requestPayload.OrderUserId.Value, connectionString);
-                    var branches = await impl.GetBranchesAsync(connectionString);
+                    var orderStatuses = await impl.GetOrderStatusesAsync(domain);
+                    var riders = await impl.GetRidersAsync(requestPayload.OrderUserId.Value, domain);
+                    var branches = await impl.GetBranchesAsync(domain);
                     payload = new { Orders = orders, OrderStatuses = orderStatuses, Riders = riders, Branches = branches };
                     success = true;
                 }
                 else
                 {
-                    var orders = await impl.GetOrdersAsync(connectionString, orderToken: requestPayload.OrderToken).ToListAsync();
+                    var orders = await impl.GetOrdersAsync(domain, orderToken: requestPayload.OrderToken).ToListAsync();
                     if (orders == null || orders.Count == 0) throw new Exception("Order not found");
                     await publisher.PublishToQueueAsync(RabbitMqQueues.ClientNotificationRequestQueue,
                     new ClientNotificationServicePayload(requestPayload)
@@ -57,13 +56,6 @@ namespace OrderHistoryService
                 DataPayload = payload
             };
             await publisher.PublishToQueueAsync(RabbitMqQueues.OrderHistoryResponseQueue, response);
-        }
-
-        private async Task<string> GetConnectionString(string domainName)
-        {
-            using var context = contextFactory.CreateDbContext();
-            var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
-            return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
         }
     }
 }

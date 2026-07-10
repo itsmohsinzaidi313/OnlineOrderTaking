@@ -20,6 +20,7 @@ var dbConnectionString =
 
 var rabbitMqSection = builder.Configuration.GetSection("RABBITMQ");
 
+builder.Services.AddMemoryCache();
 builder.Services
     .AddDbContextFactory<RestaurantsContext>(
         options => options.UseNpgsql(
@@ -34,7 +35,8 @@ builder.Services
     .Configure<RabbitMqSettings>(rabbitMqSection)
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
-    .AddHostedService<RequestQueueListener>();
+    .AddHostedService<RequestQueueListener>()
+    .AddSingleton<IRestaurantDbContextFactory, RestaurantDbContextFactory>();
 builder.Services.AddHealthChecks()
     .AddCheck<PostgresHealth>("health_check");
 

@@ -2,6 +2,7 @@ using GeneralSeoDataService;
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.HealthChecks;
 using PointofSaleModels.PGDatabaseModels;
+using PointofSaleModels.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +19,7 @@ var dbConnectionString =
 
 var rabbitMqSection = builder.Configuration.GetSection("RABBITMQ");
 
+builder.Services.AddMemoryCache();
 builder.Services
     .AddDbContextFactory<RestaurantsContext>(
         options => options.UseNpgsql(
@@ -28,7 +30,8 @@ builder.Services
                     maxRetryCount: 5,
                     maxRetryDelay: TimeSpan.FromSeconds(5),
                     errorCodesToAdd: null);
-            }));
+            }))
+    .AddSingleton<IRestaurantDbContextFactory, RestaurantDbContextFactory>();
 builder.Services.AddGrpc();
 
 builder.Services.AddHealthChecks()

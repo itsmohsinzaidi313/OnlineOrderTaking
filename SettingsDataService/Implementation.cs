@@ -1,28 +1,15 @@
 using Microsoft.EntityFrameworkCore;
+using PointofSaleModels.Services;
 using System.Text.Json.Nodes;
 using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace SettingsDataService;
 
-internal class Implementation()
+internal class Implementation(IRestaurantDbContextFactory restaurantDbContextFactory)
 {
-    private static Db.PgDbContext GetDbContext(string connectionString)
+    internal async Task<JsonObject> GetDataOneAsync(string url)
     {
-        var options = new DbContextOptionsBuilder<Db.PgDbContext>()
-            .UseNpgsql(connectionString, options =>
-            {
-                options.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorCodesToAdd: null);
-            })
-            .Options;
-        return new Db.PgDbContext(options);
-    }
-
-    internal async Task<JsonObject> GetDataOneAsync(string connectionString)
-    {
-        using var dbContext = GetDbContext(connectionString);
+        using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
         var orderModes = new JsonObject();
         var delivery = new JsonObject();
         var pickup = new JsonObject();
@@ -131,8 +118,8 @@ internal class Implementation()
         orderModes["Pickup"] = pickup;
         var themeData = new JsonObject
         {
-            ["Colors"] = await GetThemeDataAsync(connectionString),
-            ["Settings"] = await GetSettingsDataAsync(connectionString)
+            ["Colors"] = await GetThemeDataAsync(url),
+            ["Settings"] = await GetSettingsDataAsync(url)
         };
         orderModes["Theme"] = themeData;
         return orderModes;
@@ -195,9 +182,9 @@ internal class Implementation()
         return TimeSpan.TryParse(timeValue, out time);
     }
 
-    private static async Task<JsonObject> GetThemeDataAsync(string connectionString)
+    private async Task<JsonObject> GetThemeDataAsync(string url)
     {
-        using var dbContext = GetDbContext(connectionString);
+        using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
         var keys = new[]
         {
             "TOP_BAR_BG_COLOR",
@@ -259,10 +246,10 @@ internal class Implementation()
         return colorData;
     }
 
-    private static async Task<JsonObject> GetSettingsDataAsync(string connectionString)
+    private async Task<JsonObject> GetSettingsDataAsync(string url)
     {
         var settingsData = new JsonObject();
-        using var dbContext = GetDbContext(connectionString);
+        using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
         var keys = new[]
         {
             "UPLOAD_LOGO",

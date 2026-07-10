@@ -1,28 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Application;
+using PointofSaleModels.Services;
 using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace OrderHistoryService;
 
-public class Implementation()
+public class Implementation(IRestaurantDbContextFactory restaurantDbContextFactory)
 {
-    private static Db.PgDbContext GetDbContext(string connectionString)
+    internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string url, int? userId = null, string? orderToken = null)
     {
-        var options = new DbContextOptionsBuilder<Db.PgDbContext>()
-            .UseNpgsql(connectionString, options =>
-            {
-                options.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorCodesToAdd: null);
-            })
-            .Options;
-        return new Db.PgDbContext(options);
-    }
-
-    internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string connectionString, int? userId = null, string? orderToken = null)
-    {
-        using var dbContext = GetDbContext(connectionString);
+        using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
         var products = await (from x in dbContext.ProductCategories
                               join y in dbContext.Products on x.CategoryId equals y.ProductCategoryId
                               select y).ToListAsync();
@@ -160,9 +147,9 @@ public class Implementation()
         }
     }
 
-    internal async Task<Dictionary<int, string>> GetOrderStatusesAsync(string connectionString)
+    internal async Task<Dictionary<int, string>> GetOrderStatusesAsync(string url)
     {
-        using var dbContext = GetDbContext(connectionString);
+        using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
         return await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
     }
 
@@ -253,9 +240,9 @@ public class Implementation()
         }
     }
 
-    internal async Task<object> GetRidersAsync(int userId, string connectionString)
+    internal async Task<object> GetRidersAsync(int userId, string url)
     {
-        using var dbContext = GetDbContext(connectionString);
+        using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
         var list = await dbContext.Riders
             .Join(dbContext.UserBranchMappings, a => a.BranchId, b => b.BranchId, (a, b) => new { Riders = a, b.UserId })
             .Where(x => x.UserId == userId)
@@ -268,9 +255,9 @@ public class Implementation()
         return list;
     }
 
-    internal async Task<object> GetBranchesAsync(string connectionString)
+    internal async Task<object> GetBranchesAsync(string url)
     {
-        using var dbContext = GetDbContext(connectionString);
+        using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
         var list = await dbContext.BranchMasters
             .Where(x => x.IsActive)
             .Select(x => new

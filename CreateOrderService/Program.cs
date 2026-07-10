@@ -19,7 +19,7 @@ var dbConnectionString =
     ?? throw new InvalidOperationException("Postgres connection string is not configured.");
 
 var rabbitMqSection = builder.Configuration.GetSection("RABBITMQ");
-
+builder.Services.AddMemoryCache();
 builder.Services
     .AddDbContextFactory<RestaurantsContext>(
         options => options.UseNpgsql(
@@ -34,6 +34,7 @@ builder.Services
     .Configure<RabbitMqSettings>(rabbitMqSection)
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<Implementation>()
+    .AddSingleton<IRestaurantDbContextFactory, RestaurantDbContextFactory>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
     .AddHostedService<RequestQueueListener>()
     .AddHealthChecks()
