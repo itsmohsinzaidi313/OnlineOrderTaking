@@ -24,7 +24,7 @@ namespace OrderHistoryService
                     Message = "Order token not found",
                 };
 
-            using var dbContext = restaurantDbContextFactory.CreateDbContextByConnectionString(url);
+            using var dbContext = await restaurantDbContextFactory.CreateDbContextByUrlAsync(url);
             var orderMaster = await dbContext.OrderMasters.FirstOrDefaultAsync(x => x.OrderToken == request.OrderToken);
             if (orderMaster == null)
                 return new OrderHistoryResponse
