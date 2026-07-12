@@ -2,6 +2,7 @@
 using ExportService.Entities;
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.ServicePayloads;
+using System.Data.SqlTypes;
 
 namespace ExportService
 {
@@ -11,6 +12,31 @@ namespace ExportService
         DateTime ConvertToPkTime(DateTime dateTime)
         {
             return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
+        }
+
+        private static DateTime EnsureSqlDateTimeRange(DateTime value)
+        {
+            if (value < SqlDateTime.MinValue.Value)
+            {
+                return SqlDateTime.MinValue.Value;
+            }
+
+            if (value > SqlDateTime.MaxValue.Value)
+            {
+                return SqlDateTime.MaxValue.Value;
+            }
+
+            return value;
+        }
+
+        private static DateTime? EnsureSqlDateTimeRange(DateTime? value)
+        {
+            if (!value.HasValue)
+            {
+                return null;
+            }
+
+            return EnsureSqlDateTimeRange(value.Value);
         }
 
         public async Task OnMessageHandler(ExportServicePayload request, string connectionString)
@@ -91,7 +117,7 @@ namespace ExportService
                         OrderStatusId = pgLog.OrderStatusId,
                         CompanyId = pgLog.CompanyId,
                         Description = pgLog.Description,
-                        CreatedDate = pgLog.CreatedDate,
+                        CreatedDate = EnsureSqlDateTimeRange(pgLog.CreatedDate),
                         CreatedBy = createdBy,
                         IsActive = true,
                     };
@@ -276,9 +302,9 @@ namespace ExportService
                         CompanyId = pgOrderMaster.CompanyId,
                         BranchId = pgOrderMaster.BranchId,
                         OrderStatusId = pgOrderMaster.OrderStatusId,
-                        OrderDate = orderDate,
+                        OrderDate = EnsureSqlDateTimeRange(orderDate),
                         OrderTime = orderTime,
-                        CreatedDate = pgOrderMaster.CreatedDate,
+                        CreatedDate = EnsureSqlDateTimeRange(pgOrderMaster.CreatedDate),
                         IsActive = true,
                         IsSyncToPos = false
                     };
@@ -305,7 +331,7 @@ namespace ExportService
             var pgDateTime = new DateTime(DateOnly.FromDateTime(orderDate), TimeOnly.FromTimeSpan(orderTime ?? TimeSpan.Zero));
             DateTime orderDateTime = ConvertToPkTime(pgDateTime);
 
-            orderDate = new DateTime(DateOnly.FromDateTime(orderDateTime), new TimeOnly(0,0,0));
+            orderDate = EnsureSqlDateTimeRange(new DateTime(DateOnly.FromDateTime(orderDateTime), new TimeOnly(0, 0, 0)));
             orderTime = orderDateTime.TimeOfDay;
 
             return new OrderMaster
@@ -313,21 +339,21 @@ namespace ExportService
                 CompanyId = pgOrderMaster.CompanyId,
                 OrderNumber = pgOrderMaster.OrderNumber,
                 CreatedBy = pgOrderMaster.CreatedBy,
-                CreatedDate = ConvertToPkTime(DateTime.Now),
+                CreatedDate = EnsureSqlDateTimeRange(ConvertToPkTime(DateTime.Now)),
                 BranchId = pgOrderMaster.BranchId,
                 AreaId = pgOrderMaster.AreaId,
                 RiderId = pgOrderMaster.RiderId,
                 OrderStatusId = pgOrderMaster.OrderStatusId,
                 IsAdvanceOrder = pgOrderMaster.IsAdvanceOrder,
                 SpecialInstruction = pgOrderMaster.SpecialInstruction,
-                OrderDate = orderDate,
+                OrderDate = EnsureSqlDateTimeRange(orderDate),
                 OrderTime = orderTime,
                 TotalAmountWithoutGst = pgOrderMaster.TotalAmountWithoutGst,
                 Gstid = pgOrderMaster.Gstid,
                 TotalAmountWithGst = pgOrderMaster.TotalAmountWithGst,
                 IsActive = pgOrderMaster.IsActive,
                 AlternateNumber = pgOrderMaster.AlternateNumber,
-                AdvanceOrderDate = pgOrderMaster.AdvanceOrderDate,
+                AdvanceOrderDate = EnsureSqlDateTimeRange(pgOrderMaster.AdvanceOrderDate),
                 DeliveryTime = pgOrderMaster.DeliveryTime,
                 Clinumber = pgOrderMaster.Clinumber,
                 OrderSourceId = pgOrderMaster.OrderSourceId,
