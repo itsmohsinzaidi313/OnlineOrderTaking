@@ -25,7 +25,7 @@ public class Implementation(IRestaurantDbContextFactory restaurantDbContextFacto
     {
         var branchId = order.BranchId;
         var areaId = order.AreaId;
-        await using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url, readOnly: false);
+        await using var dbContext = await restaurantDbContextFactory.CreateDbContextByUrlAsync(url, readOnly: false);
         var strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
@@ -331,7 +331,7 @@ public class Implementation(IRestaurantDbContextFactory restaurantDbContextFacto
 
     internal async IAsyncEnumerable<int> GetBranchUsersIdsAsync(string url, int branchId)
     {
-        await using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
+        await using var dbContext = await restaurantDbContextFactory.CreateDbContextByUrlAsync(url);
         foreach (var userId in await dbContext.UserBranchMappings.Where(x => x.BranchId == branchId).Select(x => x.UserId).ToListAsync())
             yield return userId;
     }
@@ -339,7 +339,7 @@ public class Implementation(IRestaurantDbContextFactory restaurantDbContextFacto
     internal async Task<object> OrderStatusLogs(string url, string orderToken)
     {
         var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
-        await using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
+        await using var dbContext = await restaurantDbContextFactory.CreateDbContextByUrlAsync(url);
         var orderMasterId = await dbContext.OrderMasters.Where(x => x.OrderToken == orderToken).Select(x => x.OrderMasterId).FirstOrDefaultAsync();
         var logs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == orderMasterId).ToListAsync();
         return logs.Select(x => new
@@ -354,7 +354,7 @@ public class Implementation(IRestaurantDbContextFactory restaurantDbContextFacto
 
     internal async Task<JsonObject> GetLegacyResponse(string orderNumber, string url)
     {
-        await using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
+        await using var dbContext = await restaurantDbContextFactory.CreateDbContextByUrlAsync(url);
         var om = await dbContext.OrderMasters
             .FirstOrDefaultAsync(x => x.OrderToken == orderNumber);
 

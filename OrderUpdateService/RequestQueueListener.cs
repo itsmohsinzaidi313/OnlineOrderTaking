@@ -15,7 +15,7 @@ namespace OrderUpdateService
         {
             var requestPayload = System.Text.Json.JsonSerializer.Deserialize<OrderUpdatePayload>(transport);
             object? payload = null;
-            using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(requestPayload.DomainName);
+            using var dbContext = await restaurantDbContextFactory.CreateDbContextByUrlAsync(requestPayload.DomainName);
             try
             {
                 var orderMaster = await dbContext.OrderMasters.Where(x => x.OrderToken == requestPayload.OrderToken).FirstOrDefaultAsync();

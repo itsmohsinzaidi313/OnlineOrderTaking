@@ -7,6 +7,7 @@ namespace PointofSaleModels.Services
 {
     public interface IRestaurantDbContextFactory
     {
-        Task<PgDbContext> CreateDbContextAsync(string restaurantUrl, bool readOnly = true, CancellationToken cancellationToken = default);
+        Task<PgDbContext> CreateDbContextByUrlAsync(string restaurantUrl, bool readOnly = true, CancellationToken cancellationToken = default);
+        PgDbContext CreateDbContextByConnectionString(string connectionString, bool readOnly = true, CancellationToken cancellationToken = default);
     }
 }

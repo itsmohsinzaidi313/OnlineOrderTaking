@@ -16,7 +16,7 @@ namespace ClientNotificationService
             object? response = null;
             try
             {
-                using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(requestPayload!.DomainName);
+                using var dbContext = await restaurantDbContextFactory.CreateDbContextByUrlAsync(requestPayload!.DomainName);
                 var userIds = await dbContext.UserBranchMappings
                     .Where(x => x.BranchId == requestPayload.CustomerOrder.BranchId)
                     .Select(x => x.UserId)

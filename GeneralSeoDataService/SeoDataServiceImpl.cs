@@ -23,7 +23,7 @@ namespace GeneralSeoDataService
 
         private async IAsyncEnumerable<SeoData> FetchSeoData(string domainName)
         {
-            await using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(domainName);
+            await using var dbContext = await restaurantDbContextFactory.CreateDbContextByUrlAsync(domainName);
             var generalSeoKeys = new List<string>()
         {
             "WEBSITE_META_TITLE",

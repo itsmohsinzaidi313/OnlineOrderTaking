@@ -9,7 +9,7 @@ internal class Implementation(IRestaurantDbContextFactory restaurantDbContextFac
 {
     internal async Task<JsonObject> GetDataOneAsync(string url)
     {
-        using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
+        using var dbContext = await restaurantDbContextFactory.CreateDbContextByUrlAsync(url);
         var orderModes = new JsonObject();
         var delivery = new JsonObject();
         var pickup = new JsonObject();
@@ -184,7 +184,7 @@ internal class Implementation(IRestaurantDbContextFactory restaurantDbContextFac
 
     private async Task<JsonObject> GetThemeDataAsync(string url)
     {
-        using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
+        using var dbContext = await restaurantDbContextFactory.CreateDbContextByUrlAsync(url);
         var keys = new[]
         {
             "TOP_BAR_BG_COLOR",
@@ -249,7 +249,7 @@ internal class Implementation(IRestaurantDbContextFactory restaurantDbContextFac
     private async Task<JsonObject> GetSettingsDataAsync(string url)
     {
         var settingsData = new JsonObject();
-        using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
+        using var dbContext = await restaurantDbContextFactory.CreateDbContextByUrlAsync(url);
         var keys = new[]
         {
             "UPLOAD_LOGO",

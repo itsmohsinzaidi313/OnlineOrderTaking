@@ -9,7 +9,7 @@ public class Implementation(IRestaurantDbContextFactory restaurantDbContextFacto
 {
     internal async IAsyncEnumerable<CustomerOrder> GetOrdersAsync(string url, int? userId = null, string? orderToken = null)
     {
-        using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
+        using var dbContext = await restaurantDbContextFactory.CreateDbContextByUrlAsync(url);
         var products = await (from x in dbContext.ProductCategories
                               join y in dbContext.Products on x.CategoryId equals y.ProductCategoryId
                               select y).ToListAsync();
@@ -149,7 +149,7 @@ public class Implementation(IRestaurantDbContextFactory restaurantDbContextFacto
 
     internal async Task<Dictionary<int, string>> GetOrderStatusesAsync(string url)
     {
-        using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
+        using var dbContext = await restaurantDbContextFactory.CreateDbContextByUrlAsync(url);
         return await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
     }
 
@@ -242,7 +242,7 @@ public class Implementation(IRestaurantDbContextFactory restaurantDbContextFacto
 
     internal async Task<object> GetRidersAsync(int userId, string url)
     {
-        using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
+        using var dbContext = await restaurantDbContextFactory.CreateDbContextByUrlAsync(url);
         var list = await dbContext.Riders
             .Join(dbContext.UserBranchMappings, a => a.BranchId, b => b.BranchId, (a, b) => new { Riders = a, b.UserId })
             .Where(x => x.UserId == userId)
@@ -257,7 +257,7 @@ public class Implementation(IRestaurantDbContextFactory restaurantDbContextFacto
 
     internal async Task<object> GetBranchesAsync(string url)
     {
-        using var dbContext = await restaurantDbContextFactory.CreateDbContextAsync(url);
+        using var dbContext = await restaurantDbContextFactory.CreateDbContextByUrlAsync(url);
         var list = await dbContext.BranchMasters
             .Where(x => x.IsActive)
             .Select(x => new

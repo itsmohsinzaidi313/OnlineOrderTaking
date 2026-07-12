@@ -12,7 +12,13 @@ namespace PointofSaleModels.Services
 {
     public class RestaurantDbContextFactory(IDbContextFactory<RestaurantsContext> dbContextFactory, IMemoryCache cache, IWebHostEnvironment environment) : IRestaurantDbContextFactory
     {
-        public async Task<PgDbContext> CreateDbContextAsync(string restaurantUrl, bool readOnly = true,
+        public PgDbContext CreateDbContextByConnectionString(string connectionString, bool readOnly = true, CancellationToken cancellationToken = default)
+        {
+
+            return GetDbContext(connectionString, readOnly);
+        }
+
+        public async Task<PgDbContext> CreateDbContextByUrlAsync(string restaurantUrl, bool readOnly = true,
             CancellationToken cancellationToken = default)
         {
             if (restaurantUrl is null)
@@ -35,16 +41,20 @@ namespace PointofSaleModels.Services
                 }) ?? throw new Exception($"Restaurant '{restaurantUrl}' was not found.");
             var connectionString = restaurant.ConnectionString;
 
-            if(readOnly)
+            return GetDbContext(connectionString, readOnly);
+        }
+
+        private PgDbContext GetDbContext(string connectionString, bool readOnly)
+        {
+            if (readOnly)
             {
                 connectionString = connectionString.Replace("5434", "5433");
             }
 
-            if(environment.IsDevelopment())
+            if (environment.IsDevelopment())
             {
                 connectionString = connectionString.Replace("haproxy", "localhost");
             }
-
             var options = new DbContextOptionsBuilder<PgDbContext>()
                 .UseNpgsql(connectionString, options =>
                 {
