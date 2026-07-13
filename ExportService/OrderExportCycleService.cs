@@ -48,7 +48,7 @@ namespace ExportService
                 {
                     logger.LogError(ex, "❌ An error occurred while executing the order export cycle.");
                 }
-                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
             }
         }
     }
