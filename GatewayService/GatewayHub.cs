@@ -107,10 +107,9 @@ namespace GatewayService
         public async Task CustomerOrderHistory(string orderToken, string responseKey)
         {
             LogTenant();
-            var host = OriginalHost;
             var obj = new CustomerOrderHistoryServicePayload
             {
-                DomainName = host,
+                DomainName = OriginalHost,
                 ResponseKey = responseKey,
                 SignalRMethodName = "CustomerOrderHistory",
                 OrderToken = orderToken
@@ -121,10 +120,9 @@ namespace GatewayService
         public async Task OrderHistoryRequest(int userId, string responseKey)
         {
             LogTenant();
-            var host = OriginalHost;
             var obj = new DataServicePayload
             {
-                DomainName = host,
+                DomainName = OriginalHost,
                 DataRequestType = "Orders",
                 ResponseKey = responseKey,
                 SignalRMethodName = "OrderHistoryRequest"
@@ -145,7 +143,7 @@ namespace GatewayService
             {
                 Order = order,
                 BranchId = order.BranchId,
-                DomainName = order.Domain,
+                DomainName = OriginalHost,
                 ResponseKey = responseKey,
                 SignalRMethodName = "PlaceOrder"
             }.FillContext(Context);
