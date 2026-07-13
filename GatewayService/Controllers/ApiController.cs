@@ -25,11 +25,12 @@ namespace GatewayService.Controllers
         private readonly JwtSettings _jwt = jwtOptions.Value;
 
         [HttpGet("seo")]
-        public async Task<IActionResult> GetSeoData([FromQuery] string domain)
+        public async Task<IActionResult> GetSeoData()
         {
-            if (string.IsNullOrEmpty(domain))
+            var host = HttpContext.Request.Headers["X-Original-Host"].FirstOrDefault();
+            if (string.IsNullOrEmpty(host))
                 return BadRequest(new { error = "Domain is required." });
-            var list = await seoDataClient.GetSeoDataAsync(new Domain { DomainName = domain }, cancellationToken: HttpContext.RequestAborted);
+            var list = await seoDataClient.GetSeoDataAsync(new Domain { DomainName = host }, cancellationToken: HttpContext.RequestAborted);
             return Ok(list);
         }
 
@@ -151,19 +152,20 @@ namespace GatewayService.Controllers
         }
 
         [HttpGet("clear")]
-        public async Task<IActionResult> ClearCacheAsync([FromQuery] string domain)
+        public async Task<IActionResult> ClearCacheAsync()
         {
+            var host = HttpContext.Request.Headers["X-Original-Host"].FirstOrDefault();
             var db = redis.GetDatabase();
             var server = redis.GetServer(redis.GetEndPoints().First());
             int menuKeys = 0, dAndPKeys = 0, pendingKeys = 0, subscriptions = 0, connections = 0, orders = 0;
 
-            foreach (var key in server.Keys(pattern: $"{domain}:*:menu"))
+            foreach (var key in server.Keys(pattern: $"{host}:*:menu"))
             {
                 await db.KeyDeleteAsync(key);
                 menuKeys++;
             }
 
-            foreach (var key in server.Keys(pattern: $"{domain}:*:dandp"))
+            foreach (var key in server.Keys(pattern: $"{host}:*:dandp"))
             {
                 await db.KeyDeleteAsync(key);
                 dAndPKeys++;

@@ -15,6 +15,8 @@ namespace GatewayService
     [Authorize]
     public class GatewayHub(ILogger<GatewayHub> logger, Implementation implementation, IConnectionMultiplexer redis) : Hub
     {
+        private string OriginalHost => Context.Items["OriginalHost"]?.ToString() ?? throw new InvalidOperationException("OriginalHost is not set");
+        private string TenantId => Context.Items["TenantId"]?.ToString() ?? throw new InvalidOperationException("TenantId is not set");
         public override async Task OnConnectedAsync()
         {
             string userId = ExtractUserIdFromClaims();
@@ -47,16 +49,17 @@ namespace GatewayService
 
         private void LogTenant()
         {
-            var tenantId = Context.Items["TenantId"]?.ToString();
-            var originalHost = Context.Items["OriginalHost"]?.ToString();
+            var tenantId = TenantId;
+            var originalHost = OriginalHost;
             logger.LogInformation("Tenant Info: TenantId={TenantId}, OriginalHost={OriginalHost}", tenantId, originalHost);
         }
 
-        public async Task MenuRequest(string domainName, int branchId, string responseKey)
+        public async Task MenuRequest(int branchId, string responseKey)
         {
             LogTenant();
             var db = redis.GetDatabase();
-            var response = await db.StringGetAsync($"{domainName}:{branchId}:menu");
+            var host = OriginalHost;
+            var response = await db.StringGetAsync($"{host}:{branchId}:menu");
             if (!response.IsNull)
             {
                 var payload = JsonSerializer.Deserialize<DataServicePayload>(response.ToString());
@@ -66,7 +69,7 @@ namespace GatewayService
             }
             var obj = new DataServicePayload
             {
-                DomainName = domainName,
+                DomainName = host,
                 DataRequestType = string.Empty,
                 BranchId = branchId,
                 ResponseKey = responseKey,
@@ -76,11 +79,12 @@ namespace GatewayService
             await QueuePayload(RabbitMqQueues.MenuRequestQueue, obj);
         }
 
-        public async Task DeliveryAndPickupRequest(string domainName, int branchId, string responseKey)
+        public async Task DeliveryAndPickupRequest(int branchId, string responseKey)
         {
             LogTenant();
             var db = redis.GetDatabase();
-            var response = await db.StringGetAsync($"{domainName}:{branchId}:dandp");
+            var host = OriginalHost;
+            var response = await db.StringGetAsync($"{host}:{branchId}:dandp");
             if (!response.IsNull)
             {
                 response = DataHandler(response);
@@ -91,7 +95,7 @@ namespace GatewayService
             }
             var obj = new DataServicePayload
             {
-                DomainName = domainName,
+                DomainName = host,
                 DataRequestType = string.Empty,
                 BranchId = branchId,
                 ResponseKey = responseKey,
@@ -100,12 +104,13 @@ namespace GatewayService
             await QueuePayload(RabbitMqQueues.SettingRequestQueue, obj);
         }
 
-        public async Task CustomerOrderHistory(string domainName, string orderToken, string responseKey)
+        public async Task CustomerOrderHistory(string orderToken, string responseKey)
         {
             LogTenant();
+            var host = OriginalHost;
             var obj = new CustomerOrderHistoryServicePayload
             {
-                DomainName = domainName,
+                DomainName = host,
                 ResponseKey = responseKey,
                 SignalRMethodName = "CustomerOrderHistory",
                 OrderToken = orderToken
@@ -113,12 +118,13 @@ namespace GatewayService
             await QueuePayload(RabbitMqQueues.CustomerOrderHistoryRequestQueue, obj);
         }
 
-        public async Task OrderHistoryRequest(string domainName, int userId, string responseKey)
+        public async Task OrderHistoryRequest(int userId, string responseKey)
         {
             LogTenant();
+            var host = OriginalHost;
             var obj = new DataServicePayload
             {
-                DomainName = domainName,
+                DomainName = host,
                 DataRequestType = "Orders",
                 ResponseKey = responseKey,
                 SignalRMethodName = "OrderHistoryRequest"
@@ -146,12 +152,13 @@ namespace GatewayService
             await QueuePayload(RabbitMqQueues.OrderRequestQueue, obj);
         }
 
-        public async Task OrderStatus(string domainName, int branchId, string orderNumber, int? orderStatusId, int? branchTransferId, int? riderId, int? deliveryTime, string responseKey)
+        public async Task OrderStatus(int branchId, string orderNumber, int? orderStatusId, int? branchTransferId, int? riderId, int? deliveryTime, string responseKey)
         {
             LogTenant();
+            var host = OriginalHost;
             var obj = new OrderUpdatePayload
             {
-                DomainName = domainName,
+                DomainName = host,
                 BranchId = branchId,
                 OrderToken = orderNumber,
                 ResponseKey = responseKey,
