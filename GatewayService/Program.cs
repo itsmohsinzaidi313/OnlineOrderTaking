@@ -39,7 +39,7 @@ builder.Services.AddCors(options =>
 builder.Services
     .AddSignalR()
     .AddStackExchangeRedis(redisSettings.ConnectionString, opts => opts.Configuration.ChannelPrefix = RedisChannel.Literal("GatewayService"));
-
+builder.Services.AddHttpContextAccessor();
 builder.Services
     .AddSingleton<RabbitMqConnection>()
     .AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>()
