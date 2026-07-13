@@ -78,6 +78,7 @@ namespace GatewayService
 
         public async Task DeliveryAndPickupRequest(string domainName, int branchId, string responseKey)
         {
+            LogTenant();
             var db = redis.GetDatabase();
             var response = await db.StringGetAsync($"{domainName}:{branchId}:dandp");
             if (!response.IsNull)
@@ -101,6 +102,7 @@ namespace GatewayService
 
         public async Task CustomerOrderHistory(string domainName, string orderToken, string responseKey)
         {
+            LogTenant();
             var obj = new CustomerOrderHistoryServicePayload
             {
                 DomainName = domainName,
@@ -113,6 +115,7 @@ namespace GatewayService
 
         public async Task OrderHistoryRequest(string domainName, int userId, string responseKey)
         {
+            LogTenant();
             var obj = new DataServicePayload
             {
                 DomainName = domainName,
@@ -126,6 +129,7 @@ namespace GatewayService
 
         public async Task PlaceOrder(CustomerOrder order, string responseKey)
         {
+            LogTenant();
             if (order.Items.Count == 0)
             {
                 await Clients.Caller.SendAsync(responseKey, new { Success = false, Message = "Order must contain at least one item." });
@@ -144,6 +148,7 @@ namespace GatewayService
 
         public async Task OrderStatus(string domainName, int branchId, string orderNumber, int? orderStatusId, int? branchTransferId, int? riderId, int? deliveryTime, string responseKey)
         {
+            LogTenant();
             var obj = new OrderUpdatePayload
             {
                 DomainName = domainName,
