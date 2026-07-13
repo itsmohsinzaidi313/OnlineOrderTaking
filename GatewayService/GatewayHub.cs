@@ -13,14 +13,29 @@ namespace GatewayService
 {
 
     [Authorize]
-    public class GatewayHub(Implementation implementation, IConnectionMultiplexer redis) : Hub
+    public class GatewayHub(ILogger<GatewayHub> logger, Implementation implementation, IConnectionMultiplexer redis) : Hub
     {
         public override async Task OnConnectedAsync()
         {
             string userId = ExtractUserIdFromClaims();
             await implementation.SetClientOnlineAsync(userId, Context.ConnectionId);
             await implementation.SendPendingPayload(userId);
+            ConfigureTenantHeaders();
             await base.OnConnectedAsync();
+        }
+
+        private void ConfigureTenantHeaders()
+        {
+            var httpContext = Context.GetHttpContext();
+            if (httpContext != null)
+            {
+                var tenantId = httpContext.Request.Headers["X-Tenant-Id"].FirstOrDefault();
+                var originalHost = httpContext.Request.Headers["X-Original-Host"].FirstOrDefault();
+
+                Context.Items["TenantId"] = tenantId;
+                Context.Items["OriginalHost"] = originalHost;
+                logger.LogInformation("Tenant headers configured: TenantId={TenantId}, OriginalHost={OriginalHost}", tenantId, originalHost);
+            }
         }
 
         public override async Task OnDisconnectedAsync(Exception? ex)
@@ -30,8 +45,16 @@ namespace GatewayService
             await base.OnDisconnectedAsync(ex);
         }
 
+        private void LogTenant()
+        {
+            var tenantId = Context.Items["TenantId"]?.ToString();
+            var originalHost = Context.Items["OriginalHost"]?.ToString();
+            logger.LogInformation("Tenant Info: TenantId={TenantId}, OriginalHost={OriginalHost}", tenantId, originalHost);
+        }
+
         public async Task MenuRequest(string domainName, int branchId, string responseKey)
         {
+            LogTenant();
             var db = redis.GetDatabase();
             var response = await db.StringGetAsync($"{domainName}:{branchId}:menu");
             if (!response.IsNull)

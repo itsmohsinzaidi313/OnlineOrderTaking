@@ -44,7 +44,7 @@ namespace SettingsDataService
         {
             using var context = contextFactory.CreateDbContext();
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
-            return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
+            return restaurant?.ConnectionString.Replace("haproxy", "localhost") ?? throw new Exception("Restaurant not found");
         }
 
         private async Task<JsonObject> GetDeliveryAndPickupItemsAsync(string connectionString)
