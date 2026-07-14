@@ -298,10 +298,10 @@ namespace ExportService
                     orderTime = orderDateTime.TimeOfDay;
                     var orderMasterLog = new OrderMasterLog
                     {
-                        OrderMasterId = pgOrderMaster.OrderMasterId,
-                        CompanyId = pgOrderMaster.CompanyId,
-                        BranchId = pgOrderMaster.BranchId,
-                        OrderStatusId = pgOrderMaster.OrderStatusId,
+                        OrderMasterId = sqlOrderMaster.OrderMasterId,
+                        CompanyId = sqlOrderMaster.CompanyId,
+                        BranchId = sqlOrderMaster.BranchId,
+                        OrderStatusId = sqlOrderMaster.OrderStatusId,
                         OrderDate = sqlOrderMaster.OrderDate,
                         OrderTime = sqlOrderMaster.OrderTime,
                         CreatedDate = sqlOrderMaster.CreatedDate,
