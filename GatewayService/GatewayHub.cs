@@ -139,6 +139,7 @@ namespace GatewayService
                 await Clients.Caller.SendAsync(responseKey, new { Success = false, Message = "Order must contain at least one item." });
                 return;
             }
+            order.Domain = OriginalHost;
             var obj = new OrderServicePayload
             {
                 Order = order,
