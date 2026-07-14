@@ -110,10 +110,11 @@ app.MapGet("/import/{companyId:int}", async (int companyId, [FromServices] ILogg
         var httpClient = new HttpClient
         {
             Timeout = TimeSpan.FromMinutes(5),
-            BaseAddress = new Uri($"http://gatewayservice:8080")
+            BaseAddress = new Uri($"http://gatewayservice:8080"),
         };
+        httpClient.DefaultRequestHeaders.Add("X-Original-Host", domainInfo?.FullyQualifiedDomainName);
         logger.LogInformation("Clearing cache for {Domain}", domainInfo?.FullyQualifiedDomainName);
-        var httpResponse = await httpClient.GetAsync($"clear?domain={domainInfo?.FullyQualifiedDomainName}");
+        var httpResponse = await httpClient.GetAsync("clear");
         if (httpResponse.IsSuccessStatusCode == false)
         {
             return Results.Ok($"Import completed but failed to clear cache\nStatusCode: {httpResponse.StatusCode}");
