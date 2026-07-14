@@ -302,9 +302,9 @@ namespace ExportService
                         CompanyId = pgOrderMaster.CompanyId,
                         BranchId = pgOrderMaster.BranchId,
                         OrderStatusId = pgOrderMaster.OrderStatusId,
-                        OrderDate = orderDate,
-                        OrderTime = orderTime,
-                        CreatedDate = pgOrderMaster.CreatedDate,
+                        OrderDate = sqlOrderMaster.OrderDate,
+                        OrderTime = sqlOrderMaster.OrderTime,
+                        CreatedDate = sqlOrderMaster.CreatedDate,
                         IsActive = true,
                         IsSyncToPos = false
                     };
