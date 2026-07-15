@@ -288,14 +288,7 @@ namespace ExportService
                     });
 
                     await sqlContext.OrderStatusLogs.AddRangeAsync(pgOrderStatusLogs);
-                    var orderTime = pgOrderMaster.OrderTime;
-                    var orderDate = pgOrderMaster.OrderDate ?? throw new Exception("Invalid order date");
 
-                    var pgDateTime = new DateTime(DateOnly.FromDateTime(orderDate), TimeOnly.FromTimeSpan(orderTime ?? TimeSpan.Zero));
-                    DateTime orderDateTime = ConvertToPkTime(pgDateTime);
-
-                    orderDate = new DateTime(DateOnly.FromDateTime(orderDateTime), new TimeOnly(0, 0, 0));
-                    orderTime = orderDateTime.TimeOfDay;
                     var orderMasterLog = new OrderMasterLog
                     {
                         OrderMasterId = sqlOrderMaster.OrderMasterId,
