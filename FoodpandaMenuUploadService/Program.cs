@@ -24,11 +24,6 @@ app.MapGet("/UploadMenu/{id}", async (int id) =>
     return Results.Ok(response);
 
 });
-app.MapPost("/UploadResponse", (string update) =>
-{
-    Console.WriteLine(update);
-    return Results.Ok();
-});
 // Configure the HTTP request pipeline.
 
 app.UseHttpsRedirection();
@@ -122,7 +117,7 @@ static JsonNode TransformToFoodpanda(JsonNode source)
     var data = source?["Data"] as JsonObject ?? [];
     var products = data["Products"] as JsonArray ?? [];
     var categories = data["Categories"] as JsonArray ?? [];
-    var branches = data["Branches"] as JsonArray ?? throw new Exception("Branches are empty");
+    var branches = data["Branches"] as JsonArray ?? [];
     var items = new JsonObject();
     var productIdToBaseId = new Dictionary<int, string>();
     var detailIdToVariantId = new Dictionary<int, string>();

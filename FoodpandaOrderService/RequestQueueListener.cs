@@ -31,6 +31,7 @@ namespace FoodpandaOrderService
                     _ => throw new Exception("Unknown order code")
                 };
                 var restaurant = await restaurantsContext.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domain) ?? throw new Exception("Restaurant not found");
+
                 await SaveToDatabase(restaurant.ConnectionString, order);
             }
             catch (Exception ex)
@@ -92,7 +93,7 @@ namespace FoodpandaOrderService
                             var isDeal = dealIds.Contains(pd.ProductDetailId);
                             if (isDeal)
                             {
-
+                                
                             }
                             else
                             {
