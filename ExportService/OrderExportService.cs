@@ -2,6 +2,7 @@
 using ExportService.Entities;
 using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.ServicePayloads;
+using System.Data.SqlTypes;
 
 namespace ExportService
 {
@@ -11,6 +12,31 @@ namespace ExportService
         DateTime ConvertToPkTime(DateTime dateTime)
         {
             return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
+        }
+
+        private static DateTime EnsureSqlDateTimeRange(DateTime value)
+        {
+            if (value < SqlDateTime.MinValue.Value)
+            {
+                return SqlDateTime.MinValue.Value;
+            }
+
+            if (value > SqlDateTime.MaxValue.Value)
+            {
+                return SqlDateTime.MaxValue.Value;
+            }
+
+            return value;
+        }
+
+        private static DateTime? EnsureSqlDateTimeRange(DateTime? value)
+        {
+            if (!value.HasValue)
+            {
+                return null;
+            }
+
+            return EnsureSqlDateTimeRange(value.Value);
         }
 
         public async Task OnMessageHandler(ExportServicePayload request, string connectionString)
@@ -80,7 +106,6 @@ namespace ExportService
                 .ToListAsync();
 
             var createdBy = postgresContext.UserLogins.FirstOrDefault()?.UserId ?? 0;
-            var confirmedId = postgresContext.OrderStatuses.Where(x => x.OrderStatusName == "Confirmed").Select(x => x.OrderStatusId).FirstOrDefault();
 
             foreach (var pgLog in pgOrderStatusLogs)
             {
@@ -92,40 +117,18 @@ namespace ExportService
                         OrderStatusId = pgLog.OrderStatusId,
                         CompanyId = pgLog.CompanyId,
                         Description = pgLog.Description,
-                        CreatedDate = pgLog.CreatedDate,
+                        CreatedDate = EnsureSqlDateTimeRange(pgLog.CreatedDate),
                         CreatedBy = createdBy,
                         IsActive = true,
                     };
                     await sqlContext.OrderStatusLogs.AddAsync(newSqlLog);
-                    if (newSqlLog.OrderStatusId == confirmedId)
-                    {
-                        var orderTime = pgOrderMaster.OrderTime;
-                        var orderDate = pgOrderMaster.OrderDate ?? throw new Exception("Invalid order date");
-
-                        var pgDateTime = new DateTime(DateOnly.FromDateTime(orderDate), TimeOnly.FromTimeSpan(orderTime ?? TimeSpan.Zero));
-                        DateTime orderDateTime = ConvertToPkTime(pgDateTime);
-
-                        orderDate = new DateTime(DateOnly.FromDateTime(orderDateTime), TimeOnly.MinValue);
-                        orderTime = orderDateTime.TimeOfDay;
-                        var orderMasterLog = new OrderMasterLog
-                        {
-                            OrderMasterId = sqlOrderMaster.OrderMasterId,
-                            CompanyId = sqlOrderMaster.CompanyId,
-                            BranchId = sqlOrderMaster.BranchId,
-                            OrderStatusId = newSqlLog.OrderStatusId,
-                            OrderDate = orderDate,
-                            OrderTime = orderTime,
-                            CreatedDate = sqlOrderMaster.CreatedDate,
-                            IsActive = true,
-                            IsSyncToPos = false
-                        };
-                        await sqlContext.OrderMasterLogs.AddAsync(orderMasterLog);
-                    }
                 }
             }
             await sqlContext.SaveChangesAsync();
             var latestStatusId = pgOrderStatusLogs.OrderByDescending(x => x.OrderStatusLogId).First().OrderStatusId;
             await sqlContext.OrderMasters.Where(x => x.OrderMasterId == sqlOrderMasterId)
+                .ExecuteUpdateAsync(x => x.SetProperty(x => x.OrderStatusId, latestStatusId));
+            await sqlContext.OrderMasterLogs.Where(x => x.OrderMasterId == sqlOrderMasterId)
                 .ExecuteUpdateAsync(x => x.SetProperty(x => x.OrderStatusId, latestStatusId));
         }
         private async Task<int> GetCompanyIdAsync(string connectionString)
@@ -285,6 +288,20 @@ namespace ExportService
                     });
 
                     await sqlContext.OrderStatusLogs.AddRangeAsync(pgOrderStatusLogs);
+
+                    var orderMasterLog = new OrderMasterLog
+                    {
+                        OrderMasterId = sqlOrderMaster.OrderMasterId,
+                        CompanyId = sqlOrderMaster.CompanyId,
+                        BranchId = sqlOrderMaster.BranchId,
+                        OrderStatusId = sqlOrderMaster.OrderStatusId,
+                        OrderDate = sqlOrderMaster.OrderDate,
+                        OrderTime = sqlOrderMaster.OrderTime,
+                        CreatedDate = sqlOrderMaster.CreatedDate,
+                        IsActive = true,
+                        IsSyncToPos = false
+                    };
+                    await sqlContext.OrderMasterLogs.AddAsync(orderMasterLog);
                     await sqlContext.SaveChangesAsync();
 
                     await transaction.CommitAsync();
@@ -307,7 +324,7 @@ namespace ExportService
             var pgDateTime = new DateTime(DateOnly.FromDateTime(orderDate), TimeOnly.FromTimeSpan(orderTime ?? TimeSpan.Zero));
             DateTime orderDateTime = ConvertToPkTime(pgDateTime);
 
-            orderDate = new DateTime(DateOnly.FromDateTime(orderDateTime), TimeOnly.MinValue);
+            orderDate = EnsureSqlDateTimeRange(new DateTime(DateOnly.FromDateTime(orderDateTime), new TimeOnly(0, 0, 0)));
             orderTime = orderDateTime.TimeOfDay;
 
             return new OrderMaster
@@ -315,21 +332,21 @@ namespace ExportService
                 CompanyId = pgOrderMaster.CompanyId,
                 OrderNumber = pgOrderMaster.OrderNumber,
                 CreatedBy = pgOrderMaster.CreatedBy,
-                CreatedDate = ConvertToPkTime(DateTime.Now),
+                CreatedDate = EnsureSqlDateTimeRange(ConvertToPkTime(DateTime.Now)),
                 BranchId = pgOrderMaster.BranchId,
                 AreaId = pgOrderMaster.AreaId,
                 RiderId = pgOrderMaster.RiderId,
                 OrderStatusId = pgOrderMaster.OrderStatusId,
                 IsAdvanceOrder = pgOrderMaster.IsAdvanceOrder,
                 SpecialInstruction = pgOrderMaster.SpecialInstruction,
-                OrderDate = orderDate,
+                OrderDate = EnsureSqlDateTimeRange(orderDate),
                 OrderTime = orderTime,
                 TotalAmountWithoutGst = pgOrderMaster.TotalAmountWithoutGst,
                 Gstid = pgOrderMaster.Gstid,
                 TotalAmountWithGst = pgOrderMaster.TotalAmountWithGst,
                 IsActive = pgOrderMaster.IsActive,
                 AlternateNumber = pgOrderMaster.AlternateNumber,
-                AdvanceOrderDate = pgOrderMaster.AdvanceOrderDate,
+                AdvanceOrderDate = EnsureSqlDateTimeRange(pgOrderMaster.AdvanceOrderDate),
                 DeliveryTime = pgOrderMaster.DeliveryTime,
                 Clinumber = pgOrderMaster.Clinumber,
                 OrderSourceId = pgOrderMaster.OrderSourceId,
