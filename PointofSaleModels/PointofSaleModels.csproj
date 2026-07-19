@@ -33,5 +33,6 @@
     </Protobuf>
     <Protobuf Include="Protos\pushnotification.proto" GrpcServices="Both" ProtoRoot="Protos" />
     <Protobuf Include="Protos\orderhistory.proto" GrpcServices="Both" ProtoRoot="Protos" />
+    <Protobuf Include="Protos\fpuploadmenu.proto" GrpcServices="Both" ProtoRoot="Protos" />
   </ItemGroup>
 </Project>

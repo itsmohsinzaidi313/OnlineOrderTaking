@@ -14,6 +14,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using static PointofSaleModels.Protos.CreateOrderService;
+using static PointofSaleModels.Protos.FpUploadMenuService;
 using static PointofSaleModels.Protos.GeneralSeoDataService;
 using static PointofSaleModels.Protos.OrderHistoryService;
 using static PointofSaleModels.Protos.PushNotificationService;
@@ -24,7 +25,7 @@ namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient, GeneralSeoDataServiceClient seoDataClient, CreateOrderServiceClient createOrderClient, Implementation impl) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient, GeneralSeoDataServiceClient seoDataClient, CreateOrderServiceClient createOrderClient, FpUploadMenuServiceClient fpUploadMenuServiceClient) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
 
@@ -117,6 +118,16 @@ namespace GatewayService.Controllers
                 var responseContent = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"POST {client.BaseAddress}{request.RequestUri} -> {(int)response.StatusCode} {response.ReasonPhrase}");
             }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> UpdateFoodpandaMenu(string url)
+        {
+            var response = await fpUploadMenuServiceClient.UploadMenuAsync(new FpUploadMenuRequest { Url = url }, cancellationToken: HttpContext.RequestAborted);
+            if (response.Success)
+                return Ok(response);
+            else
+                return Problem(response.Message);
         }
 
         [HttpGet("seo")]
