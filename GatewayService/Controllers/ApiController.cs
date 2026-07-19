@@ -120,8 +120,8 @@ namespace GatewayService.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<IActionResult> UpdateFoodpandaMenu(string url)
+        [HttpGet("UpdateFoodpandaMenu")]
+        public async Task<IActionResult> UpdateFoodpandaMenu([FromQuery] string url)
         {
             var response = await fpUploadMenuServiceClient.UploadMenuAsync(new FpUploadMenuRequest { Url = url }, cancellationToken: HttpContext.RequestAborted);
             if (response.Success)
@@ -130,7 +130,7 @@ namespace GatewayService.Controllers
                 return Problem(response.Message);
         }
 
-        [HttpGet("seo")]
+        [HttpGet("SEO")]
         public async Task<IActionResult> GetSeoData([FromQuery] string domain)
         {
             if (string.IsNullOrEmpty(domain))
