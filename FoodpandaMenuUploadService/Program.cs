@@ -1,5 +1,5 @@
+using FoodpandaMenuUploadService;
 using Microsoft.EntityFrameworkCore;
-using PointofSaleModels.PGDatabaseModels;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration
@@ -7,20 +7,20 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 // Add services to the container.
-var dbConnectionString =
-    builder.Configuration.GetConnectionString("POSTGRES")
-    ?? throw new InvalidOperationException("Postgres connection string is not configured.");
+var sqlServerConnectionString =
+    builder.Configuration.GetConnectionString("SqlServer")
+    ?? throw new InvalidOperationException("SqlServer connection string is not configured.");
 
 builder.Services
-    .AddDbContextFactory<RestaurantsContext>(
-        options => options.UseNpgsql(
-            dbConnectionString,
-            npgsqlOptions =>
+    .AddDbContextFactory<SqlServerDbContext>(options =>
+        options.UseSqlServer(
+            sqlServerConnectionString,
+            sqlServerOptions =>
             {
-                npgsqlOptions.EnableRetryOnFailure(
+                sqlServerOptions.EnableRetryOnFailure(
                     maxRetryCount: 5,
                     maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorCodesToAdd: null);
+                    errorNumbersToAdd: null);
             }));
 var app = builder.Build();
 // Configure the HTTP request pipeline.

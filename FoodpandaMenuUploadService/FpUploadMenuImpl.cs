@@ -1,4 +1,5 @@
 ﻿using Grpc.Core;
+using Microsoft.EntityFrameworkCore;
 using PointofSaleModels.Protos;
 using System.Globalization;
 using System.Net.Http.Headers;
@@ -9,16 +10,27 @@ using static PointofSaleModels.Protos.FpUploadMenuService;
 
 namespace FoodpandaMenuUploadService
 {
-    public class FpUploadMenuImpl : FpUploadMenuServiceBase
+    public class FpUploadMenuImpl(IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory) : FpUploadMenuServiceBase
     {
-        const string callbackUrls = "https://ygensystems.com/api/v2/OnlineOrders/PosIntegration/BBECAFA9-48BA-46BE-A5CF-26E7B0ED76CA";
+        const string CallbackUrl = "https://ygensystems.com/api/v2/OnlineOrders/PosIntegration/BBECAFA9-48BA-46BE-A5CF-26E7B0ED76CA";
+        const string MenuUrl = "http://85.190.242.39:5019/ExternalMenu";
+        const string FPBaseUrl = "https://integration-middleware.as.restaurant-partners.com";
+        const string FoodPandaUrl = $"{FPBaseUrl}/v2/chains/Ygen_PK_UAT/catalog";
         public override async Task<FpUploadMenuResponse> UploadMenu(FpUploadMenuRequest request, ServerCallContext context)
         {
+            var sqlServerDbContext = await sqlServerDbContextFactory.CreateDbContextAsync();
+            var id = sqlServerDbContext.SetupCompanies.Where(x => x.Url == request.Url).Select(x => x.Id).FirstOrDefault();
+            if(id == 0)
+            {
+                return new FpUploadMenuResponse() { Message = "Restaurant not found for the given URL.", Success = false };
+            }
+
             var ygenJson = await GetRestaurantMenu(id);
             if (ygenJson == null)
             {
                 return new FpUploadMenuResponse() { Message = "Menu not found for the given restaurant ID.", Success = false };
             }
+
             var pandaNode = TransformToFoodpanda(ygenJson);
             var response = await SendToFoodpanda(pandaNode);
             return new FpUploadMenuResponse() { Message = response, Success = true };
@@ -33,7 +45,7 @@ namespace FoodpandaMenuUploadService
                 OrderSourceValue = "WEB"
             };
             var content = JsonContent.Create(body);
-            var response = await httpClient.PostAsync("http://85.190.242.39:5019/ExternalMenu", content);
+            var response = await httpClient.PostAsync(MenuUrl, content);
             var ygenJson = await response.Content.ReadAsStringAsync();
             return JsonNode.Parse(ygenJson);
         }
@@ -52,20 +64,19 @@ namespace FoodpandaMenuUploadService
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             }
-            var response = await httpClient.PutAsync($"https://integration-middleware.as.restaurant-partners.com/v2/chains/Ygen_PK_UAT/catalog", content);
+            var response = await httpClient.PutAsync(FoodPandaUrl, content);
             var responseContent = await response.Content.ReadAsStringAsync();
             return responseContent;
         }
 
         private static async Task<string?> RequestAccessTokenAsync()
         {
-            const string baseUrl = "https://integration-middleware.as.restaurant-partners.com";
             const string loginPath = "/v2/login";
             const string username = "as-plugin-y-generation-systems-005";
             const string password = "KQ1D8Wcm0M";
             const string secret = "SnyteunCeerhicJofI";
 
-            var apiUrl = $"{baseUrl.TrimEnd('/')}/{loginPath.TrimStart('/')}";
+            var apiUrl = $"{FPBaseUrl.TrimEnd('/')}/{loginPath.TrimStart('/')}";
             var form = new Dictionary<string, string>
             {
                 ["username"] = username,
@@ -104,7 +115,7 @@ namespace FoodpandaMenuUploadService
             return null;
         }
 
-        private static JsonNode TransformToFoodpanda(JsonNode source)
+        private static JsonObject TransformToFoodpanda(JsonNode source)
         {
             var data = source?["Data"] as JsonObject ?? [];
             var products = data["Products"] as JsonArray ?? [];
@@ -434,7 +445,7 @@ namespace FoodpandaMenuUploadService
 
             return new JsonObject
             {
-                ["callbackUrl"] = callbackUrls,
+                ["callbackUrl"] = CallbackUrl,
                 ["catalog"] = new JsonObject
                 {
                     ["items"] = items
