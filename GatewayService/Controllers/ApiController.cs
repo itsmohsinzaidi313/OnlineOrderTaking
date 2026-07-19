@@ -121,9 +121,9 @@ namespace GatewayService.Controllers
         }
 
         [HttpGet("UpdateFoodpandaMenu")]
-        public async Task<IActionResult> UpdateFoodpandaMenu([FromQuery] string url)
+        public async Task<IActionResult> UpdateFoodpandaMenu([FromQuery] int id)
         {
-            var response = await fpUploadMenuServiceClient.UploadMenuAsync(new FpUploadMenuRequest { Url = url }, cancellationToken: HttpContext.RequestAborted);
+            var response = await fpUploadMenuServiceClient.UploadMenuAsync(new FpUploadMenuRequest { Id = id }, cancellationToken: HttpContext.RequestAborted);
             if (response.Success)
                 return Ok(response);
             else

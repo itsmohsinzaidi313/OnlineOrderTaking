@@ -7,7 +7,7 @@ service FpUploadMenuService {
 }
 
 message FpUploadMenuRequest {
-	string url = 1;
+	int32 id = 1;
 }
 
 message FpUploadMenuResponse {

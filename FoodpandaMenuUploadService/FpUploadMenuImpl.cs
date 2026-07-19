@@ -19,10 +19,10 @@ namespace FoodpandaMenuUploadService
         public override async Task<FpUploadMenuResponse> UploadMenu(FpUploadMenuRequest request, ServerCallContext context)
         {
             var sqlServerDbContext = await sqlServerDbContextFactory.CreateDbContextAsync();
-            var id = sqlServerDbContext.SetupCompanies.Where(x => x.Url == request.Url).Select(x => x.Id).FirstOrDefault();
+            var id = sqlServerDbContext.SetupCompanies.Where(x => x.Id == request.Id).Select(x => x.Id).FirstOrDefault();
             if(id == 0)
             {
-                return new FpUploadMenuResponse() { Message = "Restaurant not found for the given URL.", Success = false };
+                return new FpUploadMenuResponse() { Message = "Restaurant not found for the given ID.", Success = false };
             }
 
             var ygenJson = await GetRestaurantMenu(id);
