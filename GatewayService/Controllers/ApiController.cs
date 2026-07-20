@@ -1,4 +1,5 @@
 using GatewayService.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -29,6 +30,7 @@ namespace GatewayService.Controllers
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
 
+        [AllowAnonymous]
         [HttpPost("PosIntegration/{token}/{order}/{remoteId}")]
         public async Task<IActionResult> FoodpandaIntegration(string token, string order, string remoteId, [FromBody] string payloadModel)
         {
