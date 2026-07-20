@@ -22,10 +22,14 @@ builder.Services
                     maxRetryDelay: TimeSpan.FromSeconds(5),
                     errorNumbersToAdd: null);
             }));
+
+builder.Services.AddGrpc();
 var app = builder.Build();
 // Configure the HTTP request pipeline.
 
 app.UseHttpsRedirection();
+
+app.MapGrpcService<FpUploadMenuServiceImpl>();
 
 
 app.Run();
