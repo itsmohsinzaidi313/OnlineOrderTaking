@@ -10,7 +10,7 @@ using static PointofSaleModels.Protos.FpUploadMenuService;
 
 namespace FoodpandaMenuUploadService
 {
-    public class FpUploadMenuImpl(IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory) : FpUploadMenuServiceBase
+    public class FpUploadMenuServiceImpl(IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory) : FpUploadMenuServiceBase
     {
         const string CallbackUrl = "https://ygensystems.com/api/v2/OnlineOrders/PosIntegration/BBECAFA9-48BA-46BE-A5CF-26E7B0ED76CA";
         const string MenuUrl = "http://85.190.242.39:5019/ExternalMenu";
