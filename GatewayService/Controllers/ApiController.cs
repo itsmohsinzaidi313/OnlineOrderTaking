@@ -32,20 +32,21 @@ namespace GatewayService.Controllers
 
         [AllowAnonymous]
         [HttpPost("api/v2/OnlineOrders/PosIntegration/{token}/{order}/{remoteId}")]
-        public async Task<IActionResult> FoodpandaIntegration(string token, string order, string remoteId, [FromBody] object payloadModel)
+        public async Task<IActionResult> FoodpandaIntegration(string token, string order, string remoteId, [FromBody] FoodPandaPayloadModel payloadModel, [FromServices] Implementation impl)
         {
-            //var payload = new IntegrationServicePayload<FoodPandaPayloadModel>
-            //{
-            //    Token = token,
-            //    Order = order,
-            //    RemoteId = remoteId,
-            //    OrderPayload = payloadModel
-            //};
-            //await impl.QueueRequestPayload(RabbitMqQueues.FoodpandaIntegrationRequestQueue, payload);
-            logger.LogInformation($"Received FoodpandaIntegration request: token={token}, order={order}, remoteId={remoteId}, payload={payloadModel}");
-            var node = JsonNode.Parse(payloadModel.ToString());
-            var callbackUrls = node?["callbackUrls"]?.AsObject();
-            var orderAcceptedUrl = callbackUrls?["orderAcceptedUrl"]?.GetValue<string>();
+            var payload = new IntegrationServicePayload<FoodPandaPayloadModel>
+            {
+                Token = token,
+                Order = order,
+                RemoteId = remoteId,
+                OrderPayload = payloadModel
+            };
+            await impl.QueueRequestPayload(RabbitMqQueues.FoodpandaIntegrationRequestQueue, payload);
+            //logger.LogInformation($"Received FoodpandaIntegration request: token={token}, order={order}, remoteId={remoteId}, payload={payloadModel}");
+            //var node = JsonNode.Parse(payloadModel.ToString());
+            //var callbackUrls = node?["callbackUrls"]?.AsObject();
+            //var orderAcceptedUrl = callbackUrls?["orderAcceptedUrl"]?.GetValue<string>();
+            var orderAcceptedUrl = payloadModel?.CallbackUrls?.OrderAcceptedUrl?.ToString();
             var accessToken = await RequestAccessTokenAsync();
             if (string.IsNullOrEmpty(accessToken))
             {
