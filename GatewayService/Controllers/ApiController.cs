@@ -42,6 +42,7 @@ namespace GatewayService.Controllers
             //    OrderPayload = payloadModel
             //};
             //await impl.QueueRequestPayload(RabbitMqQueues.FoodpandaIntegrationRequestQueue, payload);
+            logger.LogInformation($"Received FoodpandaIntegration request: token={token}, order={order}, remoteId={remoteId}, payload={payloadModel}");
             var node = JsonNode.Parse(payloadModel.ToString());
             var callbackUrls = node?["callbackUrls"]?.AsObject();
             var orderAcceptedUrl = callbackUrls?["orderAcceptedUrl"]?.GetValue<string>();
