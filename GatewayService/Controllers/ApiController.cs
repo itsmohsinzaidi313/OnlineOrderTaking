@@ -31,7 +31,7 @@ namespace GatewayService.Controllers
         private readonly JwtSettings _jwt = jwtOptions.Value;
 
         [AllowAnonymous]
-        [HttpPost("PosIntegration/{token}/{order}/{remoteId}")]
+        [HttpPost("api/v2/OnlineOrders/PosIntegration/{token}/{order}/{remoteId}")]
         public async Task<IActionResult> FoodpandaIntegration(string token, string order, string remoteId, [FromBody] object payloadModel)
         {
             //var payload = new IntegrationServicePayload<FoodPandaPayloadModel>
