@@ -32,7 +32,7 @@ namespace GatewayService.Controllers
 
         [AllowAnonymous]
         [HttpPost("PosIntegration/{token}/{order}/{remoteId}")]
-        public async Task<IActionResult> FoodpandaIntegration(string token, string order, string remoteId, [FromBody] string payloadModel)
+        public async Task<IActionResult> FoodpandaIntegration(string token, string order, string remoteId, [FromBody] object payloadModel)
         {
             //var payload = new IntegrationServicePayload<FoodPandaPayloadModel>
             //{
@@ -42,7 +42,7 @@ namespace GatewayService.Controllers
             //    OrderPayload = payloadModel
             //};
             //await impl.QueueRequestPayload(RabbitMqQueues.FoodpandaIntegrationRequestQueue, payload);
-            var node = JsonNode.Parse(payloadModel);
+            var node = JsonNode.Parse(payloadModel.ToString());
             var callbackUrls = node?["callbackUrls"]?.AsObject();
             var orderAcceptedUrl = callbackUrls?["orderAcceptedUrl"]?.GetValue<string>();
             var accessToken = await RequestAccessTokenAsync();
