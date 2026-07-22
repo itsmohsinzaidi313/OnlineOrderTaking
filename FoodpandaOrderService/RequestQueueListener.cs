@@ -49,10 +49,10 @@ namespace FoodpandaOrderService
             var branchId = await dbContext.BranchMasters.Select(x => x.BranchId).FirstOrDefaultAsync();
             var areaId = await dbContext.BranchDetails.Where(x=> x.BranchId == branchId).Select(x => x.AreaId).FirstOrDefaultAsync();
             var itemIds = order.Products?.Select(x => int.Parse(x.Id.ToString())).ToList() ?? [];
-            var deals = await dbContext.DealItemDetails
+            var dealsItemDetails = await dbContext.DealItemDetails
                 .Where(x => itemIds.Contains(x.ProductDetailId))
                 .ToListAsync();
-            var dealIds = deals.Select(d => d.ProductDetailId).Distinct().ToList();
+            var dealIds = dealsItemDetails.Select(d => d.ProductDetailId).Distinct().ToList();
             itemIds.RemoveAll(dealIds.Contains);
 
             var products = await dbContext.ProductDetails
