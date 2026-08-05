@@ -36,6 +36,8 @@ app.MapGet("/UploadMenu/{id}", async (int id) =>
     {
         return Results.NotFound("Menu not found for the given restaurant ID.");
     }
+    var menuNodeString = ygenJson.ToString();
+    await File.WriteAllTextAsync("menu.json", menuNodeString);
     var pandaNode = TransformToFoodpanda2(ygenJson);
     var pandaNodeString = pandaNode.ToString();
     await File.WriteAllTextAsync("body.json", pandaNodeString);
@@ -85,11 +87,6 @@ async Task<string> SendToFoodpanda(JsonNode menu)
     var response = await httpClient.PutAsync($"https://integration-middleware.as.restaurant-partners.com/v2/chains/Ygen_PK_UAT/catalog", content);
     var responseContent = await response.Content.ReadAsStringAsync();
     return responseContent;
-}
-
-string GetJson()
-{
-    return File.ReadAllText("menu.json");
 }
 
 async Task<string?> RequestAccessTokenAsync()
@@ -238,12 +235,15 @@ JsonObject TransformToFoodpanda2(JsonNode source)
         {
             list.Add(p);
         }
-        var category = new Category(
-            Id: $"cat{c!["CategoryId"]}",
-            Title: $"{c["CategoryName"]}",
-            Products: list
-        );
-        items[category.Id] = Category(category);
+        if (list.Count >= 1)
+        {
+            var category = new Category(
+                Id: $"cat{c!["CategoryId"]}",
+                Title: $"{c["CategoryName"]}",
+                Products: list
+            );
+            items[category.Id] = Category(category);
+        }
     }
 
 
