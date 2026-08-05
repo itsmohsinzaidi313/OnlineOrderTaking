@@ -200,14 +200,26 @@ JsonObject TransformToFoodpanda2(JsonNode source)
                 fpTempToppings.Add(fpTopping);
                 fpToppings.Add(fpTopping);
             }
+            List<Image>? images = null;
+            if (!string.IsNullOrEmpty(p?["ProductImage"]?.GetValue<string?>()))
+            {
+                var image = new Image(
+                    Id: $"img{pd!["ProductDetailId"]}",
+                    Url: $"https://services.eatx.pk{p?["ProductImage"]}"
+                );
+                images = [];
+                images.Add(image);
 
+                items[$"img{pd!["ProductDetailId"]}"] = Image(image);
+            }
             var fpProduct = new Product(
                     Id: $"prd{pd!["ProductDetailId"]}",
                     Title: title,
                     Description: (string?)p["ProductDescription"] ?? string.Empty,
                     Price: ((double?)pd["Price"])?.ToString("F2", CultureInfo.InvariantCulture),
                     Toppings: fpTempToppings,
-                    CategoryId: p!["ProductCategoryId"]!.GetValue<int>()
+                    CategoryId: p!["ProductCategoryId"]!.GetValue<int>(),
+                    Images: images
                 );
             var pJson = Product(fpProduct);
             items[fpProduct.Id] = pJson;
@@ -271,159 +283,7 @@ JsonObject TransformToFoodpanda2(JsonNode source)
 }
 
 
-JsonObject TransformToFoodpanda(JsonNode source)
-{
-    var data = (source?["Data"]?.AsObject()) ?? throw new Exception("");
-    string[] WeekDays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
-    var items = new JsonObject();
-    var categories = data["Categories"]?.AsArray() ?? [];
-    var products = data["Products"]?.AsArray() ?? [];
-    var fpCategory = new JsonObject();
-    var schedule = new Schedule(
-        Id: "sch1",
-        StartTime: "00:00",
-        EndTime: "23:59",
-        Days: WeekDays
-    );
-    items[schedule.Id] = Schedule(schedule);
-    var menuProducts = new List<Product>();
-    var allDealDescriptions = new List<Product>();
-    var allCategories = new List<Category>();
-
-    Console.WriteLine("Creating categories");
-    foreach (var c in categories.Select(x => x?.AsObject()))
-    {
-        if (c == null) continue;
-        var fpProducts = new List<Product>();
-        var categoryId = c["CategoryId"]?.GetValue<int>() ?? 0;
-        foreach (var p in products.Where(x => (x?.AsObject()["ProductCategoryId"]?.GetValue<int>() ?? 0) == categoryId).Select(x => x?.AsObject()))
-        {
-            if (((bool?)p?["IsEnable"] ?? false) == false) continue;
-            if (p == null) continue;
-            var pdList = p["ProductDetails"]?.AsArray() ?? [];
-            foreach (var pd in pdList.Select(x => x?.AsObject()))
-            {
-                if (pd == null) continue;
-                var title = $"{p["ProductName"]}";
-                if (pd["SizeName"]?.ToString() != "-") title += $" {pd["SizeName"]}";
-                if (pd["FlavourName"]?.ToString() != "-") title += $" {pd["FlavourName"]}";
-
-                var dealItems = pd["DealItems"]?.AsArray() ?? [];
-                var listOfDealItemToppings = new List<Topping>();
-                foreach (var dealItem in dealItems.Select(x => x?.AsObject()))
-                {
-                    if (dealItem == null) continue;
-
-                    var dealDescriptions = dealItem["DealDescriptions"]?.AsArray() ?? [];
-                    var listOfDealDescriptionProducts = new List<Product>();
-                    foreach (var dd in dealDescriptions.Select(x => x?.AsObject()))
-                    {
-                        if (dd == null) continue;
-                        int ddcatid = 0;
-                        foreach (var a in products)
-                        {
-                            foreach (var b in a["ProductDetails"].AsArray())
-                            {
-                                if (b["ProductDetailId"].GetValue<int>() == dd["DealProductDetailId"].GetValue<int>())
-                                {
-                                    ddcatid = a["ProductCategoryId"].GetValue<int>();
-                                }
-                            }
-                        }
-                        var ddpdid = dd["DealProductDetailId"].GetValue<int>();
-                        var dealDescriptionAsProduct = new Product(
-                            Id: $"prd{ddpdid}",
-                            Title: dd["ProductName"]!.GetValue<string>(),
-                            Price: ((double?)dd["Price"])?.ToString("F2", CultureInfo.InvariantCulture),
-                            CategoryId: ddcatid,
-                            InitPdId: $"prd{ddpdid}"
-                        );
-                        if (items.ContainsKey(dealDescriptionAsProduct.Id))
-                            items.Remove(dealDescriptionAsProduct.Id);
-                        items[dealDescriptionAsProduct.Id] = Product(dealDescriptionAsProduct);
-                        listOfDealDescriptionProducts.Add(dealDescriptionAsProduct);
-                        allDealDescriptions.Add(dealDescriptionAsProduct);
-                    }
-                    var dealItemAsTopping = new Topping(
-                            Id: $"prd{dealItem["DealItemId"]}",
-                            Title: $"{dealItem["DealOptionName"]}",
-                            Minimum: dealItem["MinQuantity"]!.GetValue<int>(),
-                            Maximum: dealItem["MaxQuantity"]!.GetValue<int>()
-                        );
-                    if (!items.ContainsKey(dealItemAsTopping.Id))
-                        items[dealItemAsTopping.Id] = Topping(dealItemAsTopping, products: listOfDealDescriptionProducts);
-                    listOfDealItemToppings.Add(dealItemAsTopping);
-                }
-                var product = new Product(
-                    Id: $"prd{pd["ProductDetailId"]}",
-                    Title: title,
-                    Description: (string?)p["ProductDescription"] ?? string.Empty,
-                    Price: ((double?)pd["Price"])?.ToString("F2", CultureInfo.InvariantCulture)
-                );
-
-                fpProducts.Add(product);
-                if (!menuProducts.Any(x => x.Id == product.Id))
-                    menuProducts.Add(product);
-
-                if (!items.ContainsKey(product.Id))
-                    items[product.Id] = Product(product, toppings: listOfDealItemToppings);
-            }
-        }
-        var category = new Category(
-            Id: $"cat{c["CategoryId"]}",
-            Title: $"{c["CategoryName"]}"
-        );
-        allCategories.Add(category);
-        items[category.Id] = Category(category, fpProducts);
-    }
-    Console.WriteLine("Categories created");
-
-    Console.WriteLine("updating categories and menu");
-    foreach (var item in allDealDescriptions)
-    {
-        if (item.InitPdId == null) continue;
-        items.Remove(item.InitPdId);
-        foreach (var cat in allCategories)
-        {
-            var productss = items[cat.Id].AsObject()["products"].AsObject();
-            productss.Remove(item.InitPdId);
-            productss[item.Id] = new JsonObject
-            {
-                ["id"] = item.Id,
-                ["type"] = item.Type
-            };
-        }
-    }
-    Console.WriteLine("Categories and menu updated");
-
-    var fpDeliveryMenuObj = new Menu(
-        Id: "Delivery_Menu",
-        Title: "Regular Menu",
-        MenuType: "DELIVERY"
-    );
-    var fpDeliveryMenu = Menu(fpDeliveryMenuObj, schedules: [schedule], products: menuProducts
-    );
-    var fpPickupMenuObj = new Menu(
-        Id: "PickUp_Menu",
-        Title: "Regular Menu",
-        MenuType: "PICKUP"
-    );
-    var fpPickUpMenu = Menu(fpPickupMenuObj, schedules: [schedule], products: menuProducts
-    );
-    items[fpDeliveryMenuObj.Id] = fpDeliveryMenu;
-    items[fpPickupMenuObj.Id] = fpPickUpMenu;
-    return new JsonObject
-    {
-        ["callbackUrl"] = CallbackUrl,
-        ["catalog"] = new JsonObject
-        {
-            ["items"] = items
-        },
-        ["vendors"] = new JsonArray("POS123")
-    };
-}
-
-JsonObject Product(Product product, IEnumerable<Product>? Variants = null, IEnumerable<Topping>? toppings = null, Parent? parent = null)
+JsonObject Product(Product product)
 {
     string title = product.Title.Replace("\"", "").Replace("&", "");
     var obj = new JsonObject
@@ -432,7 +292,7 @@ JsonObject Product(Product product, IEnumerable<Product>? Variants = null, IEnum
         ["type"] = product.Type,
         ["title"] = new JsonObject { ["default"] = title },
     };
-    if (product.Description is not null)
+    if (!string.IsNullOrEmpty(product.Description) && product.Description != "null")
     {
         obj["description"] = new JsonObject { ["default"] = product.Description };
     }
@@ -440,16 +300,8 @@ JsonObject Product(Product product, IEnumerable<Product>? Variants = null, IEnum
     {
         obj["price"] = product.Price;
     }
-    if (parent is not null)
-    {
-        obj["parent"] = new JsonObject
-        {
-            ["id"] = parent.Id,
-            ["type"] = parent.Type
-        };
-    }
     var variants = new JsonObject();
-    foreach (var item in product.Variations ?? Variants ?? [])
+    foreach (var item in product.Variations ?? [])
     {
         variants[item.Id] = new JsonObject
         {
@@ -461,7 +313,7 @@ JsonObject Product(Product product, IEnumerable<Product>? Variants = null, IEnum
         obj["variants"] = variants;
 
     var toppingObj = new JsonObject();
-    foreach (var item in product.Toppings ?? toppings ?? [])
+    foreach (var item in product.Toppings ?? [])
     {
         toppingObj[item.Id] = new JsonObject
         {
@@ -471,10 +323,21 @@ JsonObject Product(Product product, IEnumerable<Product>? Variants = null, IEnum
     }
     if (toppingObj.Count > 0)
         obj["toppings"] = toppingObj;
+    var images = new JsonObject();
+    foreach (var img in product.Images ?? [])
+    {
+        images[img.Id] = new JsonObject
+        {
+            ["id"] = img.Id,
+            ["type"] = img.Type
+        };
+    }
+    if (images.Count > 0)
+        obj["images"] = images;
     return obj;
 }
 
-JsonObject Topping(Topping topping, IEnumerable<Product>? products = null)
+JsonObject Topping(Topping topping)
 {
     var obj = new JsonObject
     {
@@ -485,7 +348,7 @@ JsonObject Topping(Topping topping, IEnumerable<Product>? products = null)
     };
     var productsObj = new JsonObject();
 
-    foreach (var item in topping.Products ?? products ?? [])
+    foreach (var item in topping.Products ?? [])
     {
         productsObj[item.Id] = new JsonObject
         {
@@ -495,6 +358,18 @@ JsonObject Topping(Topping topping, IEnumerable<Product>? products = null)
     }
     if (productsObj.Count > 0)
         obj["products"] = productsObj;
+
+    var images = new JsonObject();
+    foreach (var img in topping.Images ?? [])
+    {
+        images[img.Id] = new JsonObject
+        {
+            ["id"] = img.Id,
+            ["type"] = img.Type
+        };
+    }
+    if (images.Count > 0)
+        obj["images"] = images;
     return obj;
 }
 
@@ -574,9 +449,20 @@ JsonObject Schedule(Schedule schedule)
     };
 }
 
+JsonObject Image(Image image)
+{
+    return new JsonObject
+    {
+        ["id"] = image.Id,
+        ["url"] = image.Url,
+        ["type"] = image.Type,
+    };
+}
+
 record Parent(string Id, string Type);
-record Product(string Id, string Title, int? Order = null, string? Description = null, string? Price = null, List<Product>? Variations = null, List<Topping>? Toppings = null, string Type = "Product", int? CategoryId = null, string? InitPdId = null);
-record Topping(string Id, string Title, int Minimum, int Maximum, IEnumerable<Product>? Products = null, string? Description = null, string Type = "Topping");
+record Product(string Id, string Title, IEnumerable<Image>? Images = null, int? Order = null, string? Description = null, string? Price = null, List<Product>? Variations = null, List<Topping>? Toppings = null, string Type = "Product", int? CategoryId = null, string? InitPdId = null);
+record Topping(string Id, string Title, int Minimum, int Maximum, IEnumerable<Image>? Images = null, IEnumerable<Product>? Products = null, string? Description = null, string Type = "Topping");
 record Schedule(string Id, string StartTime, string EndTime, IEnumerable<string> Days, string Type = "ScheduleEntry");
 record Menu(string Id, string Title, string MenuType, string Type = "Menu");
 record Category(string Id, string Title, IEnumerable<Product>? Products = null, string Type = "Category");
+record Image(string Id, string Url, string Type = "Image");
