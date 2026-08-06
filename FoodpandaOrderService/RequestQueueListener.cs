@@ -25,7 +25,7 @@ namespace FoodpandaOrderService
 
                 await OrderAcceptedStatus(accessToken, orderCode, url.ToString());
                 var restaurantsContext = contextFactory.CreateDbContext();
-                var domain = order.Code switch
+                var domain = requestPayload.RemoteId switch
                 {
                     "POS123" => "pathan.eatx.pk",
                     _ => throw new Exception("Unknown order code")
@@ -66,12 +66,15 @@ namespace FoodpandaOrderService
                     await using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
                     try
                     {
+                        var customer = orderData.Customer;
+                        var customerPhone = customer?.MobilePhone;
+                        var customerId = (await dbContext.CustomerPhones.FirstOrDefaultAsync(x => x.PhoneNumber == customerPhone, ct))?.PhoneId;
+                        var customerName = $"{customer?.FirstName} {customer?.LastName}";
                         var orderMaster = new Db.OrderMaster
                         {
                             CompanyId = companyId,
                             BranchId = branchId,
                             AreaId = areaId,
-                            
                             IsActive = true,
                             SpecialInstruction = orderData.Comments?.CustomerComment,
                         };
@@ -102,15 +105,9 @@ namespace FoodpandaOrderService
                             orderMaster.OrderDetails.Add(orderDetail);
                         }
 
-                        var customerPhone = await dbContext.CustomerPhones.FirstOrDefaultAsync(x => x.PhoneNumber == orderData.Customer.MobilePhone, ct);
-
-                        if (customerPhone != null)
-                        {
-                            var customer = await dbContext.Customers.FirstOrDefaultAsync(x => x.PhoneId == customerPhone.PhoneId, ct);
-                        }
-
                         await dbContext.OrderMasters.AddAsync(orderMaster, ct);
                         await dbContext.SaveChangesAsync(ct);
+                        throw new Exception("Test exception to trigger rollback"); // Remove this line in production
                         await transaction.CommitAsync(ct);
 
                         return true;

@@ -38,11 +38,6 @@ builder.Services
     .AddHostedService<RequestQueueListener>()
     .AddHealthChecks()
     .AddCheck<PostgresHealth>("health_check");
-builder.Services.AddGrpcClient<CreateOrderServiceClient>(x =>
-{
-    var address = builder.Configuration["GRPC:CREATEORDERHOST"] ?? throw new InvalidOperationException("CreateOrderService gRPC host is not configured.");
-    x.Address = new Uri(address);
-});
 
 var app = builder.Build();
 

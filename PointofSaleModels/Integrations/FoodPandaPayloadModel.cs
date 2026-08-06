@@ -1,15 +1,10 @@
-﻿using System;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Globalization;
-using System.Linq;
-using PointofSaleModels.Integrations;
-using PointofSaleModels.Integrations.Common;
 
 namespace PointofSaleModels.Integrations
 {
-
-    public partial class FoodPandaPayloadModel : PayloadModel
+    public partial class FoodPandaPayloadModel
     {
         [JsonPropertyName("token")]
         public string? Token { get; set; }
@@ -96,56 +91,6 @@ namespace PointofSaleModels.Integrations
 
         [JsonPropertyName("callbackUrls")]
         public CallbackUrls? CallbackUrls { get; set; }
-
-
-        public PayloadModel Payload
-        {
-            get
-            {
-                var obj = Delivery?.Address;
-                var address = obj?.Street + obj?.Number;
-                var instructions = obj?.DeliveryInstructions;
-                return new PayloadModel
-                {
-                    OrderId = Code,
-                    OrderStatus = ExpeditionType,
-                    OrderType = ExpeditionType,
-                    OSPId = string.Empty,
-                    PaymentStatus = Payment.Status,
-
-                    Customer = new PayloadCustomerModel
-                    {
-                        Id = Customer.Id,
-                        Address = address,
-                        PhoneNumber = Customer.MobilePhone,
-                        FirstName = Customer.FirstName,
-                        LastName = Customer.LastName,
-                        Landmark = string.Empty,
-                        Instructions = instructions ?? string.Empty,
-                        AlternateNumber = string.Empty,
-
-                    },
-                    Products = [.. (from Product x in Products
-                                select new PayloadProductModel
-                                {
-                                    Comments = x.Comment,
-                                    DiscountedPrice = x.DiscountAmount,
-                                    Name = x.Name,
-                                    POSCode = x.RemoteCode,
-                                    Price = x.UnitPrice.ToString(),
-                                    Quantity = x.Quantity.ToString(),
-                                })],
-                    PaymentDetail = new()
-                    {
-                        DeliveryCharges = Price.DeliveryFee.ToString(),
-                        DiscountAmount = Price.DiscountAmountTotal.ToString(),
-                        GrandTotal = Price.GrandTotal,
-                        TaxAmount = Price.ServiceTaxValue.ToString(),
-                        TaxPercentage = Price.ServiceTax.ToString(),
-                    }
-                };
-            }
-        }
     }
 
     public partial class CallbackUrls
