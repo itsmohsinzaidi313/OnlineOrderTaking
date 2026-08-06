@@ -38,7 +38,7 @@ app.MapGet("/UploadMenu/{id}", async (int id) =>
     }
     var menuNodeString = ygenJson.ToString();
     await File.WriteAllTextAsync("menu.json", menuNodeString);
-    var pandaNode = TransformToFoodpanda2(ygenJson);
+    var pandaNode = TransformToFoodpanda(ygenJson);
     var pandaNodeString = pandaNode.ToString();
     await File.WriteAllTextAsync("body.json", pandaNodeString);
     var response = await SendToFoodpanda(pandaNode);
@@ -142,7 +142,7 @@ async Task<string?> RequestAccessTokenAsync()
     return null;
 }
 
-JsonObject TransformToFoodpanda2(JsonNode source)
+JsonObject TransformToFoodpanda(JsonNode source)
 {
     var data = (source?["Data"]?.AsObject()) ?? throw new Exception("");
     string[] WeekDays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
