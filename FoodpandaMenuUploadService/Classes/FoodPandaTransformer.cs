@@ -8,7 +8,7 @@ namespace FoodpandaMenuUploadService.Classes
     {
         public JsonObject Transform(JsonNode source)
         {
-            string imagesBaseUrl = configuration["ImageBaseUrl"] ?? throw new InvalidOperationException("ImageBaseUrl is not configured.");
+            string imagesBaseUrl = configuration["ImagesBaseUrl"] ?? throw new InvalidOperationException("ImageBaseUrl is not configured.");
             var callbackUrl = configuration["CallbackUrl"] ?? throw new InvalidOperationException("CallbackUrl is not configured.");
             var data = (source?["Data"]?.AsObject()) ?? throw new Exception("");
             string[] WeekDays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
@@ -40,7 +40,7 @@ namespace FoodpandaMenuUploadService.Classes
                             Id: $"prd{dd["DealProductDetailId"]}",
                             Title: title,
                             Description: (string?)p["ProductDescription"] ?? string.Empty,
-                            Price: ((double?)pd["Price"])?.ToString("F2", CultureInfo.InvariantCulture)
+                            Price: ((double?)dd["Price"])?.ToString("F2", CultureInfo.InvariantCulture)
                             );
                             fpTempToppingProducts.Add(fpToppingProduct);
                             fpToppingProducts.Add(fpToppingProduct);
@@ -220,6 +220,7 @@ namespace FoodpandaMenuUploadService.Classes
                 {
                     ["id"] = item.Id,
                     ["type"] = item.Type,
+                    ["price"] = item.Price
                 };
             }
             if (productsObj.Count > 0)
