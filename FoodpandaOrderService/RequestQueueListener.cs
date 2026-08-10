@@ -14,6 +14,7 @@ namespace FoodpandaOrderService
         public override string QueueName() => RabbitMqQueues.FoodpandaIntegrationRequestQueue;
         public override async Task OnMessage(string transport)
         {
+            logger.LogInformation(transport);
             var requestPayload = System.Text.Json.JsonSerializer.Deserialize<IntegrationServicePayload<FoodPandaPayloadModel>>(transport);
             object? response = null;
             try
@@ -32,7 +33,7 @@ namespace FoodpandaOrderService
                 };
                 var restaurant = await restaurantsContext.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domain) ?? throw new Exception("Restaurant not found");
 
-                await SaveToDatabase(restaurant.ConnectionString, order);
+                await SaveToDatabase(restaurant.ConnectionString.Replace("haproxy", "localhost"), order);
             }
             catch (Exception ex)
             {
@@ -41,67 +42,129 @@ namespace FoodpandaOrderService
             }
         }
 
-        private async Task SaveToDatabase(string connectionString, FoodPandaPayloadModel order)
+        private static async Task SaveToDatabase(string connectionString, FoodPandaPayloadModel order)
         {
             var dbContext = GetDbContext(connectionString);
             var strategy = dbContext.Database.CreateExecutionStrategy();
             var companyId = await dbContext.SetupCompanies.Select(x => x.CompanyId).FirstOrDefaultAsync();
             var branchId = await dbContext.BranchMasters.Select(x => x.BranchId).FirstOrDefaultAsync();
-            var areaId = await dbContext.BranchDetails.Where(x=> x.BranchId == branchId).Select(x => x.AreaId).FirstOrDefaultAsync();
             var itemIds = order.Products?.Select(x => int.Parse(x.Id.ToString())).ToList() ?? [];
-            var dealsItemDetails = await dbContext.DealItemDetails
-                .Where(x => itemIds.Contains(x.ProductDetailId))
-                .ToListAsync();
-            var dealIds = dealsItemDetails.Select(d => d.ProductDetailId).Distinct().ToList();
-            itemIds.RemoveAll(dealIds.Contains);
 
             var products = await dbContext.ProductDetails
                 .Where(x => itemIds.Contains(x.ProductDetailId))
+                .ToListAsync();
+            var dealDescriptions = await dbContext.DealItemDetails
+                .Where(x => x.IsActive == true)
                 .ToListAsync();
 
             await strategy.ExecuteAsync(
                 order,
                 async (context, orderData, ct) =>
                 {
-                    await using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
-                    try
+                await using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
+                try
+                {
+                    var customer = orderData.Customer;
+                    var customerPhone = customer?.MobilePhone.Replace("+92", "0");
+                    var customerId = (await dbContext.CustomerPhones.FirstOrDefaultAsync(x => x.PhoneNumber == customerPhone, ct))?.PhoneId;
+                    var customerName = $"{customer?.FirstName} {customer?.LastName}";
+                    var address = orderData.Delivery.Address;
+                    var fullAddress = $"{address.Room} {address.FlatNumber} {address.Number} {address.Floor} {address.Building} {address.Street} {address.DeliveryMainArea} {address.City}";
+                    var paymentType = orderData.Payment.Type;
+                    var paymentTypeDescription = paymentType switch
                     {
-                        var customer = orderData.Customer;
-                        var customerPhone = customer?.MobilePhone;
-                        var customerId = (await dbContext.CustomerPhones.FirstOrDefaultAsync(x => x.PhoneNumber == customerPhone, ct))?.PhoneId;
-                        var customerName = $"{customer?.FirstName} {customer?.LastName}";
+                        "Cash On Delivery" => "By Cash",
+                        "Online payment" => "By Card",
+                        _ => "Unknown"
+                    };
+                    var paymentTermId = await dbContext.SetupMasterDetails
+                        .Where(x => x.SetupDetailName == paymentTypeDescription && x.CompanyId == companyId)
+                        .Select(x => x.SetupDetailId)
+                        .FirstOrDefaultAsync(ct);
+                    var paymentModeDescription = paymentType switch
+                    {
+                        "Cash On Delivery" => "CASH",
+                        "Online payment" => "CARD",
+                        _ => "Unknown"
+                    };
+                    var paymentModeId = await dbContext.PaymentModes
+                        .Where(x => x.PaymentMode1 == paymentModeDescription && x.CompanyId == companyId)
+                        .Select(x => x.PaymentModeId)
+                        .FirstOrDefaultAsync(ct);
+                    var gst = await dbContext.Gsts
+                        .Where(x => x.PaymentModeId == paymentModeId && x.CompanyId == companyId)
+                        .FirstOrDefaultAsync(ct);
+                    var gstFactor = gst.Gstpercentage / 100;
+                        var subTotal = decimal.ToDouble(orderData.Price.SubTotal);
+                        var orderTypeDescription = orderData.ExpeditionType switch
+                        {
+                            "Delivery" => "DELIVERY",
+                            "Pickup" => "TAKE AWAY",
+                            _ => "Unknown"
+                        };
+                        var orderType = await dbContext.SetupMasterDetails.FirstOrDefaultAsync(x => x.Flex1 == orderTypeDescription);
+
                         var orderMaster = new Db.OrderMaster
                         {
                             CompanyId = companyId,
                             BranchId = branchId,
-                            AreaId = areaId,
+                            AreaId = 0,
                             IsActive = true,
                             SpecialInstruction = orderData.Comments?.CustomerComment,
+                            PaymentTermId = paymentTermId,
+                            OrderNumber = $"{orderData.Code}/${orderData.ShortCode}",
+                            Gstid = gst.Gstid,
+                            Gstpercent = gst.Gstpercentage ?? 0.00,
+                            TotalAmountWithoutGst = subTotal,
+                            TotalAmountWithGst = subTotal + (subTotal * gstFactor),
+                            AlternateNumber = customerPhone,
+                            OrderModeId = orderType.SetupDetailId,
+                            OrderDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                            OrderTime = TimeOnly.FromDateTime(DateTime.UtcNow),
+                            OrderDetails = [],
+                            DiscountAmount = 0.00,
+                            OrderToken = await GetUniqueTokenAsync(dbContext),
+                            Exported = false,
+                            PaymentTypeId = paymentModeId
                         };
-
                         foreach (var product in orderData.Products ?? [])
                         {
-                            var pd = products.FirstOrDefault(p => p.ProductDetailId == int.Parse(product.Id.ToString())) ?? throw new Exception("Product not found");
+                            var remoteCode = int.Parse(product.RemoteCode.Replace("prd", ""));
+                            var pd = products.FirstOrDefault(p => p.ProductDetailId == remoteCode) ?? throw new Exception("Product not found");
+
+                            List<Db.OrderDetail> orderDetails = [];
                             var orderDetail = new Db.OrderDetail
                             {
                                 OrderMasterId = orderMaster.OrderMasterId,
                                 ProductDetailId = pd.ProductDetailId,
                                 IsActive = true,
                                 PriceWithoutGst = pd.Price,
+                                PriceWithGst = pd.Price + (pd.Price * gstFactor),
+                                Gstid = gst.Gstid,
                                 Quantity = (int)product.Quantity,
                                 SpecialInstruction = product.Comment,
                                 RandomId = new Random().Next(8999) + 1000,
                             };
-
-                            var isDeal = dealIds.Contains(pd.ProductDetailId);
-                            if (isDeal)
+                            orderDetails.Add(orderDetail);
+                            foreach (var tpId in product.SelectedToppings)
                             {
-                                
+                                var dealProductDetailId = int.Parse(tpId.RemoteCode.Replace("prd", ""));
+                                var dealItemId = dbContext.DealDescriptions.Where(x => x.ProductDetailId == dealProductDetailId).Select(x => x.DealItemId).FirstOrDefault();
+                                orderDetails.Add(new Db.OrderDetail
+                                {
+                                    OrderParentId = orderDetail.ProductDetailId,
+                                    RandomId = orderDetail.RandomId,
+                                    DealItemId = dealItemId,
+                                    ProductDetailId = dealProductDetailId,
+                                    Quantity = tpId.Quantity,
+                                    IsKot = false,
+                                    IsActive = true,
+                                    Gstid = gst.Gstid,
+                                    PriceWithoutGst = double.Parse(tpId.Price ?? "0.00"),
+                                    PriceWithGst = double.Parse(tpId.Price ?? "0.00") + (double.Parse(tpId.Price ?? "0.00") * gstFactor),
+                                });
                             }
-                            else
-                            {
 
-                            }
                             orderMaster.OrderDetails.Add(orderDetail);
                         }
 

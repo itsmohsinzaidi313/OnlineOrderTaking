@@ -41,8 +41,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomerOrderHistoryService
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralSeoDataService", "GeneralSeoDataService\GeneralSeoDataService.csproj", "{1D0F2A00-428A-4D50-AAD9-17C576721CCD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FoodpandaIntegrationService", "FoodpandaIntegrationService\FoodpandaIntegrationService.csproj", "{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FoodpandaOrderService", "FoodpandaOrderService\FoodpandaOrderService.csproj", "{A6B10A5D-12B5-4050-8FE4-C2F8F19E100D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FoodpandaMenuUploadService", "FoodpandaMenuUploadService\FoodpandaMenuUploadService.csproj", "{E7ED1B45-A788-42C3-BA31-82D83EC9784E}"
@@ -225,18 +223,6 @@ Global
 		{1D0F2A00-428A-4D50-AAD9-17C576721CCD}.Release|x64.Build.0 = Release|Any CPU
 		{1D0F2A00-428A-4D50-AAD9-17C576721CCD}.Release|x86.ActiveCfg = Release|Any CPU
 		{1D0F2A00-428A-4D50-AAD9-17C576721CCD}.Release|x86.Build.0 = Release|Any CPU
-		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Debug|x64.Build.0 = Debug|Any CPU
-		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Debug|x86.Build.0 = Debug|Any CPU
-		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Release|x64.ActiveCfg = Release|Any CPU
-		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Release|x64.Build.0 = Release|Any CPU
-		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Release|x86.ActiveCfg = Release|Any CPU
-		{C0A03E4E-F37D-4E8F-9A1D-341CEBF82648}.Release|x86.Build.0 = Release|Any CPU
 		{A6B10A5D-12B5-4050-8FE4-C2F8F19E100D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A6B10A5D-12B5-4050-8FE4-C2F8F19E100D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A6B10A5D-12B5-4050-8FE4-C2F8F19E100D}.Debug|x64.ActiveCfg = Debug|Any CPU
