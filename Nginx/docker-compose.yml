@@ -1,0 +1,39 @@
+services:
+  # Main NGINX web server
+  nginx:
+    image: nginx:latest
+    container_name: nginx-server
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /home/mohsin-zaidi/nginx/nginx-config:/etc/nginx # Shared config directory
+      - ./www:/var/www            # Website files
+    networks:
+      - nginx-net
+
+  # Nginx UI management interface
+  nginx-ui:
+    image: uozi/nginx-ui:latest
+    container_name: nginx-ui
+    restart: always
+    environment:
+      - TZ=Asia/Karachi # Set your timezone
+    ports:
+      - "127.0.0.1:9000:9000"      # UI management port
+    volumes:
+      - /home/mohsin-zaidi/nginx/nginx-config:/etc/nginx        # Share the SAME config directory
+      - /home/mohsin-zaidi/nginx/nginx-ui-data:/etc/nginx-ui    # UI's own data/config
+      - /home/mohsin-zaidi/nginx/www:/var/www                   # Share web root
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - nginx-net
+
+volumes:
+  nginx-ui-data:
+
+networks:
+  nginx-net:
+    driver: bridge
+    name: nginx-net

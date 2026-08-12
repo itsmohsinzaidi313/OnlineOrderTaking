@@ -248,25 +248,23 @@ namespace GatewayService
 
             if (!TryParseTime(businessTime["StartTime"], out var startTime) || !TryParseTime(businessTime["EndTime"], out var endTime))
                 return false;
+            TimeSpan openTime = startTime;
+            TimeSpan closeTime = endTime;
+            TimeSpan currentTime = DateTime.Now.TimeOfDay;
 
-            var startDateTime = now.Date.Add(startTime);
-            var endDateTime = now.Date.Add(endTime);
-            if (endTime < TimeSpan.FromHours(12))
+            bool isOpen;
+
+            if (openTime < closeTime)
             {
-                endDateTime = endDateTime.AddDays(1);
-            }
-            if (startDateTime < now && now < endDateTime)
-            {
-                return true;
-            }
-            else if (startTime == endTime)
-            {
-                return true;
+                isOpen = currentTime >= openTime &&
+                         currentTime < closeTime;
             }
             else
             {
-                return false;
+                isOpen = currentTime >= openTime ||
+                         currentTime < closeTime;
             }
+            return isOpen;
         }
 
         private static bool TryParseTime(JsonNode? timeNode, out TimeSpan time)
