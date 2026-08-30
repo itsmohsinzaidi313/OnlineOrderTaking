@@ -231,6 +231,7 @@ internal class Implementation()
                     var variation = new ItemVariation
                     {
                         Id = dbProductDetail.ProductDetailId,
+                        RemoteId = dbProductDetail.RemoteId,
                         Size = sizeItem,
                         Flavour = flavourItem,
                         Price = dbProductDetail.Price,
