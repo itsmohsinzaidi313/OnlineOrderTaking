@@ -225,8 +225,8 @@ namespace GatewayService.Controllers
             var bad = ValidateJwtOrBad();
             if (bad != null) return bad;
             var userId = request.UserId;
-            var token = CreateTokenForUser(userId, "1165", "0");
-            return Ok(new { token, userId });
+            var token = CreateTokenForUser(userId);
+            return Ok(token);
         }
 
         [HttpPost("refresh-token")]
@@ -261,8 +261,8 @@ namespace GatewayService.Controllers
                 if (string.IsNullOrWhiteSpace(userId))
                     return BadRequest(new { error = "Token does not contain a subject (user id)." });
 
-                var newToken = CreateTokenForUser(userId, "1165", "0");
-                return Ok(new { token = newToken, userId });
+                var newToken = CreateTokenForUser(userId);
+                return Ok(newToken);
             }
             catch (SecurityTokenException)
             {
@@ -286,12 +286,10 @@ namespace GatewayService.Controllers
             return string.IsNullOrWhiteSpace(bodyToken) ? null : bodyToken;
         }
 
-        private string CreateTokenForUser(string userId, string companyId, string branchId)
+        private object CreateTokenForUser(string userId)
         {
             var claims = new List<Claim>
             {
-                new("cid", companyId),
-                new("bid", branchId),
                 new(ClaimTypes.NameIdentifier, userId),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
@@ -308,7 +306,13 @@ namespace GatewayService.Controllers
                 expires: expires,
                 signingCredentials: creds);
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+            return new
+            {
+                token = tokenString,
+                expires,
+                userId
+            };
         }
 
         private BadRequestObjectResult? ValidateJwtOrBad()
