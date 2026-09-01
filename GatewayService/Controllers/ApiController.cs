@@ -226,7 +226,7 @@ namespace GatewayService.Controllers
             if (bad != null) return bad;
             var userId = request.UserId;
             var token = CreateTokenForUser(userId);
-            return Ok(token);
+            return Ok(new {token, userId});
         }
 
         [HttpPost("refresh-token")]
@@ -262,7 +262,7 @@ namespace GatewayService.Controllers
                     return BadRequest(new { error = "Token does not contain a subject (user id)." });
 
                 var newToken = CreateTokenForUser(userId);
-                return Ok(newToken);
+                return Ok(new {token = newToken, userId});
             }
             catch (SecurityTokenException)
             {
@@ -286,7 +286,7 @@ namespace GatewayService.Controllers
             return string.IsNullOrWhiteSpace(bodyToken) ? null : bodyToken;
         }
 
-        private object CreateTokenForUser(string userId)
+        private string CreateTokenForUser(string userId)
         {
             var claims = new List<Claim>
             {
@@ -306,13 +306,7 @@ namespace GatewayService.Controllers
                 expires: expires,
                 signingCredentials: creds);
 
-            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-            return new
-            {
-                token = tokenString,
-                expires,
-                userId
-            };
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         private BadRequestObjectResult? ValidateJwtOrBad()
