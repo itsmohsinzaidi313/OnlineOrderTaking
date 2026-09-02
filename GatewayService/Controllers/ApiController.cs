@@ -1,30 +1,59 @@
 using GatewayService.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using PointofSaleModels.Integrations;
 using PointofSaleModels.Protos;
 using PointofSaleModels.ServicePayloads;
+using PointofSaleModels.Settings;
 using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using static PointofSaleModels.Protos.CreateOrderService;
+using static PointofSaleModels.Protos.FpUploadMenuService;
 using static PointofSaleModels.Protos.GeneralSeoDataService;
 using static PointofSaleModels.Protos.OrderHistoryService;
 using static PointofSaleModels.Protos.PushNotificationService;
 using App = PointofSaleModels.Application;
 
+
 namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient, GeneralSeoDataServiceClient seoDataClient, CreateOrderServiceClient createOrderClient) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient, GeneralSeoDataServiceClient seoDataClient, CreateOrderServiceClient createOrderClient, FpUploadMenuServiceClient fpUploadMenuServiceClient) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
 
-        [HttpGet("seo")]
+        [AllowAnonymous]
+        [HttpPost("api/v2/OnlineOrders/PosIntegration/{token}/{order}/{remoteId}")]
+        public async Task<IActionResult> FoodpandaIntegration(string token, string order, string remoteId, [FromBody] FoodPandaPayloadModel payloadModel, [FromServices] Implementation impl)
+        {
+            var payload = new IntegrationServicePayload<FoodPandaPayloadModel>
+            {
+                Token = token,
+                Order = order,
+                RemoteId = remoteId,
+                OrderPayload = payloadModel
+            };
+            await impl.QueueRequestPayload(RabbitMqQueues.FoodpandaIntegrationRequestQueue, payload);
+            return Ok();
+        }
+        
+        [HttpGet("UpdateFoodpandaMenu")]
+        public async Task<IActionResult> UpdateFoodpandaMenu([FromQuery] int id)
+        {
+            var response = await fpUploadMenuServiceClient.UploadMenuAsync(new FpUploadMenuRequest { Id = id }, cancellationToken: HttpContext.RequestAborted);
+            if (response.Success)
+                return Ok(response);
+            else
+                return Problem(response.Message);
+        }
+
+        [HttpGet("SEO")]
         public async Task<IActionResult> GetSeoData([FromQuery] string domain)
         {
             if (string.IsNullOrEmpty(domain))
@@ -40,7 +69,7 @@ namespace GatewayService.Controllers
             var response = await createOrderClient.PlaceOrderAsync(request, cancellationToken: HttpContext.RequestAborted);
             if (response.Success)
             {
-                if(response.Success)
+                if (response.Success)
                 {
                     return Ok(response);
                 }
@@ -174,24 +203,6 @@ namespace GatewayService.Controllers
                 await db.KeyDeleteAsync(key);
                 pendingKeys++;
             }
-
-            //foreach (var key in server.Keys(pattern: "subscription:*"))
-            //{
-            //    await db.KeyDeleteAsync(key);
-            //    subscriptions++;
-            //}
-
-            //foreach (var key in server.Keys(pattern: "*:connection"))
-            //{
-            //    await db.KeyDeleteAsync(key);
-            //    connections++;
-            //}
-
-            //foreach (var key in server.Keys(pattern: "order:*"))
-            //{
-            //    await db.KeyDeleteAsync(key);
-            //    orders++;
-            //}
             return Ok(new { Menu = menuKeys, DAndP = dAndPKeys, Pending = pendingKeys, Subscriptions = subscriptions, Connections = connections, Orders = orders });
         }
 
@@ -203,7 +214,7 @@ namespace GatewayService.Controllers
                 Timeout = TimeSpan.FromMinutes(5),
                 BaseAddress = new Uri("http://importservice:8080"),
             };
-            
+
             var response = await httpClient.GetAsync($"import/{companyId}?selection={selection}");
 
             if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)

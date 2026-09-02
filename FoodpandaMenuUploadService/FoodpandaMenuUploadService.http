@@ -1,0 +1,6 @@
+@FoodpandaMenuUploadService_HostAddress = http://localhost:5257
+
+GET {{FoodpandaMenuUploadService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

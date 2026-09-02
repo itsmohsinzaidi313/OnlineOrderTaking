@@ -14,6 +14,7 @@ namespace PointofSaleModels.Settings
         public const string ImportService = "import";
         public const string ExportService = "export";
         public const string CustomerOrderHistoryService = "customerorderhistory";
+        public const string FoodpandaIntegrationService = "foodpandaintegration";
         public const string Request = "request";
         public const string Response = "response";
 
@@ -40,5 +41,7 @@ namespace PointofSaleModels.Settings
         public const string PushNotificationRequestQueue = $"{Services}.{PushNotificationService}.{Request}";
         public const string CustomerOrderHistoryRequestQueue = $"{Services}.{CustomerOrderHistoryService}.{Request}";
         public const string CustomerOrderHistoryResponseQueue = $"{Services}.{CustomerOrderHistoryService}.{Response}";
+        public const string FoodpandaIntegrationRequestQueue = $"{Services}.{FoodpandaIntegrationService}.{Request}";
+        public const string FoodpandaIntegrationResponseQueue = $"{Services}.{FoodpandaIntegrationService}.{Response}";
     }
 }

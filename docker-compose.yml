@@ -1,5 +1,34 @@
 services:
 
+  fpordersservice:
+    image: registry.eatx.pk/online-order-taking/fpordersservice:${IMAGE_TAG}
+    environment:
+      - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - patroni-net
+
+  fpmenuuploadservice:
+    image: registry.eatx.pk/online-order-taking/fpmenuuploadservice:${IMAGE_TAG}
+    environment:
+      - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
+    networks:
+      - patroni-net
+
+  fpintegrationservice:
+    image: registry.eatx.pk/online-order-taking/fpintegrationservice:${IMAGE_TAG}
+    environment:
+      - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - patroni-net
+
   exportservice:
     image: registry.eatx.pk/online-order-taking/exportservice:${IMAGE_TAG}
     environment:
@@ -147,6 +176,7 @@ services:
       - GRPC__ORDERHISTORYHOST=http://orderhistoryservice:${GRPC_PORT}
       - GRPC__GENERALSEODATAHOST=http://generalseodataservice:${GRPC_PORT}
       - GRPC__CREATEORDERHOST=http://createorderservice:${GRPC_PORT}
+      - GRPC__FPMENUUPLOADHOST=http://fpmenuuploadservice:${GRPC_PORT}
       - ASPNETCORE_ENVIRONMENT=${GATEWAY_ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=${GATEWAY_ASPNETCORE_URLS}
       - REDIS__CONNECTIONSTRING=${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},abortConnect=false
