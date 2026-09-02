@@ -215,6 +215,7 @@ public class Implementation()
                     new ()
                         {
                             Id = productDetail.ProductDetailId,
+                            RemoteId = productDetail.RemoteId,
                             Size = new ItemSize
                             {
                                 Id = size.SizeId,
