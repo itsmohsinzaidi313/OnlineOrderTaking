@@ -13,7 +13,7 @@ namespace FoodpandaMenuUploadService
     public class FpUploadMenuServiceImpl(IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory) : FpUploadMenuServiceBase
     {
         const string CallbackUrl = "https://ygensystems.com/api/v2/OnlineOrders/PosIntegration/BBECAFA9-48BA-46BE-A5CF-26E7B0ED76CA";
-        const string MenuUrl = "http://85.190.242.39:5019/ExternalMenu";
+        const string MenuUrl = "https://beta.services.eatx.pk/ExternalMenu";
         const string FPBaseUrl = "https://integration-middleware.as.restaurant-partners.com";
         const string FoodPandaUrl = $"{FPBaseUrl}/v2/chains/Ygen_PK_UAT/catalog";
         public override async Task<FpUploadMenuResponse> UploadMenu(FpUploadMenuRequest request, ServerCallContext context)
