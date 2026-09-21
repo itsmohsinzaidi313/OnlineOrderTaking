@@ -30,13 +30,14 @@ namespace FoodpandaOrderService
                 };
                 var restaurant = await restaurantsContext.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domain) ?? throw new Exception("Restaurant not found");
 
+                var orderNumber = await SaveToDatabase(restaurant.ConnectionString, order) ?? throw new Exception("Order cannot be saved");
+                logger.LogInformation("Order Saved {orderNumber}", orderNumber);
+
                 var url = order?.CallbackUrls?.OrderAcceptedUrl ?? throw new Exception("Order accepted URL is missing");
                 var orderCode = order.Code ?? throw new Exception("Order code is missing");
                 var accessToken = await RequestAccessTokenAsync() ?? throw new Exception("Access token is missing");
                 await OrderAcceptedStatus(accessToken, orderCode, url.ToString());
-                logger.LogInformation("Acknowledge sent to FP for {orderNumber}", order.Code);
-                var orderNumber = await SaveToDatabase(restaurant.ConnectionString, order) ?? throw new Exception("Order cannot be saved");
-                logger.LogInformation("Order Saved {orderNumber}", orderNumber);
+                logger.LogInformation("Acknowledgement sent to FP for {orderNumber}", orderNumber);
 
             }
             catch (Exception ex)
