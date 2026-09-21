@@ -51,7 +51,7 @@ namespace GeneralSeoDataService
         {
             await using var context = await dbContextFactory.CreateDbContextAsync();
             var restaurant = await context.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domainName);
-            return restaurant?.ConnectionString ?? throw new Exception("Restaurant not found");
+            return restaurant?.ConnectionString ?? throw new Exception($"Restaurant not found for url:{domainName}");
         }
 
         private static PgDbContext GetDbContext(string connectionString)
