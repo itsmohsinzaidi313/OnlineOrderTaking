@@ -21,7 +21,7 @@ namespace FoodpandaOrderService
             {
                 var order = requestPayload?.OrderPayload ?? throw new Exception("Order payload is missing");
                 Console.WriteLine($"Received order request: {order.Code}\n{requestPayload}");
-                
+
                 var restaurantsContext = contextFactory.CreateDbContext();
                 var domain = requestPayload.RemoteId switch
                 {
@@ -30,14 +30,14 @@ namespace FoodpandaOrderService
                 };
                 var restaurant = await restaurantsContext.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domain) ?? throw new Exception("Restaurant not found");
 
-                var orderNumber = await SaveToDatabase(restaurant.ConnectionString, order) ?? throw new Exception("Order cannot be saved");
-                logger.LogInformation("Order Saved {orderNumber}", orderNumber);
                 var url = order?.CallbackUrls?.OrderAcceptedUrl ?? throw new Exception("Order accepted URL is missing");
                 var orderCode = order.Code ?? throw new Exception("Order code is missing");
                 var accessToken = await RequestAccessTokenAsync() ?? throw new Exception("Access token is missing");
-
                 await OrderAcceptedStatus(accessToken, orderCode, url.ToString());
-                logger.LogInformation("Acknowledge sent to FP for {orderNumber}", orderNumber);
+                logger.LogInformation("Acknowledge sent to FP for {orderNumber}", order.Code);
+                var orderNumber = await SaveToDatabase(restaurant.ConnectionString, order) ?? throw new Exception("Order cannot be saved");
+                logger.LogInformation("Order Saved {orderNumber}", orderNumber);
+
             }
             catch (Exception ex)
             {
@@ -48,7 +48,7 @@ namespace FoodpandaOrderService
 
         private static async Task<string?> SaveToDatabase(string connectionString, FoodPandaPayloadModel order)
         {
-            var dbContext = GetDbContext(connectionString);
+            var dbContext = GetDbContext(connectionString.Replace("haproxy", "localhost"));
             var strategy = dbContext.Database.CreateExecutionStrategy();
             var companyId = await dbContext.SetupCompanies.Select(x => x.CompanyId).FirstOrDefaultAsync();
             var branchId = await dbContext.BranchMasters.Select(x => x.BranchId).FirstOrDefaultAsync();
@@ -62,40 +62,86 @@ namespace FoodpandaOrderService
                 order,
                 async (context, orderData, ct) =>
                 {
-                await using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
-                try
-                {
-                    var customer = orderData.Customer;
-                    var customerPhone = customer?.MobilePhone.Replace("+92", "0");
-                    var customerId = (await dbContext.CustomerPhones.FirstOrDefaultAsync(x => x.PhoneNumber == customerPhone, ct))?.PhoneId;
-                    var customerName = $"{customer?.FirstName} {customer?.LastName}";
-                    var address = orderData.Delivery.Address;
-                    var fullAddress = $"{address.Room} {address.FlatNumber} {address.Number} {address.Floor} {address.Building} {address.Street} {address.DeliveryMainArea} {address.City}";
-                    var paymentType = orderData.Payment.Type;
-                    var paymentTypeDescription = paymentType switch
+                    await using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
+                    try
                     {
-                        "Cash On Delivery" => "By Cash",
-                        "Online payment" => "By Card",
-                        _ => "Unknown"
-                    };
-                    var paymentTermId = await dbContext.SetupMasterDetails
-                        .Where(x => x.SetupDetailName == paymentTypeDescription && x.CompanyId == companyId)
-                        .Select(x => x.SetupDetailId)
-                        .FirstOrDefaultAsync(ct);
-                    var paymentModeDescription = paymentType switch
-                    {
-                        "Cash On Delivery" => "CASH",
-                        "Online payment" => "CARD",
-                        _ => "Unknown"
-                    };
-                    var paymentModeId = await dbContext.PaymentModes
-                        .Where(x => x.PaymentMode1 == paymentModeDescription && x.CompanyId == companyId)
-                        .Select(x => x.PaymentModeId)
-                        .FirstOrDefaultAsync(ct);
-                    var gst = await dbContext.Gsts
-                        .Where(x => x.PaymentModeId == paymentModeId && x.CompanyId == companyId)
-                        .FirstOrDefaultAsync(ct);
-                    var gstFactor = gst.Gstpercentage / 100;
+                        var customer = orderData.Customer;
+                        var customerPhone = customer?.MobilePhone.Replace("+92", "0");
+                        var customerPhoneId = (await dbContext.CustomerPhones.FirstOrDefaultAsync(x => x.PhoneNumber == customerPhone, ct))?.PhoneId;
+                        if (customerPhoneId == null)
+                        {
+                            var newCustomerPhone = new Db.CustomerPhone
+                            {
+                                CompanyId = companyId,
+                                PhoneNumber = customerPhone,
+                                IsActive = true,
+                            };
+                            await dbContext.CustomerPhones.AddAsync(newCustomerPhone);
+                            await dbContext.SaveChangesAsync();
+                            customerPhoneId = newCustomerPhone.PhoneId;
+                        }
+                        var dbCustomer = await dbContext.Customers.Where(x => x.PhoneId == customerPhoneId).FirstOrDefaultAsync();
+                        var customerName = $"{customer?.FirstName} {customer?.LastName}";
+                        var customerId = dbCustomer?.CustomerId ?? 0;
+                        if (dbCustomer == null)
+                        {
+                            var newCustomer = new Db.Customer
+                            {
+                                CompanyId = companyId,
+                                PhoneId = customerPhoneId,
+                                CustomerName = customerName,
+                                Email = customer?.Email,
+                                IsActive = true,
+                            };
+                            await dbContext.Customers.AddAsync(newCustomer);
+                            await dbContext.SaveChangesAsync();
+                            customerId = newCustomer.CustomerId;
+                        }
+
+                        var address = orderData.Delivery.Address;
+                        var dbCity = await dbContext.Cities.Select(x => new {x.CityId, x.CityName}).Where(x => x.CityName.Contains(address.City)).FirstOrDefaultAsync();
+                        var fullAddress = $"{address.Room} {address.FlatNumber} {address.Number} {address.Floor} {address.Building} {address.Street} {address.DeliveryMainArea} {address.City}";
+                        var dbCustomerAddress = await dbContext.CustomerAddressDetails.Where(x => x.CompleteAddress == fullAddress).FirstOrDefaultAsync();
+                        var customerAddressId = dbCustomerAddress?.CustomerAddressId ?? 0;
+                        if (dbCustomerAddress == null)
+                        {
+                            var newCustomerAddress = new Db.CustomerAddressDetail
+                            {
+                                CompanyId = companyId,
+                                PhoneId = customerPhoneId,
+                                CompleteAddress = fullAddress,
+                                CityId = dbCity?.CityId ?? 0,
+                                IsActive = true,
+                            };
+                            await dbContext.CustomerAddressDetails.AddAsync(newCustomerAddress);
+                            await dbContext.SaveChangesAsync();
+                            customerAddressId = newCustomerAddress.CustomerAddressId;
+                        }
+                        var paymentType = orderData.Payment.Type;
+                        var paymentTypeDescription = paymentType switch
+                        {
+                            "Cash On Delivery" => "By Cash",
+                            "Online payment" => "By Card",
+                            _ => "Unknown"
+                        };
+                        var paymentTermId = await dbContext.SetupMasterDetails
+                            .Where(x => x.SetupDetailName == paymentTypeDescription && x.CompanyId == companyId)
+                            .Select(x => x.SetupDetailId)
+                            .FirstOrDefaultAsync(ct);
+                        var paymentModeDescription = paymentType switch
+                        {
+                            "Cash On Delivery" => "CASH",
+                            "Online payment" => "CARD",
+                            _ => "Unknown"
+                        };
+                        var paymentModeId = await dbContext.PaymentModes
+                            .Where(x => x.PaymentMode1 == paymentModeDescription && x.CompanyId == companyId)
+                            .Select(x => x.PaymentModeId)
+                            .FirstOrDefaultAsync(ct);
+                        var gst = await dbContext.Gsts
+                            .Where(x => x.PaymentModeId == paymentModeId && x.CompanyId == companyId)
+                            .FirstOrDefaultAsync(ct);
+                        var gstFactor = gst.Gstpercentage / 100;
                         var subTotal = decimal.ToDouble(orderData.Price.SubTotal);
                         var orderTypeDescription = orderData.ExpeditionType switch
                         {
@@ -126,7 +172,10 @@ namespace FoodpandaOrderService
                             DiscountAmount = 0.00,
                             OrderToken = await GetUniqueTokenAsync(dbContext),
                             Exported = false,
-                            PaymentTypeId = paymentModeId
+                            PaymentTypeId = paymentModeId,
+                            PhoneId = customerPhoneId,
+                            CustomerId = customerId,
+                            CustomerAddressId = customerAddressId,
                         };
                         foreach (var product in orderData.Products ?? [])
                         {
