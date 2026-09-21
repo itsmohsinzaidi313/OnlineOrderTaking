@@ -140,6 +140,7 @@ fpordersservice:
       - CONNECTIONSTRINGS__POSTGRES=${RWSQLCONNECTION}
     networks:
       - patroni-net
+      - mssql-net
 
   createorderservice:
     image: registry.eatx.pk/online-order-taking/createorderservice:${IMAGE_TAG}
@@ -180,6 +181,16 @@ fpordersservice:
       - patroni-net
 
 networks:
+      - patroni-net
+      - nginx-net
+
+networks:
   patroni-net:
-    driver: bridge
+    external: true
     name: patroni-net
+  nginx-net:
+    external: true
+    name: nginx-net
+  mssql-net:
+    external: true
+    name: mssql-net

@@ -1,28 +1,4 @@
 services:
-
-  fpordersservice:
-    build:
-      context: .
-      dockerfile: ./FoodpandaOrderService/Dockerfile
-    image: registry.eatx.pk/online-order-taking/fpordersservice:${IMAGE_TAG}
-    environment:
-      - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
-      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
-      - RABBITMQ__PORT=${RABBITMQ_PORT}
-      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
-      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
-    networks:
-      - patroni-net
-
-  fpmenuuploadservice:
-    build:
-      context: .
-      dockerfile: ./FoodpandaMenuUploadService/Dockerfile
-    image: registry.eatx.pk/online-order-taking/fpmenuuploadservice:${IMAGE_TAG}
-    environment:
-      - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
-    networks:
-      - patroni-net
   
   exportservice:
     build:
@@ -38,6 +14,7 @@ services:
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
     networks:
       - patroni-net
+      - mssql-net
 
   generalseodataservice:
     build:
@@ -176,6 +153,7 @@ services:
       - CONNECTIONSTRINGS__POSTGRES=${RWSQLCONNECTION}
     networks:
       - patroni-net
+      - mssql-net
 
   createorderservice:
     build:
@@ -200,8 +178,6 @@ services:
       context: .
       dockerfile: ./GatewayService/Dockerfile
     image: registry.eatx.pk/online-order-taking/gatewayservice:${IMAGE_TAG}
-    ports:
-      - "8090:8080"
     environment:
       - GRPC__PUSHNOTIFICAIONHOST=http://pushnotificationservice:${GRPC_PORT}
       - GRPC__ORDERHISTORYHOST=http://orderhistoryservice:${GRPC_PORT}
@@ -220,8 +196,15 @@ services:
       - JWT__EXPIREMINUTES=${GATEWAY_JWT_EXPIREMINUTES}
     networks:
       - patroni-net
+      - nginx-net
 
 networks:
   patroni-net:
-    driver: bridge
+    external: true
     name: patroni-net
+  nginx-net:
+    external: true
+    name: nginx-net
+  mssql-net:
+    external: true
+    name: mssql-net
