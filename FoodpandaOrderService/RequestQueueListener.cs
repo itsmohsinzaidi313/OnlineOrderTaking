@@ -30,12 +30,14 @@ namespace FoodpandaOrderService
                 };
                 var restaurant = await restaurantsContext.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domain) ?? throw new Exception("Restaurant not found");
 
-                await SaveToDatabase(restaurant.ConnectionString, order);
+                var orderNumber = await SaveToDatabase(restaurant.ConnectionString, order) ?? throw new Exception("Order cannot be saved");
+                logger.LogInformation("Order Saved {orderNumber}", orderNumber);
                 var url = order?.CallbackUrls?.OrderAcceptedUrl ?? throw new Exception("Order accepted URL is missing");
                 var orderCode = order.Code ?? throw new Exception("Order code is missing");
                 var accessToken = await RequestAccessTokenAsync() ?? throw new Exception("Access token is missing");
 
                 await OrderAcceptedStatus(accessToken, orderCode, url.ToString());
+                logger.LogInformation("Acknowledge sent to FP for {orderNumber}", orderNumber);
             }
             catch (Exception ex)
             {
@@ -44,22 +46,19 @@ namespace FoodpandaOrderService
             }
         }
 
-        private static async Task SaveToDatabase(string connectionString, FoodPandaPayloadModel order)
+        private static async Task<string?> SaveToDatabase(string connectionString, FoodPandaPayloadModel order)
         {
             var dbContext = GetDbContext(connectionString);
             var strategy = dbContext.Database.CreateExecutionStrategy();
             var companyId = await dbContext.SetupCompanies.Select(x => x.CompanyId).FirstOrDefaultAsync();
             var branchId = await dbContext.BranchMasters.Select(x => x.BranchId).FirstOrDefaultAsync();
-            var itemIds = order.Products?.Select(x => int.Parse(x.Id.ToString())).ToList() ?? [];
-
+            //var itemIds = order.Products?.Select(x => int.Parse(x.RemoteCode.Replace("prd","").ToString())).ToList() ?? [];
             var products = await dbContext.ProductDetails
-                .Where(x => itemIds.Contains(x.ProductDetailId))
                 .ToListAsync();
             var dealDescriptions = await dbContext.DealItemDetails
                 .Where(x => x.IsActive == true)
                 .ToListAsync();
-
-            await strategy.ExecuteAsync(
+            return await strategy.ExecuteAsync(
                 order,
                 async (context, orderData, ct) =>
                 {
@@ -100,8 +99,8 @@ namespace FoodpandaOrderService
                         var subTotal = decimal.ToDouble(orderData.Price.SubTotal);
                         var orderTypeDescription = orderData.ExpeditionType switch
                         {
-                            "Delivery" => "DELIVERY",
-                            "Pickup" => "TAKE AWAY",
+                            "delivery" => "DELIVERY",
+                            "pickup" => "TAKE AWAY",
                             _ => "Unknown"
                         };
                         var orderType = await dbContext.SetupMasterDetails.FirstOrDefaultAsync(x => x.Flex1 == orderTypeDescription);
@@ -174,8 +173,7 @@ namespace FoodpandaOrderService
                         await dbContext.SaveChangesAsync(ct);
                         //throw new Exception("Test exception to trigger rollback"); // Remove this line in production
                         await transaction.CommitAsync(ct);
-
-                        return true;
+                        return orderMaster.OrderNumber;
                     }
                     catch
                     {
