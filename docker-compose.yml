@@ -14,7 +14,10 @@ services:
   fpmenuuploadservice:
     image: registry.eatx.pk/online-order-taking/fpmenuuploadservice:${IMAGE_TAG}
     environment:
-      - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
+      - KESTREL__ENDPOINTS__GRPC__URL=http://fpmenuuploadservice:${GRPC_PORT}
+      - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
+      - KESTREL__ENDPOINTS__HTTP__URL=http://fpmenuuploadservice:${HTTP_PORT}
+      - KESTREL__ENDPOINTS__HTTP__PROTOCOLS=Http1
     networks:
       - patroni-net
 
