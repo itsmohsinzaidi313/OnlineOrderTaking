@@ -48,7 +48,7 @@ namespace FoodpandaOrderService
 
         private static async Task<string?> SaveToDatabase(string connectionString, FoodPandaPayloadModel order)
         {
-            var dbContext = GetDbContext(connectionString.Replace("haproxy", "localhost"));
+            var dbContext = GetDbContext(connectionString);
             var strategy = dbContext.Database.CreateExecutionStrategy();
             var companyId = await dbContext.SetupCompanies.Select(x => x.CompanyId).FirstOrDefaultAsync();
             var branchId = await dbContext.BranchMasters.Select(x => x.BranchId).FirstOrDefaultAsync();
