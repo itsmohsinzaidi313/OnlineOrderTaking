@@ -1,16 +1,19 @@
 using GatewayService.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using PointofSaleModels.Integrations;
 using PointofSaleModels.Protos;
 using PointofSaleModels.ServicePayloads;
+using PointofSaleModels.Settings;
 using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using static PointofSaleModels.Protos.CreateOrderService;
+using static PointofSaleModels.Protos.FpUploadMenuService;
 using static PointofSaleModels.Protos.GeneralSeoDataService;
 using static PointofSaleModels.Protos.OrderHistoryService;
 using static PointofSaleModels.Protos.PushNotificationService;
@@ -20,9 +23,35 @@ namespace GatewayService.Controllers
 {
     [ApiController]
     [Route("")]
-    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient, GeneralSeoDataServiceClient seoDataClient, CreateOrderServiceClient createOrderClient) : ControllerBase
+    public class ApiController(IOptions<JwtSettings> jwtOptions, ILogger<ApiController> logger, IConnectionMultiplexer redis, PushNotificationServiceClient pushNotificationClient, OrderHistoryServiceClient orderHistoryClient, GeneralSeoDataServiceClient seoDataClient, CreateOrderServiceClient createOrderClient, FpUploadMenuServiceClient fpUploadMenuServiceClient) : ControllerBase
     {
         private readonly JwtSettings _jwt = jwtOptions.Value;
+
+        [AllowAnonymous]
+        [HttpPost("api/v2/OnlineOrders/PosIntegration/{token}/{order}/{remoteId}")]
+        public async Task<IActionResult> FoodpandaIntegration(string token, string order, string remoteId, [FromBody] FoodPandaPayloadModel payloadModel, [FromServices] Implementation impl)
+        {
+            logger?.LogInformation("Received Token:{token}, Order:{order} RemoteId: {remoteId}", token, order, remoteId);
+            var payload = new IntegrationServicePayload<FoodPandaPayloadModel>
+            {
+                Token = token,
+                Order = order,
+                RemoteId = remoteId,
+                OrderPayload = payloadModel
+            };
+            await impl.QueueRequestPayload(RabbitMqQueues.FoodpandaIntegrationRequestQueue, payload);
+            return Ok();
+        }
+
+        [HttpGet("UpdateFoodpandaMenu")]
+        public async Task<IActionResult> UpdateFoodpandaMenu([FromQuery] int id)
+        {
+            var response = await fpUploadMenuServiceClient.UploadMenuAsync(new FpUploadMenuRequest { Id = id }, cancellationToken: HttpContext.RequestAborted);
+            if (response.Success)
+                return Ok(response);
+            else
+                return Problem(response.Message);
+        }
 
         [HttpGet("seo")]
         public async Task<IActionResult> GetSeoData([FromQuery] string domain)
