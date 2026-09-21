@@ -1,6 +1,6 @@
 services:
 
-fpordersservice:
+  fpordersservice:
     image: registry.eatx.pk/online-order-taking/fpordersservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
