@@ -1,6 +1,9 @@
 services:
 
   fpordersservice:
+    build:
+      context: .
+      dockerfile: ./FoodpandaOrderService/Dockerfile
     image: registry.eatx.pk/online-order-taking/fpordersservice:${IMAGE_TAG}
     environment:
       - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
@@ -12,6 +15,9 @@ services:
       - patroni-net
 
   fpmenuuploadservice:
+    build:
+      context: .
+      dockerfile: ./FoodpandaMenuUploadService/Dockerfile
     image: registry.eatx.pk/online-order-taking/fpmenuuploadservice:${IMAGE_TAG}
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://fpmenuuploadservice:${GRPC_PORT}
