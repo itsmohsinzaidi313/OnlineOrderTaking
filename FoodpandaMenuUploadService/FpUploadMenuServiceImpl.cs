@@ -10,7 +10,7 @@ using static PointofSaleModels.Protos.FpUploadMenuService;
 
 namespace FoodpandaMenuUploadService
 {
-    public class FpUploadMenuServiceImpl(IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory) : FpUploadMenuServiceBase
+    public class FpUploadMenuServiceImpl() : FpUploadMenuServiceBase
     {
         const string CallbackUrl = "https://ygensystems.com/api/v2/OnlineOrders/PosIntegration/BBECAFA9-48BA-46BE-A5CF-26E7B0ED76CA";
         const string MenuUrl = "https://beta.services.eatx.pk/ExternalMenu";
@@ -18,14 +18,7 @@ namespace FoodpandaMenuUploadService
         const string FoodPandaUrl = $"{FPBaseUrl}/v2/chains/Ygen_PK_UAT/catalog";
         public override async Task<FpUploadMenuResponse> UploadMenu(FpUploadMenuRequest request, ServerCallContext context)
         {
-            var sqlServerDbContext = await sqlServerDbContextFactory.CreateDbContextAsync();
-            var id = sqlServerDbContext.SetupCompanies.Where(x => x.Id == request.Id).Select(x => x.Id).FirstOrDefault();
-            if(id == 0)
-            {
-                return new FpUploadMenuResponse() { Message = "Restaurant not found for the given ID.", Success = false };
-            }
-
-            var ygenJson = await GetRestaurantMenu(id);
+            var ygenJson = await GetRestaurantMenu(request.Id);
             if (ygenJson == null)
             {
                 return new FpUploadMenuResponse() { Message = "Menu not found for the given restaurant ID.", Success = false };
