@@ -16,7 +16,7 @@ namespace GeneralSeoDataService
             await ruleProvider.BuildAsync();
             var domainParser = new DomainParser(ruleProvider);
             var domainInfo = domainParser.Parse(request.DomainName);
-            var url = domainInfo?.FullyQualifiedDomainName ?? string.Empty;
+            var url = domainInfo?.RegistrableDomain ?? string.Empty;
             var connectionString = await GetConnectionString(url);
             var list = new SeoDataList();
 
