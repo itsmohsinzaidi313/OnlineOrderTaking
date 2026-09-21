@@ -171,7 +171,7 @@ namespace FoodpandaOrderService
 
                         await dbContext.OrderMasters.AddAsync(orderMaster, ct);
                         await dbContext.SaveChangesAsync(ct);
-                        throw new Exception("Test exception to trigger rollback"); // Remove this line in production
+                        //throw new Exception("Test exception to trigger rollback"); // Remove this line in production
                         await transaction.CommitAsync(ct);
 
                         return true;
