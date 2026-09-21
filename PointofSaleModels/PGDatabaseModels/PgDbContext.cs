@@ -262,6 +262,8 @@ public partial class PgDbContext : DbContext
             entity
                 .HasIndex(x => x.OrderNumber)
                 .IsUnique();
+            entity
+                .Ignore(x => x.PaymentTermId);
         });
 
         modelBuilder.Entity<OrderModeCompanyMapping>(entity =>

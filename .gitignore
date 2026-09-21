@@ -19,6 +19,7 @@ obj/
 *.pidb
 *.svclog
 *.scc
+*.lscache
 
 # Visual Studio Code
 .vscode/

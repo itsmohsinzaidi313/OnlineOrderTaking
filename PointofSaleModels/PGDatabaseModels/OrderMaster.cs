@@ -128,6 +128,7 @@ public partial class OrderMaster
     public int? PartyCustomerId { get; set; }
     
     public bool Exported { get; set; }
+    public int PaymentTermId { get; set; }
 
     public List<OrderDetail> OrderDetails { get; set; } = null!;
 }

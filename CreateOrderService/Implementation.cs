@@ -65,7 +65,7 @@ public class Implementation()
 
     private static async Task<string> GetUniqueTokenAsync(Db.PgDbContext dbContext)
     {
-        var token = TokenGenerator.GenerateToken();
+        var token = PointofSaleModels.TokenGenerator.GenerateToken();
         var existingToken = await dbContext.OrderMasters
             .FirstOrDefaultAsync(x => x.OrderToken == token);
         if (existingToken == null)
@@ -74,7 +74,7 @@ public class Implementation()
         }
         else
         {
-            var newToken = TokenGenerator.GenerateToken();
+            var newToken = PointofSaleModels.TokenGenerator.GenerateToken();
             return await GetUniqueTokenAsync(dbContext);
         }
     }

@@ -12,6 +12,7 @@ using static PointofSaleModels.Protos.OrderHistoryService;
 using static PointofSaleModels.Protos.GeneralSeoDataService;
 using PointofSaleModels.HealthChecks;
 using static PointofSaleModels.Protos.CreateOrderService;
+using static PointofSaleModels.Protos.FpUploadMenuService;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -119,6 +120,12 @@ builder.Services.AddGrpcClient<GeneralSeoDataServiceClient>(x =>
 builder.Services.AddGrpcClient<CreateOrderServiceClient>(x =>
 {
     var address = builder.Configuration["GRPC:CREATEORDERHOST"] ?? throw new InvalidOperationException("CreateOrderService gRPC host is not configured.");
+    x.Address = new Uri(address);
+});
+
+builder.Services.AddGrpcClient<FpUploadMenuServiceClient>(x =>
+{
+    var address = builder.Configuration["GRPC:FPMENUUPLOADHOST"] ?? throw new InvalidOperationException("FpUploadMenuService gRPC host is not configured.");
     x.Address = new Uri(address);
 });
 
