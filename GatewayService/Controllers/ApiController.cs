@@ -32,6 +32,7 @@ namespace GatewayService.Controllers
         [HttpPost("api/v2/OnlineOrders/PosIntegration/{token}/{order}/{remoteId}")]
         public async Task<IActionResult> FoodpandaIntegration(string token, string order, string remoteId, [FromBody] FoodPandaPayloadModel payloadModel, [FromServices] Implementation impl)
         {
+            logger?.LogInformation("Received Token:{token}, Order:{order} RemoteId: {remoteId}", token, order, remoteId);
             var payload = new IntegrationServicePayload<FoodPandaPayloadModel>
             {
                 Token = token,
