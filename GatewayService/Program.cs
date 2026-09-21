@@ -127,6 +127,7 @@ builder.Services.AddGrpcClient<FpUploadMenuServiceClient>(x =>
 {
     var address = builder.Configuration["GRPC:FPMENUUPLOADHOST"] ?? throw new InvalidOperationException("FpUploadMenuService gRPC host is not configured.");
     x.Address = new Uri(address);
+    Console.WriteLine($"Configured FpUploadMenuService gRPC client with address: {x.Address}");
 });
 
 builder.Services.AddHealthChecks()
