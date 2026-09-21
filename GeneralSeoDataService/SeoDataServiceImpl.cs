@@ -1,5 +1,7 @@
 ﻿using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
+using Nager.PublicSuffix;
+using Nager.PublicSuffix.RuleProviders;
 using PointofSaleModels.PGDatabaseModels;
 using PointofSaleModels.Protos;
 using static PointofSaleModels.Protos.GeneralSeoDataService;
@@ -10,7 +12,12 @@ namespace GeneralSeoDataService
     {
         public override async Task<SeoDataList> GetSeoData(Domain request, ServerCallContext context)
         {
-            var connectionString = await GetConnectionString(request.DomainName);
+            SimpleHttpRuleProvider ruleProvider = new();
+            await ruleProvider.BuildAsync();
+            var domainParser = new DomainParser(ruleProvider);
+            var domainInfo = domainParser.Parse(request.DomainName);
+            var url = domainInfo?.FullyQualifiedDomainName ?? string.Empty;
+            var connectionString = await GetConnectionString(url);
             var list = new SeoDataList();
 
             await foreach (var seoData in FetchSeoData(connectionString))
