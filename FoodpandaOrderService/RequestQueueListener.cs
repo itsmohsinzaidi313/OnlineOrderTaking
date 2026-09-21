@@ -21,11 +21,7 @@ namespace FoodpandaOrderService
             {
                 var order = requestPayload?.OrderPayload ?? throw new Exception("Order payload is missing");
                 Console.WriteLine($"Received order request: {order.Code}\n{requestPayload}");
-                var url = order?.CallbackUrls?.OrderAcceptedUrl ?? throw new Exception("Order accepted URL is missing");
-                var orderCode = order.Code ?? throw new Exception("Order code is missing");
-                var accessToken = await RequestAccessTokenAsync() ?? throw new Exception("Access token is missing");
-
-                await OrderAcceptedStatus(accessToken, orderCode, url.ToString());
+                
                 var restaurantsContext = contextFactory.CreateDbContext();
                 var domain = requestPayload.RemoteId switch
                 {
@@ -34,7 +30,12 @@ namespace FoodpandaOrderService
                 };
                 var restaurant = await restaurantsContext.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domain) ?? throw new Exception("Restaurant not found");
 
-                await SaveToDatabase(restaurant.ConnectionString.Replace("haproxy", "localhost"), order);
+                await SaveToDatabase(restaurant.ConnectionString, order);
+                var url = order?.CallbackUrls?.OrderAcceptedUrl ?? throw new Exception("Order accepted URL is missing");
+                var orderCode = order.Code ?? throw new Exception("Order code is missing");
+                var accessToken = await RequestAccessTokenAsync() ?? throw new Exception("Access token is missing");
+
+                await OrderAcceptedStatus(accessToken, orderCode, url.ToString());
             }
             catch (Exception ex)
             {
