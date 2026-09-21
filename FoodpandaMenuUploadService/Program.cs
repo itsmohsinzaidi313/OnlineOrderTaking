@@ -3,6 +3,8 @@ using FoodpandaMenuUploadService.Classes;
 using FoodpandaMenuUploadService.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using PointofSaleModels.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration
@@ -17,7 +19,9 @@ builder.Services
 .AddSingleton<IAccessToken, AccessToken>()
 .AddSingleton<IFoodPandaTransformer, FoodPandaTransformer>()
 .AddSingleton<IMenuService, MenuService>()
-.AddSingleton<IUploadService, UploadService>();
+.AddSingleton<IUploadService, UploadService>()
+.AddHealthChecks()
+.AddCheck<PostgresHealth>("health_check");
 builder.Services
     .AddDbContextFactory<SqlServerDbContext>(options =>
         options.UseSqlServer(
@@ -29,7 +33,7 @@ builder.Services
                     maxRetryDelay: TimeSpan.FromSeconds(5),
                     errorNumbersToAdd: null);
             }));
-
+builder.Services.AddGrpc();
 var app = builder.Build();
 app.MapGet("/UploadMenu/{id}", async ([FromServices] IAccessToken accessTokenService, [FromServices] IFoodPandaTransformer foodPandaTransformer, [FromServices] IMenuService menuService, [FromServices] IUploadService uploadService, int id) =>
 {
@@ -40,6 +44,8 @@ app.MapGet("/UploadMenu/{id}", async ([FromServices] IAccessToken accessTokenSer
     var response = await uploadService.Initiate(pandaNode);
     return Results.Ok(response);
 });
+app.MapHealthChecks("/health");
+app.MapGrpcService<FpUploadMenuServiceImpl>();
 
 app.UseHttpsRedirection();
 
