@@ -29,7 +29,7 @@ namespace FoodpandaOrderService
                 var restaurantsContext = contextFactory.CreateDbContext();
                 var domain = requestPayload.RemoteId switch
                 {
-                    "POS123" => "pathan.eatx.pk",
+                    "POS123" => "gogopizza.pk",
                     _ => throw new Exception("Unknown order code")
                 };
                 var restaurant = await restaurantsContext.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domain) ?? throw new Exception("Restaurant not found");
