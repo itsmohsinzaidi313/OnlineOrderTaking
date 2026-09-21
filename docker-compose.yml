@@ -1,5 +1,23 @@
 services:
 
+fpordersservice:
+    image: registry.eatx.pk/online-order-taking/fpordersservice:${IMAGE_TAG}
+    environment:
+      - CONNECTIONSTRINGS__POSTGRES=${ROSQLCONNECTION}
+      - RABBITMQ__HOSTNAME=${RABBITMQ_HOSTNAME}
+      - RABBITMQ__PORT=${RABBITMQ_PORT}
+      - RABBITMQ__USERNAME=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - patroni-net
+
+  fpmenuuploadservice:
+    image: registry.eatx.pk/online-order-taking/fpmenuuploadservice:${IMAGE_TAG}
+    environment:
+      - CONNECTIONSTRINGS__SQLSERVER=${MSSQLCONNECTION}
+    networks:
+      - patroni-net
+
   exportservice:
     image: registry.eatx.pk/online-order-taking/exportservice:${IMAGE_TAG}
     environment:
