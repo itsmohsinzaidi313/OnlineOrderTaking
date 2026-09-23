@@ -3,6 +3,7 @@ using PointofSaleModels.Integrations;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
 using PointofSaleModels.Settings;
+using StackExchange.Redis;
 using System.Net.Http.Headers;
 using Db = PointofSaleModels.PGDatabaseModels;
 
@@ -48,6 +49,8 @@ namespace FoodpandaOrderService
                     });
 
                 }
+                requestPayload.BranchId = await dbContext.BranchMasters.Where(x => x.CompanyId == 1193).Select(x => x.BranchId).FirstOrDefaultAsync();
+                requestPayload.ResponseKey = "CreateOrderResponse";
                 await publisher.PublishToQueueAsync(RabbitMqQueues.OrderHistoryRequestQueue,
                    new DataServicePayload(requestPayload)
                    {
@@ -64,8 +67,8 @@ namespace FoodpandaOrderService
         private static async Task<string?> SaveToDatabase(string connectionString, FoodPandaPayloadModel order)
         {
             using var dbContext = GetDbContext(connectionString);
-            var exists = await dbContext.OrderMasters.AsNoTracking().Where(x => $"{order.Code}/${order.ShortCode}" == x.OrderNumber).AnyAsync();
-            if (exists) return $"{order.Code}/${order.ShortCode}";
+            var ordr = await dbContext.OrderMasters.AsNoTracking().Where(x => $"{order.Code}/${order.ShortCode}" == x.OrderNumber).FirstOrDefaultAsync();
+            if (ordr != null) return ordr.OrderToken;
             var strategy = dbContext.Database.CreateExecutionStrategy();
             var companyId = await dbContext.SetupCompanies.AsNoTracking().Select(x => x.CompanyId).FirstOrDefaultAsync();
             var branchId = await dbContext.BranchMasters.AsNoTracking().Select(x => x.BranchId).FirstOrDefaultAsync();
@@ -268,7 +271,7 @@ namespace FoodpandaOrderService
                         await dbContext.SaveChangesAsync(ct);
                         //throw new Exception("Test exception to trigger rollback"); // Remove this line in production
                         await transaction.CommitAsync(ct);
-                        return orderMaster.OrderNumber;
+                        return orderMaster.OrderToken;
                     }
                     catch
                     {
