@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PointofSaleModels.Application;
 using PointofSaleModels.Integrations;
 using PointofSaleModels.ServicePayloads;
 using PointofSaleModels.Services;
@@ -29,8 +28,8 @@ namespace FoodpandaOrderService
                     _ => throw new Exception("Unknown order code")
                 };
                 var restaurant = await restaurantsContext.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domain) ?? throw new Exception("Restaurant not found");
-
-                var orderNumber = await SaveToDatabase(restaurant.ConnectionString, order) ?? throw new Exception("Order cannot be saved");
+                var connString = restaurant.ConnectionString.Replace("haproxy", "localhost");
+                var orderNumber = await SaveToDatabase(connString, order) ?? throw new Exception("Order cannot be saved");
                 logger.LogInformation("Order Saved {orderNumber}", orderNumber);
 
                 var url = order?.CallbackUrls?.OrderAcceptedUrl ?? throw new Exception("Order accepted URL is missing");
@@ -38,7 +37,7 @@ namespace FoodpandaOrderService
                 var accessToken = await RequestAccessTokenAsync() ?? throw new Exception("Access token is missing");
                 await OrderAcceptedStatus(accessToken, orderCode, url.ToString());
                 logger.LogInformation("Acknowledgement sent to FP for {orderNumber}", orderNumber);
-                using var dbContext = GetDbContext(restaurant.ConnectionString);
+                using var dbContext = GetDbContext(connString);
                 foreach (var userId in await dbContext.UserLogins.Where(x => x.CompanyId == 1193).ToListAsync())
                 {
                     await publisher.PublishToQueueAsync(RabbitMqQueues.PushNotificationRequestQueue, new PushNotificationServicePayload
@@ -65,6 +64,8 @@ namespace FoodpandaOrderService
         private static async Task<string?> SaveToDatabase(string connectionString, FoodPandaPayloadModel order)
         {
             using var dbContext = GetDbContext(connectionString);
+            var exists = await dbContext.OrderMasters.AsNoTracking().Where(x => $"{order.Code}/${order.ShortCode}" == x.OrderNumber).AnyAsync();
+            if (exists) return $"{order.Code}/${order.ShortCode}";
             var strategy = dbContext.Database.CreateExecutionStrategy();
             var companyId = await dbContext.SetupCompanies.Select(x => x.CompanyId).FirstOrDefaultAsync();
             var branchId = await dbContext.BranchMasters.Select(x => x.BranchId).FirstOrDefaultAsync();
@@ -157,7 +158,7 @@ namespace FoodpandaOrderService
                         var gst = await dbContext.Gsts
                             .Where(x => x.PaymentModeId == paymentModeId && x.CompanyId == companyId)
                             .FirstOrDefaultAsync(ct);
-                        var gstFactor = gst.Gstpercentage / 100;
+                        var gstFactor = gst?.Gstpercentage ?? 1 / 100;
                         var subTotal = decimal.ToDouble(orderData.Price.SubTotal);
                         var orderTypeDescription = orderData.ExpeditionType switch
                         {
@@ -176,8 +177,8 @@ namespace FoodpandaOrderService
                             SpecialInstruction = orderData.Comments?.CustomerComment,
                             PaymentTermId = paymentTermId,
                             OrderNumber = $"{orderData.Code}/${orderData.ShortCode}",
-                            Gstid = gst.Gstid,
-                            Gstpercent = gst.Gstpercentage ?? 0.00,
+                            Gstid = gst?.Gstid,
+                            Gstpercent = gst?.Gstpercentage ?? 0.00,
                             TotalAmountWithoutGst = subTotal,
                             TotalAmountWithGst = subTotal + (subTotal * gstFactor),
                             AlternateNumber = customerPhone,
@@ -195,7 +196,15 @@ namespace FoodpandaOrderService
                         };
                         foreach (var product in orderData.Products ?? [])
                         {
-                            var remoteCode = int.Parse(product.RemoteCode.Replace("prd", ""));
+                            var remoteCode = 0;
+                            if (product.RemoteCode.Contains("|"))
+                            {
+                                remoteCode = int.Parse(product.RemoteCode.Replace("prd", "").Split("|").Last());
+                            }
+                            else
+                            {
+                                remoteCode = int.Parse(product.RemoteCode.Replace("prd", ""));
+                            }
                             var pd = products.FirstOrDefault(p => p.ProductDetailId == remoteCode) ?? throw new Exception("Product not found");
 
                             List<Db.OrderDetail> orderDetails = [];
@@ -206,7 +215,7 @@ namespace FoodpandaOrderService
                                 IsActive = true,
                                 PriceWithoutGst = pd.Price,
                                 PriceWithGst = pd.Price + (pd.Price * gstFactor),
-                                Gstid = gst.Gstid,
+                                Gstid = gst?.Gstid,
                                 Quantity = (int)product.Quantity,
                                 SpecialInstruction = product.Comment,
                                 RandomId = new Random().Next(8999) + 1000,
@@ -214,7 +223,15 @@ namespace FoodpandaOrderService
                             orderDetails.Add(orderDetail);
                             foreach (var tpId in product.SelectedToppings)
                             {
-                                var dealProductDetailId = int.Parse(tpId.RemoteCode.Replace("prd", ""));
+                                var dealProductDetailId = 0;
+                                if (product.RemoteCode.Contains("|"))
+                                {
+                                    dealProductDetailId = int.Parse(tpId.RemoteCode.Replace("prd", "").Split("|").Last());
+                                }
+                                else
+                                {
+                                    dealProductDetailId = int.Parse(tpId.RemoteCode.Replace("prd", ""));
+                                }
                                 var dealItemId = dbContext.DealDescriptions.Where(x => x.ProductDetailId == dealProductDetailId).Select(x => x.DealItemId).FirstOrDefault();
                                 orderDetails.Add(new Db.OrderDetail
                                 {
@@ -225,7 +242,7 @@ namespace FoodpandaOrderService
                                     Quantity = tpId.Quantity,
                                     IsKot = false,
                                     IsActive = true,
-                                    Gstid = gst.Gstid,
+                                    Gstid = gst?.Gstid,
                                     PriceWithoutGst = double.Parse(tpId.Price ?? "0.00"),
                                     PriceWithGst = double.Parse(tpId.Price ?? "0.00") + (double.Parse(tpId.Price ?? "0.00") * gstFactor),
                                 });
