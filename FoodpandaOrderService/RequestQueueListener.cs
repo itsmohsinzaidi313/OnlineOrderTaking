@@ -67,12 +67,12 @@ namespace FoodpandaOrderService
             var exists = await dbContext.OrderMasters.AsNoTracking().Where(x => $"{order.Code}/${order.ShortCode}" == x.OrderNumber).AnyAsync();
             if (exists) return $"{order.Code}/${order.ShortCode}";
             var strategy = dbContext.Database.CreateExecutionStrategy();
-            var companyId = await dbContext.SetupCompanies.Select(x => x.CompanyId).FirstOrDefaultAsync();
-            var branchId = await dbContext.BranchMasters.Select(x => x.BranchId).FirstOrDefaultAsync();
-            //var itemIds = order.Products?.Select(x => int.Parse(x.RemoteCode.Replace("prd","").ToString())).ToList() ?? [];
-            var products = await dbContext.ProductDetails
+            var companyId = await dbContext.SetupCompanies.AsNoTracking().Select(x => x.CompanyId).FirstOrDefaultAsync();
+            var branchId = await dbContext.BranchMasters.AsNoTracking().Select(x => x.BranchId).FirstOrDefaultAsync();
+            var areas = await dbContext.Areas.AsNoTracking().ToListAsync();
+            var products = await dbContext.ProductDetails.AsNoTracking()
                 .ToListAsync();
-            var dealDescriptions = await dbContext.DealItemDetails
+            var dealDescriptions = await dbContext.DealItemDetails.AsNoTracking()
                 .Where(x => x.IsActive == true)
                 .ToListAsync();
             return await strategy.ExecuteAsync(
@@ -167,7 +167,18 @@ namespace FoodpandaOrderService
                             _ => "Unknown"
                         };
                         var orderType = await dbContext.SetupMasterDetails.FirstOrDefaultAsync(x => x.Flex1 == orderTypeDescription);
-
+                        var orderstatus = await dbContext.OrderStatuses.Where(x => x.OrderStatusName == "Confirmed").FirstOrDefaultAsync();
+                        var orderSource = await dbContext.SetupMasterDetails.Where(x => x.CompanyId == companyId && x.Flex1 == "WEB").FirstOrDefaultAsync();
+                        var areaId = 0;
+                        var addr = address.DeliveryMainArea.ToLower();
+                        foreach (var area in areas)
+                        {
+                            if (addr.Contains(area.AreaName.ToLower()))
+                            {
+                                areaId = area.AreaId;
+                                break;
+                            }
+                        }
                         var orderMaster = new Db.OrderMaster
                         {
                             CompanyId = companyId,
@@ -189,6 +200,8 @@ namespace FoodpandaOrderService
                             DiscountAmount = 0.00,
                             OrderToken = await GetUniqueTokenAsync(dbContext),
                             Exported = false,
+                            OrderStatusId = orderstatus!.OrderStatusId,
+                            OrderSourceId = orderSource!.SetupDetailId,
                             PaymentTypeId = paymentModeId,
                             PhoneId = customerPhoneId,
                             CustomerId = customerId,
@@ -197,7 +210,7 @@ namespace FoodpandaOrderService
                         foreach (var product in orderData.Products ?? [])
                         {
                             var remoteCode = 0;
-                            if (product.RemoteCode.Contains("|"))
+                            if (product.RemoteCode.Contains('|'))
                             {
                                 remoteCode = int.Parse(product.RemoteCode.Replace("prd", "").Split("|").Last());
                             }

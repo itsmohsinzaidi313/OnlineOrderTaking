@@ -18,6 +18,7 @@ namespace OrderHistoryService
             try
             {
                 var connectionString = await GetConnectionString(requestPayload.DomainName);
+                connectionString = connectionString.Replace("haproxy", "localhost");
 
                 if (string.IsNullOrEmpty(requestPayload.OrderToken))
                 {
