@@ -97,8 +97,8 @@ namespace FoodpandaOrderService
                                 PhoneNumber = customerPhone,
                                 IsActive = true,
                             };
-                            await dbContext.CustomerPhones.AddAsync(newCustomerPhone);
-                            await dbContext.SaveChangesAsync();
+                            await dbContext.CustomerPhones.AddAsync(newCustomerPhone, ct);
+                            await dbContext.SaveChangesAsync(ct);
                             customerPhoneId = newCustomerPhone.PhoneId;
                         }
                         var dbCustomer = await dbContext.Customers.Where(x => x.PhoneId == customerPhoneId).FirstOrDefaultAsync();
@@ -114,15 +114,15 @@ namespace FoodpandaOrderService
                                 Email = customer?.Email,
                                 IsActive = true,
                             };
-                            await dbContext.Customers.AddAsync(newCustomer);
-                            await dbContext.SaveChangesAsync();
+                            await dbContext.Customers.AddAsync(newCustomer, ct);
+                            await dbContext.SaveChangesAsync(ct);
                             customerId = newCustomer.CustomerId;
                         }
 
                         var address = orderData.Delivery.Address;
-                        var dbCity = await dbContext.Cities.Select(x => new { x.CityId, x.CityName }).Where(x => x.CityName.Contains(address.City)).FirstOrDefaultAsync();
+                        var dbCity = await dbContext.Cities.Select(x => new { x.CityId, x.CityName }).Where(x => x.CityName.Contains(address.City)).FirstOrDefaultAsync(ct);
                         var fullAddress = $"{address.Room} {address.FlatNumber} {address.Number} {address.Floor} {address.Building} {address.Street} {address.DeliveryMainArea} {address.City}";
-                        var dbCustomerAddress = await dbContext.CustomerAddressDetails.Where(x => x.CompleteAddress == fullAddress).FirstOrDefaultAsync();
+                        var dbCustomerAddress = await dbContext.CustomerAddressDetails.Where(x => x.CompleteAddress == fullAddress).FirstOrDefaultAsync(ct);
                         var customerAddressId = dbCustomerAddress?.CustomerAddressId ?? 0;
                         if (dbCustomerAddress == null)
                         {
@@ -134,8 +134,8 @@ namespace FoodpandaOrderService
                                 CityId = dbCity?.CityId ?? 0,
                                 IsActive = true,
                             };
-                            await dbContext.CustomerAddressDetails.AddAsync(newCustomerAddress);
-                            await dbContext.SaveChangesAsync();
+                            await dbContext.CustomerAddressDetails.AddAsync(newCustomerAddress, ct);
+                            await dbContext.SaveChangesAsync(ct);
                             customerAddressId = newCustomerAddress.CustomerAddressId;
                         }
                         var paymentType = orderData.Payment.Type;
@@ -163,21 +163,21 @@ namespace FoodpandaOrderService
                             .Where(x => x.PaymentModeId == paymentModeId && x.CompanyId == companyId)
                             .FirstOrDefaultAsync(ct);
                         var gstFactor = gst?.Gstpercentage ?? 1 / 100;
-                        var subTotal = decimal.ToDouble(orderData.Price.SubTotal);
                         var orderTypeDescription = orderData.ExpeditionType switch
                         {
                             "delivery" => "DELIVERY",
                             "pickup" => "TAKE AWAY",
                             _ => "Unknown"
                         };
-                        var orderType = await dbContext.SetupMasterDetails.FirstOrDefaultAsync(x => x.Flex1 == orderTypeDescription);
-                        var orderstatus = await dbContext.OrderStatuses.Where(x => x.OrderStatusName == "Confirmed").FirstOrDefaultAsync();
-                        var orderSource = await dbContext.SetupMasterDetails.Where(x => x.CompanyId == companyId && x.Flex1 == "WEB").FirstOrDefaultAsync();
+                        var orderStatuses = await dbContext.OrderStatuses.AsNoTracking().Select(x => new { x.OrderStatusId, x.OrderStatusName }).ToListAsync(ct);
+                        var confirmedStatusId = orderStatuses.FirstOrDefault(x => x.OrderStatusName == "Confirmed")?.OrderStatusId ?? 0;
+                        var orderType = await dbContext.SetupMasterDetails.FirstOrDefaultAsync(x => x.Flex1 == orderTypeDescription, ct);
+                        var orderSource = await dbContext.SetupMasterDetails.Where(x => x.CompanyId == companyId && x.Flex1 == "WEB").FirstOrDefaultAsync(ct);
                         var areaId = 0;
                         var addr = address.DeliveryMainArea.ToLower();
                         foreach (var area in areas)
                         {
-                            if (addr.Contains(area.AreaName.ToLower()))
+                            if (addr.Contains(area.AreaName, StringComparison.CurrentCultureIgnoreCase))
                             {
                                 areaId = area.AreaId;
                                 break;
@@ -194,8 +194,8 @@ namespace FoodpandaOrderService
                             OrderNumber = $"{orderData.Code}/${orderData.ShortCode}",
                             Gstid = gst?.Gstid,
                             Gstpercent = gst?.Gstpercentage ?? 0.00,
-                            TotalAmountWithoutGst = subTotal,
-                            TotalAmountWithGst = subTotal + (subTotal * gstFactor),
+                            TotalAmountWithoutGst = double.Parse(orderData.Price?.TotalNet.ToString() ?? "0"),
+                            TotalAmountWithGst = double.Parse(orderData.Price?.CollectFromCustomer ?? "0"),
                             AlternateNumber = customerPhone,
                             OrderModeId = orderType.SetupDetailId,
                             OrderDate = DateOnly.FromDateTime(DateTime.UtcNow),
@@ -204,7 +204,7 @@ namespace FoodpandaOrderService
                             DiscountAmount = 0.00,
                             OrderToken = await GetUniqueTokenAsync(dbContext),
                             Exported = false,
-                            OrderStatusId = orderstatus!.OrderStatusId,
+                            OrderStatusId = confirmedStatusId,
                             OrderSourceId = orderSource!.SetupDetailId,
                             PaymentTypeId = paymentModeId,
                             PhoneId = customerPhoneId,
@@ -269,6 +269,23 @@ namespace FoodpandaOrderService
                         }
 
                         await dbContext.OrderMasters.AddAsync(orderMaster, ct);
+                        var pendingStatusId = orderStatuses.Where(x => x.OrderStatusName == "Pending").Select(x => x.OrderStatusId).FirstOrDefault();
+                        await dbContext.OrderStatusLogs.AddAsync(new Db.OrderStatusLog
+                        {
+                            CompanyId = orderMaster.CompanyId,
+                            OrderMasterId = orderMaster.OrderMasterId,
+                            OrderStatusId = pendingStatusId,
+                            CreatedDate = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(2)),
+                            Description = string.Empty,
+                        }, ct);
+                        await dbContext.OrderStatusLogs.AddAsync(new Db.OrderStatusLog
+                        {
+                            CompanyId = orderMaster.CompanyId,
+                            OrderMasterId = orderMaster.OrderMasterId,
+                            OrderStatusId = confirmedStatusId,
+                            CreatedDate = DateTime.UtcNow,
+                            Description = string.Empty,
+                        }, ct);
                         await dbContext.SaveChangesAsync(ct);
                         //throw new Exception("Test exception to trigger rollback"); // Remove this line in production
                         await transaction.CommitAsync(ct);
