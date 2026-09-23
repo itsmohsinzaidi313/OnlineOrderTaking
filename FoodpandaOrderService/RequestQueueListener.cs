@@ -51,6 +51,7 @@ namespace FoodpandaOrderService
                 }
                 requestPayload.BranchId = await dbContext.BranchMasters.Where(x => x.CompanyId == 1193).Select(x => x.BranchId).FirstOrDefaultAsync();
                 requestPayload.ResponseKey = "CreateOrderResponse";
+                requestPayload.DomainName = domain;
                 await publisher.PublishToQueueAsync(RabbitMqQueues.OrderHistoryRequestQueue,
                    new DataServicePayload(requestPayload)
                    {
