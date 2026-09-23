@@ -28,7 +28,7 @@ namespace FoodpandaOrderService
                     _ => throw new Exception("Unknown order code")
                 };
                 var restaurant = await restaurantsContext.Restaurants.FirstOrDefaultAsync(r => r.DomainName == domain) ?? throw new Exception("Restaurant not found");
-                var connString = restaurant.ConnectionString.Replace("haproxy", "localhost");
+                var connString = restaurant.ConnectionString;
                 var orderNumber = await SaveToDatabase(connString, order) ?? throw new Exception("Order cannot be saved");
                 logger.LogInformation("Order Saved {orderNumber}", orderNumber);
 
