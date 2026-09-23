@@ -9,7 +9,7 @@ using Db = PointofSaleModels.PGDatabaseModels;
 
 namespace FoodpandaOrderService
 {
-    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, IDbContextFactory<Db.RestaurantsContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
+    internal class RequestQueueListener(ILogger<RequestQueueListener> logger, RabbitMqConnection rabbitConnection, IRabbitMqPublisher publisher, IDbContextFactory<Db.RestaurantsContext> contextFactory) : RabbitMqConsumerService<RequestQueueListener>(logger, rabbitConnection)
     {
         public override string QueueName() => RabbitMqQueues.FoodpandaIntegrationRequestQueue;
         public override async Task OnMessage(string transport)
@@ -38,7 +38,22 @@ namespace FoodpandaOrderService
                 var accessToken = await RequestAccessTokenAsync() ?? throw new Exception("Access token is missing");
                 await OrderAcceptedStatus(accessToken, orderCode, url.ToString());
                 logger.LogInformation("Acknowledgement sent to FP for {orderNumber}", orderNumber);
+                using var dbContext = GetDbContext(restaurant.ConnectionString);
+                foreach (var userId in await dbContext.UserLogins.Where(x => x.CompanyId == 1193).ToListAsync())
+                {
+                    await publisher.PublishToQueueAsync(RabbitMqQueues.PushNotificationRequestQueue, new PushNotificationServicePayload
+                    {
+                        ClientId = $"branch:{userId}:*",
+                        Title = "New Order Received!",
+                        Message = $" New order received from the DHA BRANCH branch - Order# {orderNumber} — Rs.{decimal.Round(order?.Price.SubTotal ?? 0.00M + decimal.Parse(order.Price.DeliveryFee ?? "0.0"))}.",
+                    });
 
+                }
+                await publisher.PublishToQueueAsync(RabbitMqQueues.OrderHistoryRequestQueue,
+                   new DataServicePayload(requestPayload)
+                   {
+                       OrderToken = orderNumber
+                   });
             }
             catch (Exception ex)
             {
@@ -49,7 +64,7 @@ namespace FoodpandaOrderService
 
         private static async Task<string?> SaveToDatabase(string connectionString, FoodPandaPayloadModel order)
         {
-            var dbContext = GetDbContext(connectionString);
+            using var dbContext = GetDbContext(connectionString);
             var strategy = dbContext.Database.CreateExecutionStrategy();
             var companyId = await dbContext.SetupCompanies.Select(x => x.CompanyId).FirstOrDefaultAsync();
             var branchId = await dbContext.BranchMasters.Select(x => x.BranchId).FirstOrDefaultAsync();
@@ -100,7 +115,7 @@ namespace FoodpandaOrderService
                         }
 
                         var address = orderData.Delivery.Address;
-                        var dbCity = await dbContext.Cities.Select(x => new {x.CityId, x.CityName}).Where(x => x.CityName.Contains(address.City)).FirstOrDefaultAsync();
+                        var dbCity = await dbContext.Cities.Select(x => new { x.CityId, x.CityName }).Where(x => x.CityName.Contains(address.City)).FirstOrDefaultAsync();
                         var fullAddress = $"{address.Room} {address.FlatNumber} {address.Number} {address.Floor} {address.Building} {address.Street} {address.DeliveryMainArea} {address.City}";
                         var dbCustomerAddress = await dbContext.CustomerAddressDetails.Where(x => x.CompleteAddress == fullAddress).FirstOrDefaultAsync();
                         var customerAddressId = dbCustomerAddress?.CustomerAddressId ?? 0;
