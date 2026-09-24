@@ -117,10 +117,13 @@ public class Implementation()
                     TotalDiscount = orderMaster.DiscountAmount ?? 0.00,
                     PreviousOrderCount = await dbContext.OrderMasters.Where(x => x.PhoneId == orderMaster.PhoneId).CountAsync(),
                 };
-                if (orderMaster.AreaId.HasValue)
+                var areaId = orderMaster.AreaId ?? 0;
+                if (areaId == 0)
                 {
-
-                    order.CityName = cities[areaCityIds[orderMaster.AreaId ?? 0] ?? 0];
+                    order.AreaName = "N/A";
+                }
+                else
+                {
                     order.AreaName = areas[orderMaster.AreaId ?? 0];
                 }
                 var phoneId = orderMaster.PhoneId;
@@ -129,6 +132,15 @@ public class Implementation()
                 {
                     var customer = await dbContext.Customers.Where(x => x.CustomerId == orderMaster.CustomerId).FirstOrDefaultAsync();
                     var addressDetails = await dbContext.CustomerAddressDetails.Where(x => x.CustomerAddressId == orderMaster.CustomerAddressId).FirstOrDefaultAsync();
+                    var cityId = addressDetails?.CityId ?? 0;
+                    if (cityId == 0)
+                    {
+                        order.CityName = "N/A";
+                    }
+                    else
+                    {
+                        order.CityName = cities[cityId];
+                    }
 
                     var customerDetail = new CustomerDetail
                     {

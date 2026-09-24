@@ -7,15 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Nager.PublicSuffix" Version="3.8.0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\PointofSaleModels\PointofSaleModels.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Protobuf Include="Protos\generalseo.proto" GrpcServices="Server" Namespace="PointofSaleModels.Protos" />
   </ItemGroup>
 
 </Project>

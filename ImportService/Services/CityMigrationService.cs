@@ -12,6 +12,7 @@ namespace ImportService.Services
             await using var sqlDb = await sqlDbFactory.CreateDbContextAsync(ct);
             var cities = await sqlDb.Cities
                 .AsNoTracking()
+                .Where(x => x.IsActive)
                 .ToListAsync(ct);
 
             await pgDb.Cities.ExecuteDeleteAsync(ct);

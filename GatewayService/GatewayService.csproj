@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PointofSaleModels\PointofSaleModels.csproj" />
+    <Protobuf Include="Protos\fpuploadmenu.proto" GrpcServices="Client" Namespace="PointofSaleModels.Protos" />
     <Protobuf Include="Protos\pushnotification.proto" GrpcServices="Client" Namespace="PointofSaleModels.Protos" />
     <Protobuf Include="Protos\orderhistory.proto" GrpcServices="Client" Namespace="PointofSaleModels.Protos" />
     <Protobuf Include="Protos\generalseo.proto" GrpcServices="Client" Namespace="PointofSaleModels.Protos" />
