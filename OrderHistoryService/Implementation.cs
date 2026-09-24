@@ -25,33 +25,38 @@ public class Implementation()
         using var dbContext = GetDbContext(connectionString);
         var products = await (from x in dbContext.ProductCategories
                               join y in dbContext.Products on x.CategoryId equals y.ProductCategoryId
-                              select y).ToListAsync();
+                              select y)
+                              .AsNoTracking()
+                              .ToListAsync();
         var productDetails = await (from a in dbContext.ProductDetails
                                     join b in dbContext.Products on a.ProductId equals b.ProductId
                                     join c in dbContext.ProductCategories on b.ProductCategoryId equals c.CategoryId
-                                    select a).ToListAsync();
+                                    select a).AsNoTracking()
+                              .ToListAsync();
         var dealItems = await (from a in dbContext.DealItemDetails
                                join b in dbContext.ProductDetails on a.ProductDetailId equals b.ProductDetailId
                                join c in dbContext.Products on b.ProductId equals c.ProductId
                                join d in dbContext.ProductCategories on c.ProductCategoryId equals d.CategoryId
-                               select a).ToListAsync();
+                               select a).AsNoTracking()
+                              .ToListAsync();
         var dealDescriptions = await (from a in dbContext.DealDescriptions
                                       join b in dbContext.DealItemDetails on a.DealItemId equals b.DealItemId
                                       join c in dbContext.ProductDetails on b.ProductDetailId equals c.ProductDetailId
                                       join d in dbContext.Products on c.ProductId equals d.ProductId
                                       join e in dbContext.ProductCategories on d.ProductCategoryId equals e.CategoryId
-                                      select a).ToListAsync();
-        var flavours = await dbContext.Flavours.ToDictionaryAsync(x => x.FlavourId, x => x);
-        var sizes = await dbContext.ProductSizes.ToDictionaryAsync(x => x.SizeId, x => x);
-        var setupDetail = await dbContext.SetupMasterDetails.ToDictionaryAsync(x => x.SetupDetailId, x => x.SetupDetailName);
-        var statuses = await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
-        var branchDict = await dbContext.BranchMasters.ToDictionaryAsync(x => x.BranchId, x => x.BranchName);
-        var discounts = await dbContext.Discounts.ToDictionaryAsync(x => x.DiscountId, x => x);
-        var riders = await dbContext.Riders.ToListAsync();
-        var areas = await dbContext.Areas.ToDictionaryAsync(x => x.AreaId, x => x.AreaName);
-        var cities = await dbContext.Cities.ToDictionaryAsync(x => x.CityId, x => x.CityName);
-        var areaCityIds = await dbContext.Areas.ToDictionaryAsync(x => x.AreaId, x => x.CityId);
-        var paymentModes = await dbContext.PaymentModes.ToDictionaryAsync(x => x.PaymentModeId, x => x.PaymentMode1);
+                                      select a).AsNoTracking()
+                              .ToListAsync();
+        var flavours = await dbContext.Flavours.AsNoTracking().ToDictionaryAsync(x => x.FlavourId, x => x);
+        var sizes = await dbContext.ProductSizes.AsNoTracking().ToDictionaryAsync(x => x.SizeId, x => x);
+        var setupDetail = await dbContext.SetupMasterDetails.AsNoTracking().ToDictionaryAsync(x => x.SetupDetailId, x => x.SetupDetailName);
+        var statuses = await dbContext.OrderStatuses.AsNoTracking().ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
+        var branchDict = await dbContext.BranchMasters.AsNoTracking().ToDictionaryAsync(x => x.BranchId, x => x.BranchName);
+        var discounts = await dbContext.Discounts.AsNoTracking().ToDictionaryAsync(x => x.DiscountId, x => x);
+        var riders = await dbContext.Riders.AsNoTracking().ToListAsync();
+        var areas = await dbContext.Areas.AsNoTracking().ToDictionaryAsync(x => x.AreaId, x => x.AreaName);
+        var cities = await dbContext.Cities.AsNoTracking().ToDictionaryAsync(x => x.CityId, x => x.CityName);
+        var areaCityIds = await dbContext.Areas.AsNoTracking().ToDictionaryAsync(x => x.AreaId, x => x.CityId);
+        var paymentModes = await dbContext.PaymentModes.AsNoTracking().ToDictionaryAsync(x => x.PaymentModeId, x => x.PaymentMode1);
 
         if (userId.HasValue)
         {
@@ -84,13 +89,14 @@ public class Implementation()
                 var orderDate = orderMaster.OrderDate;
 
                 var karachiTz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
-                Func<DateTime, DateTime> convertToPkTime = (dateTime) =>
-                {
-                    return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
-                };
+                Func<DateTime, DateTime> convertToPkTime = (dateTime) => TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
                 DateTime orderDateTime = convertToPkTime(orderDate?.ToDateTime(orderTime) ?? DateTime.MinValue);
                 var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == orderMaster.OrderMasterId).ToListAsync();
-
+                var orderSource = await dbContext.SetupMasterDetails
+                    .AsNoTracking()
+                    .Select(x => new {x.SetupDetailId, x.SetupDetailName, x.CompanyId})
+                    .Where(x => x.SetupDetailId == orderMaster.OrderSourceId && x.CompanyId == orderMaster.CompanyId)
+                    .Select(x => x.SetupDetailName).FirstOrDefaultAsync();
 
                 var order = new CustomerOrder
                 {
@@ -116,6 +122,7 @@ public class Implementation()
                     DeliveryTime = orderMaster.DeliveryTime ?? 0,
                     TotalDiscount = orderMaster.DiscountAmount ?? 0.00,
                     PreviousOrderCount = await dbContext.OrderMasters.Where(x => x.PhoneId == orderMaster.PhoneId).CountAsync(),
+                    OrderSource = orderSource ?? "N/A",
                 };
                 var areaId = orderMaster.AreaId ?? 0;
                 if (areaId == 0)

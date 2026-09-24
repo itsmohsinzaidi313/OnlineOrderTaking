@@ -172,7 +172,7 @@ namespace FoodpandaOrderService
                         var orderStatuses = await dbContext.OrderStatuses.AsNoTracking().Select(x => new { x.OrderStatusId, x.OrderStatusName }).ToListAsync(ct);
                         var confirmedStatusId = orderStatuses.FirstOrDefault(x => x.OrderStatusName == "Confirmed")?.OrderStatusId ?? 0;
                         var orderType = await dbContext.SetupMasterDetails.FirstOrDefaultAsync(x => x.Flex1 == orderTypeDescription, ct);
-                        var orderSource = await dbContext.SetupMasterDetails.Where(x => x.CompanyId == companyId && x.Flex1 == "WEB").FirstOrDefaultAsync(ct);
+                        var orderSource = await dbContext.SetupMasterDetails.Where(x => x.CompanyId == companyId && x.SetupDetailName == "Foodpanda").FirstOrDefaultAsync(ct);
                         var areaId = 0;
                         var addr = address.DeliveryMainArea.ToLower();
                         foreach (var area in areas)
@@ -206,6 +206,7 @@ namespace FoodpandaOrderService
                             Exported = false,
                             OrderStatusId = confirmedStatusId,
                             OrderSourceId = orderSource!.SetupDetailId,
+                            OrderSourceValue = orderSource.Flex1,
                             PaymentTypeId = paymentModeId,
                             PhoneId = customerPhoneId,
                             CustomerId = customerId,

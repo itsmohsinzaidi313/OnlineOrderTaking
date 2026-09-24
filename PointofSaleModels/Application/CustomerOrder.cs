@@ -22,6 +22,8 @@
         public double TotalDiscount { get; set; }
         public double GstPercentage { get; set; }
         public int PreviousOrderCount { get; set; }
+        public string OrderSource { get; set; }
+
 
         public CustomerOrder() : base()
         {
