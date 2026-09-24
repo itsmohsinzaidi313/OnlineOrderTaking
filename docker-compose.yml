@@ -32,6 +32,7 @@ services:
       - RABBITMQ__PASSWORD=${RABBITMQ_DEFAULT_PASS}
     networks:
       - patroni-net
+      - mssql-net
 
   generalseodataservice:
     image: registry.eatx.pk/online-order-taking/generalseodataservice:${IMAGE_TAG}
@@ -46,8 +47,6 @@ services:
 
   pushnotificationservice:
     image: registry.eatx.pk/online-order-taking/pushnotificationservice:${IMAGE_TAG}
-    ports:
-      - "8080"
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://pushnotificationservice:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
@@ -88,8 +87,6 @@ services:
 
   orderhistoryservice:
     image: registry.eatx.pk/online-order-taking/orderhistoryservice:${IMAGE_TAG}
-    ports:
-      - "8080"
     environment:
       - KESTREL__ENDPOINTS__GRPC__URL=http://orderhistoryservice:${GRPC_PORT}
       - KESTREL__ENDPOINTS__GRPC__PROTOCOLS=Http2
@@ -162,8 +159,6 @@ services:
 
   gatewayservice:
     image: registry.eatx.pk/online-order-taking/gatewayservice:${IMAGE_TAG}
-    ports:
-      - "8090:8080"
     environment:
       - GRPC__PUSHNOTIFICAIONHOST=http://pushnotificationservice:${GRPC_PORT}
       - GRPC__ORDERHISTORYHOST=http://orderhistoryservice:${GRPC_PORT}
@@ -183,10 +178,6 @@ services:
       - JWT__EXPIREMINUTES=${GATEWAY_JWT_EXPIREMINUTES}
     networks:
       - patroni-net
-
-networks:
-      - patroni-net
-      - nginx-net
 
 networks:
   patroni-net:
