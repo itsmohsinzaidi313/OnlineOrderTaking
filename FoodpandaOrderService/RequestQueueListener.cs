@@ -179,6 +179,7 @@ namespace FoodpandaOrderService
                         {
                             if (addr.Contains(area.AreaName, StringComparison.CurrentCultureIgnoreCase))
                             {
+
                                 areaId = area.AreaId;
                                 break;
                             }
