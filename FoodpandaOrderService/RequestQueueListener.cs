@@ -189,7 +189,7 @@ namespace FoodpandaOrderService
                             BranchId = branchId,
                             AreaId = 0,
                             IsActive = true,
-                            SpecialInstruction = orderData.Comments?.CustomerComment,
+                            SpecialInstruction = orderData?.Delivery?.Address?.DeliveryInstructions,
                             PaymentTermId = paymentTermId,
                             OrderNumber = $"{orderData.Code}/${orderData.ShortCode}",
                             Gstid = gst?.Gstid,
