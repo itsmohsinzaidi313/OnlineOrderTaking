@@ -178,6 +178,7 @@ internal class Implementation()
                 .Select(x => x.a.ProductId)
                 .Distinct()
                 .ToList();
+            var pdRmtIdDict = dbMenuData.ProductDetails.ToDictionary(x => x.ProductDetailId, y => y.RemoteId);
             foreach (var dbProduct in dbMenuData.Products.Where(p => p.ProductCategoryId == dbCategory.CategoryId && !onlyForDealsId.Contains(p.ProductId)))
             {
                 var item = new MenuItem
@@ -255,6 +256,7 @@ internal class Implementation()
                             var itemOption = new ItemOption
                             {
                                 Id = dbDescription.ProductDetailId ?? 0,
+                                RemoteId = pdRmtIdDict[dbDescription.ProductDetailId ?? 0],
                                 Price = dbDescription.Price ?? 0.0,
                                 Name = list.FirstOrDefault()?.ProductName ?? string.Empty,
                             };
