@@ -179,10 +179,12 @@ namespace FoodpandaOrderService
                         {
                             if (addr.Contains(area.AreaName, StringComparison.CurrentCultureIgnoreCase))
                             {
+
                                 areaId = area.AreaId;
                                 break;
                             }
                         }
+
                         var orderMaster = new Db.OrderMaster
                         {
                             CompanyId = companyId,
