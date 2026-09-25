@@ -57,6 +57,7 @@ public class Implementation()
         var cities = await dbContext.Cities.AsNoTracking().ToDictionaryAsync(x => x.CityId, x => x.CityName);
         var areaCityIds = await dbContext.Areas.AsNoTracking().ToDictionaryAsync(x => x.AreaId, x => x.CityId);
         var paymentModes = await dbContext.PaymentModes.AsNoTracking().ToDictionaryAsync(x => x.PaymentModeId, x => x.PaymentMode1);
+        var pdRmtIdDict = productDetails.ToDictionary(x => x.ProductDetailId, y => y.RemoteId);
 
         if (userId.HasValue)
         {
@@ -94,7 +95,7 @@ public class Implementation()
                 var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == orderMaster.OrderMasterId).ToListAsync();
                 var orderSource = await dbContext.SetupMasterDetails
                     .AsNoTracking()
-                    .Select(x => new {x.SetupDetailId, x.SetupDetailName, x.CompanyId})
+                    .Select(x => new { x.SetupDetailId, x.SetupDetailName, x.CompanyId })
                     .Where(x => x.SetupDetailId == orderMaster.OrderSourceId && x.CompanyId == orderMaster.CompanyId)
                     .Select(x => x.SetupDetailName).FirstOrDefaultAsync();
 
@@ -164,7 +165,7 @@ public class Implementation()
                     };
                     order.CustomerDetails = customerDetail;
                 }
-                await foreach (var item in GetOrderItemsAsync(dbContext, orderMaster.OrderMasterId, productDetails, dealItems, products, flavours, sizes, dealDescriptions, discounts))
+                await foreach (var item in GetOrderItemsAsync(dbContext, orderMaster.OrderMasterId, productDetails, dealItems, products, flavours, sizes, dealDescriptions, discounts, pdRmtIdDict))
                 {
                     item.Price = item.Variations.Sum(x => x.Price + x.ItemChoices.SelectMany(y => y.ItemOptions).Sum(z => z.Price));
                     order.Items.Add(item);
@@ -185,7 +186,7 @@ public class Implementation()
         return await dbContext.OrderStatuses.ToDictionaryAsync(x => x.OrderStatusId, x => x.OrderStatusName);
     }
 
-    private async IAsyncEnumerable<MenuItem> GetOrderItemsAsync(Db.PgDbContext dbContext, int orderMasterId, List<Db.ProductDetail> productDetails, List<Db.DealItemDetail> dealItems, List<Db.Product> products, Dictionary<int, Db.Flavour> flavours, Dictionary<int, Db.ProductSize> sizes, List<Db.DealDescription> dealDescriptions, Dictionary<int, Db.Discount> discounts)
+    private async IAsyncEnumerable<MenuItem> GetOrderItemsAsync(Db.PgDbContext dbContext, int orderMasterId, List<Db.ProductDetail> productDetails, List<Db.DealItemDetail> dealItems, List<Db.Product> products, Dictionary<int, Db.Flavour> flavours, Dictionary<int, Db.ProductSize> sizes, List<Db.DealDescription> dealDescriptions, Dictionary<int, Db.Discount> discounts, Dictionary<int, string?> pdRmtIdDict)
     {
         var orderDetails = await dbContext.OrderDetails
             .Where(x => x.OrderMasterId == orderMasterId && x.IsActive == true)
@@ -255,8 +256,11 @@ public class Implementation()
                                 Name = x.DealOptionName,
                                 ItemOptions = [..orderDetails
                                 .Where(y => y.OrderParentId == orderDetail.ProductDetailId && y.DealItemId == x.DealItemId)
-                                .Select(y => new ItemOption {
+                                .Select(y => {
+                                    pdRmtIdDict.TryGetValue(y.ProductDetailId, out string? rmtId);
+                                    return new ItemOption {
                                     Id = y.ProductDetailId,
+                                    RemoteId = rmtId,
                                     Name = (from a in productDetails
                                             join b in products on a.ProductId equals b.ProductId
                                             where a.ProductDetailId == y.ProductDetailId
@@ -265,6 +269,7 @@ public class Implementation()
                                              where a.ProductDetailId == y.ProductDetailId && a.DealItemId == x.DealItemId
                                              select a.Price).FirstOrDefault() ?? 0.0,
                                     Quantity = (int?)(y.Quantity ?? 0.00)
+                                };
                                 })]
                             })],
                         }
