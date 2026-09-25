@@ -196,6 +196,7 @@ namespace FoodpandaOrderService
                             OrderNumber = $"{orderData.Code}/${orderData.ShortCode}",
                             Gstid = gst?.Gstid,
                             Gstpercent = gst?.Gstpercentage ?? 0.00,
+                            Gstamount = gstFactor * double.Parse(order.Price.TotalNet.ToString() ?? "0"),
                             TotalAmountWithoutGst = double.Parse(orderData.Price?.TotalNet.ToString() ?? "0"),
                             TotalAmountWithGst = double.Parse(orderData.Price?.CollectFromCustomer ?? "0"),
                             AlternateNumber = customerPhone,
