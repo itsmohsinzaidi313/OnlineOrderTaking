@@ -93,11 +93,6 @@ public class Implementation()
                 Func<DateTime, DateTime> convertToPkTime = (dateTime) => TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), karachiTz);
                 DateTime orderDateTime = convertToPkTime(orderDate?.ToDateTime(orderTime) ?? DateTime.MinValue);
                 var orderStatusLogs = await dbContext.OrderStatusLogs.Where(x => x.OrderMasterId == orderMaster.OrderMasterId).ToListAsync();
-                var orderSource = await dbContext.SetupMasterDetails
-                    .AsNoTracking()
-                    .Select(x => new { x.SetupDetailId, x.SetupDetailName, x.CompanyId })
-                    .Where(x => x.SetupDetailId == orderMaster.OrderSourceId && x.CompanyId == orderMaster.CompanyId)
-                    .Select(x => x.SetupDetailName).FirstOrDefaultAsync();
 
                 var order = new CustomerOrder
                 {
@@ -123,7 +118,7 @@ public class Implementation()
                     DeliveryTime = orderMaster.DeliveryTime ?? 0,
                     TotalDiscount = orderMaster.DiscountAmount ?? 0.00,
                     PreviousOrderCount = await dbContext.OrderMasters.Where(x => x.PhoneId == orderMaster.PhoneId).CountAsync(),
-                    OrderSource = orderSource ?? "N/A",
+                    OrderSource = orderMaster.OrderSourceValue ?? "N/A",
                 };
                 var areaId = orderMaster.AreaId ?? 0;
                 if (areaId == 0)
