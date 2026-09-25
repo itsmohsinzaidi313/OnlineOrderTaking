@@ -170,11 +170,11 @@ namespace FoodpandaOrderService
                             _ => "Unknown"
                         };
                         var orderStatuses = await dbContext.OrderStatuses.AsNoTracking().Select(x => new { x.OrderStatusId, x.OrderStatusName }).ToListAsync(ct);
-                        var confirmedStatusId = orderStatuses.FirstOrDefault(x => x.OrderStatusName == "Confirmed")?.OrderStatusId ?? 0;
                         var orderType = await dbContext.SetupMasterDetails.FirstOrDefaultAsync(x => x.Flex1 == orderTypeDescription, ct);
                         var orderSource = await dbContext.SetupMasterDetails.Where(x => x.CompanyId == companyId && x.SetupDetailName == "Foodpanda").FirstOrDefaultAsync(ct);
                         var addr = address.DeliveryMainArea.ToLower();
-
+                        
+                        var pendingStatusId = orderStatuses.Where(x => x.OrderStatusName == "Pending").Select(x => x.OrderStatusId).FirstOrDefault();
                         var orderMaster = new Db.OrderMaster
                         {
                             CompanyId = companyId,
@@ -197,7 +197,7 @@ namespace FoodpandaOrderService
                             DiscountAmount = 0.00,
                             OrderToken = await GetUniqueTokenAsync(dbContext),
                             Exported = false,
-                            OrderStatusId = confirmedStatusId,
+                            OrderStatusId = pendingStatusId,
                             OrderSourceId = orderSource!.SetupDetailId,
                             OrderSourceValue = orderSource.Flex1,
                             PaymentTypeId = paymentModeId,
@@ -263,21 +263,12 @@ namespace FoodpandaOrderService
                         }
 
                         await dbContext.OrderMasters.AddAsync(orderMaster, ct);
-                        var pendingStatusId = orderStatuses.Where(x => x.OrderStatusName == "Pending").Select(x => x.OrderStatusId).FirstOrDefault();
                         await dbContext.OrderStatusLogs.AddAsync(new Db.OrderStatusLog
                         {
                             CompanyId = orderMaster.CompanyId,
                             OrderMasterId = orderMaster.OrderMasterId,
                             OrderStatusId = pendingStatusId,
                             CreatedDate = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(2)),
-                            Description = string.Empty,
-                        }, ct);
-                        await dbContext.OrderStatusLogs.AddAsync(new Db.OrderStatusLog
-                        {
-                            CompanyId = orderMaster.CompanyId,
-                            OrderMasterId = orderMaster.OrderMasterId,
-                            OrderStatusId = confirmedStatusId,
-                            CreatedDate = DateTime.UtcNow,
                             Description = string.Empty,
                         }, ct);
                         await dbContext.SaveChangesAsync(ct);
