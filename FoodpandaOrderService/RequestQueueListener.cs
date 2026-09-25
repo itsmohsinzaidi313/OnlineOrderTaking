@@ -73,7 +73,7 @@ namespace FoodpandaOrderService
             var strategy = dbContext.Database.CreateExecutionStrategy();
             var companyId = await dbContext.SetupCompanies.AsNoTracking().Select(x => x.CompanyId).FirstOrDefaultAsync();
             var branchId = await dbContext.BranchMasters.AsNoTracking().Select(x => x.BranchId).FirstOrDefaultAsync();
-            var areas = await dbContext.Areas.AsNoTracking().ToListAsync();
+            var area = await dbContext.Areas.AsNoTracking().Where(x => x.AreaName == "FP Area").FirstOrDefaultAsync();
             var products = await dbContext.ProductDetails.AsNoTracking()
                 .ToListAsync();
             var dealDescriptions = await dbContext.DealItemDetails.AsNoTracking()
@@ -173,23 +173,13 @@ namespace FoodpandaOrderService
                         var confirmedStatusId = orderStatuses.FirstOrDefault(x => x.OrderStatusName == "Confirmed")?.OrderStatusId ?? 0;
                         var orderType = await dbContext.SetupMasterDetails.FirstOrDefaultAsync(x => x.Flex1 == orderTypeDescription, ct);
                         var orderSource = await dbContext.SetupMasterDetails.Where(x => x.CompanyId == companyId && x.SetupDetailName == "Foodpanda").FirstOrDefaultAsync(ct);
-                        var areaId = 0;
                         var addr = address.DeliveryMainArea.ToLower();
-                        foreach (var area in areas)
-                        {
-                            if (addr.Contains(area.AreaName, StringComparison.CurrentCultureIgnoreCase))
-                            {
-
-                                areaId = area.AreaId;
-                                break;
-                            }
-                        }
 
                         var orderMaster = new Db.OrderMaster
                         {
                             CompanyId = companyId,
                             BranchId = branchId,
-                            AreaId = 0,
+                            AreaId = area.AreaId,
                             IsActive = true,
                             SpecialInstruction = orderData?.Delivery?.Address?.DeliveryInstructions,
                             PaymentTermId = paymentTermId,
