@@ -253,10 +253,11 @@ internal class Implementation()
                                         join y in dbMenuData.Products on x.ProductId equals y.ProductId
                                         where x.ProductDetailId == dbDescription.ProductDetailId
                                         select y).ToList();
+                            pdRmtIdDict.TryGetValue(dbDescription.ProductDetailId ?? 0, out string? rmtId);
                             var itemOption = new ItemOption
                             {
                                 Id = dbDescription.ProductDetailId ?? 0,
-                                RemoteId = pdRmtIdDict[dbDescription.ProductDetailId ?? 0],
+                                RemoteId = rmtId,
                                 Price = dbDescription.Price ?? 0.0,
                                 Name = list.FirstOrDefault()?.ProductName ?? string.Empty,
                             };
